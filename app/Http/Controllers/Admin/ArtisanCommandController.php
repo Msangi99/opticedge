@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\Artisan;
 class ArtisanCommandController extends Controller
 {
     /**
-     * Allowed artisan commands (safe maintenance only). No migrate, seed, or destructive commands.
+     * Allowed artisan commands: cache/config, migrations, and db.
      */
     protected const ALLOWED_COMMANDS = [
+        // Cache & config
         'cache:clear',
         'config:clear',
         'view:clear',
@@ -19,11 +20,29 @@ class ArtisanCommandController extends Controller
         'optimize:clear',
         'event:clear',
         'package:discover',
+        // Migrations
+        'migrate',
+        'migrate:status',
+        'migrate:rollback',
+        'migrate:refresh',
+        'migrate:reset',
+        'migrate:fresh',
+        // Database
+        'db:seed',
+        'db:wipe',
+        'db:show',
+        'db:table',
+        'db:monitor',
+        'db:prune',
+        // Migration-related
+        'migrate:install',
+        'schema:dump',
     ];
 
     /**
      * Run a whitelisted artisan command via GET /admin/command/{command}.
-     * Example: /admin/command/cache:clear
+     * Optional query params: force=1 (--force), seed=1 (--seed for migrate:fresh/refresh).
+     * Example: /admin/command/migrate?force=1
      */
     public function __invoke(Request $request, string $command)
     {
@@ -38,8 +57,16 @@ class ArtisanCommandController extends Controller
             ], 403);
         }
 
+        $options = [];
+        if ($request->boolean('force')) {
+            $options['--force'] = true;
+        }
+        if ($request->boolean('seed') && in_array($command, ['migrate:fresh', 'migrate:refresh'], true)) {
+            $options['--seed'] = true;
+        }
+
         try {
-            Artisan::call($command);
+            Artisan::call($command, $options);
             $output = trim(Artisan::output());
 
             return response()->json([
