@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class DistributionSale extends Model
+{
+    protected $fillable = [
+        'dealer_id',
+        'order_id',
+        'dealer_name',
+        'seller_name',
+        'product_id',
+        'quantity_sold',
+        'purchase_price',
+        'selling_price',
+        'total_purchase_value',
+        'total_selling_value',
+        'profit',
+        'commission',
+        'status',
+        'to_be_paid',
+        'paid_amount',
+        'collection_date',
+        'collected_amount',
+        'balance',
+        'date',
+    ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function dealer()
+    {
+        return $this->belongsTo(User::class, 'dealer_id');
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+}
