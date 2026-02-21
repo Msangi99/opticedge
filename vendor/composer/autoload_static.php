@@ -566,6 +566,7 @@ class ComposerStaticInit00cb428c67e5922f796ee75e7a4e5fa9
     public static $classMap = array (
         'App\\Http\\Controllers\\AddressController' => __DIR__ . '/../..' . '/app/Http/Controllers/AddressController.php',
         'App\\Http\\Controllers\\Admin\\AgentController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/AgentController.php',
+        'App\\Http\\Controllers\\Admin\\ArtisanCommandController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/ArtisanCommandController.php',
         'App\\Http\\Controllers\\Admin\\CategoryController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/CategoryController.php',
         'App\\Http\\Controllers\\Admin\\CustomerController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/CustomerController.php',
         'App\\Http\\Controllers\\Admin\\DealerController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/DealerController.php',
