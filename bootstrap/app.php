@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'agent' => \App\Http\Middleware\AgentMiddleware::class,
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            'selcom/checkout-callback',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

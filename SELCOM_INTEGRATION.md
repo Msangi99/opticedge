@@ -13,12 +13,9 @@ This e-commerce platform integrates with Selcom payment gateway to accept mobile
 
 ## Configuration
 
-### 1. Install Selcom Package
-```bash
-composer require bryceandy/laravel-selcom
-```
+This project uses the **Selcom Checkout API** directly (no third-party package). Implementation follows the [official Selcom Developer documentation](https://developers.selcommobile.com/#checkout-api).
 
-### 2. Environment Variables
+### 1. Environment Variables
 Update your `.env` file with Selcom credentials:
 
 ```env
@@ -42,7 +39,7 @@ SELCOM_PAYMENT_EXPIRY=60
 3. Create a new application
 4. Copy the Vendor ID, API Key, and API Secret
 
-### 3. Database Migration
+### 2. Database Migration
 Create the `selcompays` table:
 
 ```bash
@@ -82,7 +79,7 @@ php artisan migrate
 When user submits the order:
 1. **Validation**: Phone number is validated (must be Tanzanian format)
 2. **Order Creation**: Order is created in the database
-3. **Selcom Request**: Initiate Selcom checkout
+3. **Selcom API**: Create order (minimal) then wallet-payment (push USSD) via `App\Services\SelcomApiService`
 4. **Database Record**: Create payment record in `selcompays` table
 5. **Redirect**: User is redirected to payment processing page
 
@@ -94,7 +91,7 @@ The payment-processing page:
 - Timeout after 6 minutes (120 polls × 3 seconds)
 
 ### 4. Payment Status Check
-The backend checks Selcom API for payment status:
+The backend polls Selcom **Get Order Status** API for payment status:
 - **COMPLETED**: Payment successful → Order marked as `paid`
 - **FAILED/CANCELLED/EXPIRED**: Payment failed → Order marked as `cancelled`
 - **PENDING**: Still processing → Continue polling
@@ -243,8 +240,8 @@ Before going live:
 ## Support
 
 For Selcom API issues:
-- Documentation: https://developers.selcommobile.com/
-- Support: support@selcommobile.com
+- **Checkout API docs**: https://developers.selcommobile.com/#checkout-api
+- Support: support@selcom.net (or email from developer portal)
 
 For integration issues:
 - Review logs in `storage/logs/laravel.log`

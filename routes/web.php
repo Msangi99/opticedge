@@ -2,9 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\SelcomWebhookController;
 use Livewire\Volt\Volt;
 
 Route::view('/', 'welcome')->name('welcome');
+
+// Selcom Checkout webhook (no auth; CSRF excluded in bootstrap/app.php)
+$selcomPrefix = config('selcom.prefix', 'selcom');
+Route::post("{$selcomPrefix}/checkout-callback", SelcomWebhookController::class)->name('selcom.checkout-callback');
 Route::get('/product/{product}', [App\Http\Controllers\PublicProductController::class , 'show'])->name('product.show');
 Route::get('/category/{category}', [App\Http\Controllers\PublicCategoryController::class , 'show'])->name('category.show');
 
