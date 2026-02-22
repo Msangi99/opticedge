@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Stock extends Model
+{
+    protected $fillable = ['name', 'stock_limit'];
+
+    public function productListItems()
+    {
+        return $this->hasMany(ProductListItem::class, 'stock_id');
+    }
+
+    /** Count of items not yet sold (available quantity) */
+    public function getQuantityAttribute(): int
+    {
+        return $this->productListItems()->whereNull('sold_at')->count();
+    }
+
+    /** Whether this stock can accept more items (under limit) */
+    public function getUnderLimitAttribute(): bool
+    {
+        return $this->quantity < $this->stock_limit;
+    }
+}
