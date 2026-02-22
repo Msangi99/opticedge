@@ -6,10 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 
 class StockController extends Controller
 {
+    /**
+     * List stocks (created via app or API). These are the stock buckets used for product list / agents.
+     */
+    public function stocks()
+    {
+        $stocks = Stock::withCount(['productListItems as quantity_available' => function ($q) {
+            $q->whereNull('sold_at');
+        }])->orderBy('name')->get();
+
+        return view('admin.stock.stocks', compact('stocks'));
+    }
+
     public function purchases()
     {
         $purchases = Purchase::with('product')->latest('date')->get();

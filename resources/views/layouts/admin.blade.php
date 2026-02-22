@@ -320,6 +320,8 @@
                                 </svg>
                             </button>
                             <div x-show="open" x-cloak class="pl-10 space-y-1 mt-1 border-l-2 border-slate-100 ml-4">
+                                <a href="{{ route('admin.stock.stocks') }}"
+                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Stocks</a>
                                 <a href="{{ route('admin.stock.purchases') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Purchases</a>
                                 <a href="{{ route('admin.stock.distribution') }}"
