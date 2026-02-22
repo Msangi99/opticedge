@@ -11,7 +11,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Ensure sanctum guard is defined (for API token auth from Flutter app)
+        $guards = config('auth.guards', []);
+        if (! isset($guards['sanctum'])) {
+            config(['auth.guards.sanctum' => [
+                'driver' => 'sanctum',
+                'provider' => 'users',
+            ]]);
+        }
     }
 
     /**
