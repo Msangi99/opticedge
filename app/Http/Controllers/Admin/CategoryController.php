@@ -17,7 +17,7 @@ class CategoryController extends Controller
         $categories = Category::withCount(['products' => function ($query) {
             $query->where('stock_quantity', '>', 0);
         }])->withSum('products', 'stock_quantity')
-            ->with(['products' => fn ($q) => $q->select('id', 'category_id', 'name', 'stock_quantity')])
+            ->with(['products' => fn ($q) => $q->orderBy('name')])
             ->get();
         return view('admin.categories.index', compact('categories'));
     }
