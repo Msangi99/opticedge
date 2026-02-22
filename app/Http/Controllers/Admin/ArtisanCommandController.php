@@ -37,6 +37,8 @@ class ArtisanCommandController extends Controller
         // Migration-related
         'migrate:install',
         'schema:dump',
+        // Stock
+        'stock:recalc',
     ];
 
     /**
