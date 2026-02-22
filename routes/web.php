@@ -5,6 +5,9 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\SelcomWebhookController;
 use Livewire\Volt\Volt;
 
+// API routes (for Flutter app) – loaded here so /api/* is always available
+Route::prefix('api')->middleware('api')->group(base_path('routes/api.php'));
+
 Route::view('/', 'welcome')->name('welcome');
 
 // Selcom Checkout webhook (no auth; CSRF excluded in bootstrap/app.php)
