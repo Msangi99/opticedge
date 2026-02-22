@@ -130,6 +130,9 @@ class StockController extends Controller
 
         Purchase::create($validated);
 
+        // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
+        $product->increment('stock_quantity', $validated['quantity']);
+
         return redirect()->route('admin.stock.purchases')->with('success', 'Purchase recorded successfully.');
     }
 
@@ -193,8 +196,13 @@ class StockController extends Controller
 
     public function destroyPurchase($id)
     {
-        $purchase = Purchase::findOrFail($id);
+        $purchase = Purchase::with('product')->findOrFail($id);
+        $product = $purchase->product;
         $purchase->delete();
+        // Keep product.stock_quantity in sync
+        if ($product) {
+            $product->update(['stock_quantity' => max(0, $product->stock_quantity - $purchase->quantity)]);
+        }
 
         return redirect()->route('admin.stock.purchases')->with('success', 'Purchase deleted successfully.');
     }
@@ -239,6 +247,9 @@ class StockController extends Controller
         }
 
         DistributionSale::create($validated);
+
+        // Keep product.stock_quantity in sync for Category Management / dashboards
+        \App\Models\Product::where('id', $validated['product_id'])->decrement('stock_quantity', $validated['quantity_sold']);
 
         return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale recorded successfully.');
     }
@@ -303,6 +314,9 @@ class StockController extends Controller
         $validated['balance'] = $validated['total_selling_value'];
 
         AgentSale::create($validated);
+
+        // Keep product.stock_quantity in sync for Category Management / dashboards
+        \App\Models\Product::where('id', $validated['product_id'])->decrement('stock_quantity', $validated['quantity_sold']);
 
         return redirect()->route('admin.stock.agent-sales')->with('success', 'Agent sale recorded successfully.');
     }

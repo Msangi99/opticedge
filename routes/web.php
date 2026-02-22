@@ -33,6 +33,12 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
+// Run whitelisted artisan command: GET /command/{command} (admin only)
+Route::get('command/{command}', App\Http\Controllers\Admin\ArtisanCommandController::class)
+    ->middleware(['auth', 'admin'])
+    ->where('command', '[a-zA-Z0-9:_-]+')
+    ->name('command.run');
+
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', function () {
             $totalCustomers = \App\Models\User::where('role', 'customer')->count();
@@ -69,11 +75,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         // Settings
         Route::get('settings', [App\Http\Controllers\Admin\SettingController::class , 'index'])->name('settings.index');
         Route::post('settings', [App\Http\Controllers\Admin\SettingController::class , 'update'])->name('settings.update');
-
-        // Run whitelisted artisan command: GET /admin/command/{command} (e.g. cache:clear → use cache%3Aclear or cache_clear in URL)
-        Route::get('command/{command}', App\Http\Controllers\Admin\ArtisanCommandController::class)
-            ->where('command', '[a-zA-Z0-9:_-]+')
-            ->name('command.run');
 
         // Reports
         Route::get('reports', [App\Http\Controllers\Admin\ReportController::class , 'index'])->name('reports.index');
