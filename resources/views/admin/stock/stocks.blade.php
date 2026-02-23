@@ -46,7 +46,7 @@
                             </td>
                             <td class="px-6 py-3 text-right">
                                 @if($atLimit)
-                                    <a href="{{ route('admin.stock.create-purchase') }}" class="text-xs font-medium text-[#fa8900] hover:underline">Add via Purchases</a>
+                                    <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="text-xs font-medium text-[#fa8900] hover:underline">Add via Purchases</a>
                                 @else
                                     <span class="text-slate-400">–</span>
                                 @endif

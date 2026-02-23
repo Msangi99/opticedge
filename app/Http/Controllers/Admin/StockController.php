@@ -40,7 +40,7 @@ class StockController extends Controller
 
     public function purchases()
     {
-        $purchases = Purchase::with('product')->latest('date')->get();
+        $purchases = Purchase::with(['product', 'stock'])->latest('date')->get();
         return view('admin.stock.purchases', compact('purchases'));
     }
 
@@ -83,23 +83,26 @@ class StockController extends Controller
         return view('admin.stock.payables', compact('payables'));
     }
 
-    public function createPurchase()
+    public function createPurchase(Request $request)
     {
-        // Get all categories for the select dropdown
         $categories = \App\Models\Category::orderBy('name')->get();
-            
-        // Get unique distributors for the datalist
         $distributors = Purchase::select('distributor_name')
             ->whereNotNull('distributor_name')
             ->distinct()
             ->pluck('distributor_name');
-            
-        return view('admin.stock.create-purchase', compact('categories', 'distributors'));
+
+        $fromStock = null;
+        if ($request->has('from_stock')) {
+            $fromStock = Stock::with('defaultCategory')->find($request->from_stock);
+        }
+
+        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock'));
     }
 
     public function storePurchase(Request $request)
     {
         $validated = $request->validate([
+            'stock_id' => 'nullable|exists:stocks,id',
             'date' => 'required|date',
             'distributor_name' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -142,21 +145,40 @@ class StockController extends Controller
             $product->update(['images' => $imagePaths]);
         }
 
+        $stockId = !empty($validated['stock_id']) ? (int) $validated['stock_id'] : null;
+        $categoryId = $validated['category_id'] ?? null;
+        $modelName = $validated['model'] ?? null;
+        $quantity = $validated['quantity'] ?? 0;
+
         // Remove non-purchase fields from validated data
         unset($validated['category_id']);
         unset($validated['model']);
         unset($validated['images']);
+        unset($validated['stock_id']);
 
-        // Add product_id
+        // Add product_id and optional stock_id
         $validated['product_id'] = $product->id;
+        if ($stockId) {
+            $validated['stock_id'] = $stockId;
+        }
 
         // Calculate total amount (backend validation/calculation)
-        $validated['total_amount'] = $validated['quantity'] * $validated['unit_price'];
-        
-        // Default paid amount to 0 if null
+        $validated['total_amount'] = $quantity * $validated['unit_price'];
         $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
 
         Purchase::create($validated);
+
+        // When from stock: save as stock defaults for next time if not already set
+        if ($stockId) {
+            $stock = Stock::find($stockId);
+            if ($stock && (is_null($stock->default_category_id) || is_null($stock->default_model) || is_null($stock->default_quantity))) {
+                $stock->update([
+                    'default_category_id' => $categoryId ?? $stock->default_category_id,
+                    'default_model' => $modelName ?? $stock->default_model,
+                    'default_quantity' => $quantity ?: $stock->default_quantity,
+                ]);
+            }
+        }
 
         // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
         $product->increment('stock_quantity', $validated['quantity']);

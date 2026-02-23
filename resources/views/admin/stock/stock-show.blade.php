@@ -12,7 +12,7 @@
                 <p class="mt-1 text-slate-600">Devices in this stock (model and IMEI). Limit: {{ number_format($stock->stock_limit) }}.</p>
             </div>
             @if($atLimit)
-                <a href="{{ route('admin.stock.create-purchase') }}" class="px-4 py-2 bg-[#fa8900] text-white rounded-lg hover:bg-[#fa8900]/90 text-sm font-medium">
+                <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="px-4 py-2 bg-[#fa8900] text-white rounded-lg hover:bg-[#fa8900]/90 text-sm font-medium">
                     Add via Purchases
                 </a>
             @endif
@@ -20,7 +20,7 @@
 
         @if($atLimit)
             <div class="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">
-                Stock at limit. Add more inventory via <a href="{{ route('admin.stock.create-purchase') }}" class="font-medium underline">Purchases</a>.
+                Stock at limit. Add more inventory via <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="font-medium underline">Purchases</a>.
             </div>
         @endif
 

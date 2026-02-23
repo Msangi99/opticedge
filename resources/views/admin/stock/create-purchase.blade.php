@@ -12,8 +12,20 @@
             <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
                 <form action="{{ route('admin.stock.store-purchase') }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    
+                    @if($fromStock)
+                        <input type="hidden" name="stock_id" value="{{ $fromStock->id }}">
+                    @endif
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @if($fromStock)
+                            <!-- Stock name (from stock – read-only) -->
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 font-medium">{{ $fromStock->name }}</div>
+                                <p class="text-xs text-slate-500 mt-1">Purchase for this stock. Name, category, model and quantity are from stock.</p>
+                            </div>
+                        @endif
+
                         <!-- Date -->
                         <div class="col-span-1">
                             <label for="date" class="block text-sm font-medium text-slate-700 mb-1">Date of Purchase</label>
@@ -33,31 +45,50 @@
                             @error('distributor_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
+                        @php
+                            $fromStockWithDefaults = $fromStock && $fromStock->default_category_id && $fromStock->default_model && $fromStock->default_quantity;
+                        @endphp
+
                         <!-- Category -->
                         <div class="col-span-1">
                             <label for="category_id" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                            <select name="category_id" id="category_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">Select Category</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if($fromStockWithDefaults)
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->defaultCategory->name ?? '–' }}</div>
+                                <input type="hidden" name="category_id" value="{{ $fromStock->default_category_id }}">
+                            @else
+                                <select name="category_id" id="category_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Select Category</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id', $fromStock?->default_category_id ?? '') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                             @error('category_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Model -->
                         <div class="col-span-1">
                             <label for="model" class="block text-sm font-medium text-slate-700 mb-1">Model (Product Name)</label>
-                            <input type="text" name="model" id="model" value="{{ old('model') }}" required placeholder="Type model name..." class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @if($fromStockWithDefaults)
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->default_model }}</div>
+                                <input type="hidden" name="model" value="{{ $fromStock->default_model }}">
+                            @else
+                                <input type="text" name="model" id="model" value="{{ old('model', $fromStock?->default_model ?? '') }}" required placeholder="Type model name..." class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @endif
                             @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Quantity -->
                         <div class="col-span-1">
                             <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                            <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="calculateTotal()">
+                            @if($fromStockWithDefaults)
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->default_quantity }}</div>
+                                <input type="hidden" name="quantity" id="quantity" value="{{ $fromStock->default_quantity }}">
+                            @else
+                                <input type="number" name="quantity" id="quantity" value="{{ old('quantity', $fromStock?->default_quantity ?? '') }}" required min="1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="calculateTotal()">
+                            @endif
                             @error('quantity') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
@@ -129,10 +160,12 @@
 
     <script>
         function calculateTotal() {
-            const qty = parseFloat(document.getElementById('quantity').value) || 0;
-            const price = parseFloat(document.getElementById('unit_price').value) || 0;
+            const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
+            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
             const total = qty * price;
-            document.getElementById('total_amount').value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const el = document.getElementById('total_amount');
+            if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
+        document.addEventListener('DOMContentLoaded', calculateTotal);
     </script>
 </x-admin-layout>

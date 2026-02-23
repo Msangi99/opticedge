@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Stock extends Model
 {
-    protected $fillable = ['name', 'stock_limit'];
+    protected $fillable = ['name', 'stock_limit', 'default_category_id', 'default_model', 'default_quantity'];
+
+    public function defaultCategory()
+    {
+        return $this->belongsTo(Category::class, 'default_category_id');
+    }
 
     public function productListItems()
     {

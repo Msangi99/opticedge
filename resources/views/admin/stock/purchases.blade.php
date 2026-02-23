@@ -18,6 +18,7 @@
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">Stock</th>
                         <th class="px-6 py-3">Distributor</th>
                         <th class="px-6 py-3">Product</th>
                         <th class="px-6 py-3">Quantity</th>
@@ -34,6 +35,7 @@
                     @forelse($purchases as $purchase)
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3">{{ $purchase->date }}</td>
+                            <td class="px-6 py-3">{{ $purchase->stock?->name ?? '–' }}</td>
                             <td class="px-6 py-3">{{ $purchase->distributor_name ?? '-' }}</td>
                             <td class="px-6 py-3 font-medium">{{ $purchase->product->name ?? 'N/A' }}</td>
                             <td class="px-6 py-3">{{ $purchase->quantity }}</td>
@@ -69,7 +71,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
+                            <td colspan="12" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
                         </tr>
                     @endforelse
                 </tbody>
