@@ -22,7 +22,7 @@
                             <div class="col-span-2">
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
                                 <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 font-medium">{{ $fromStock->name }}</div>
-                                <p class="text-xs text-slate-500 mt-1">Purchase for this stock. Name, category, model and quantity are from stock.</p>
+                                <p class="text-xs text-slate-500 mt-1">Category and model from products in this stock (as added in the app). Quantity = stock limit.</p>
                             </div>
                         @endif
 
@@ -49,8 +49,8 @@
                         <div class="col-span-1">
                             <label for="category_id" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
                             @if($fromStock)
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->defaultCategory->name ?? '–' }}</div>
-                                <input type="hidden" name="category_id" value="{{ $fromStock->default_category_id }}">
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_category_name ?? '–' }}</div>
+                                <input type="hidden" name="category_id" value="{{ $fromStock->purchase_category_id }}">
                             @else
                                 <select name="category_id" id="category_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Select Category</option>
@@ -66,20 +66,20 @@
                         <div class="col-span-1">
                             <label for="model" class="block text-sm font-medium text-slate-700 mb-1">Model (Product Name)</label>
                             @if($fromStock)
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->default_model }}</div>
-                                <input type="hidden" name="model" value="{{ $fromStock->default_model }}">
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_model }}</div>
+                                <input type="hidden" name="model" value="{{ $fromStock->purchase_model }}">
                             @else
                                 <input type="text" name="model" id="model" value="{{ old('model') }}" required placeholder="Type model name..." class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             @endif
                             @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Quantity: from stock (read-only) or editable -->
+                        <!-- Quantity: from stock limit (read-only) or editable -->
                         <div class="col-span-1">
                             <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
                             @if($fromStock)
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->default_quantity }}</div>
-                                <input type="hidden" name="quantity" id="quantity" value="{{ $fromStock->default_quantity }}">
+                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_quantity }}</div>
+                                <input type="hidden" name="quantity" id="quantity" value="{{ $fromStock->purchase_quantity }}">
                             @else
                                 <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="calculateTotal()">
                             @endif

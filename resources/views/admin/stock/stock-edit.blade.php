@@ -10,7 +10,7 @@
                         Back to Stocks
                     </a>
                     <h1 class="text-2xl font-bold text-slate-900">Edit stock: {{ $stock->name }}</h1>
-                    <p class="mt-1 text-slate-600">Set default category, model and quantity. These will be used when you click "Add via Purchases" so they are locked and not editable.</p>
+                    <p class="mt-1 text-slate-600">Set default category and model for when this stock has no products yet. When you add products in the app, "Add via Purchases" will use that category and model. Quantity always uses the stock limit.</p>
                 </div>
             </div>
 
@@ -56,11 +56,6 @@
                             @error('default_model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <div>
-                            <label for="default_quantity" class="block text-sm font-medium text-slate-700 mb-1">Default quantity</label>
-                            <input type="number" name="default_quantity" id="default_quantity" value="{{ old('default_quantity', $stock->default_quantity ?? 1) }}" required min="1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('default_quantity') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
                     </div>
 
                     <div class="mt-6 flex justify-end gap-2">
