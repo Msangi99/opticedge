@@ -23,6 +23,21 @@ class StockController extends Controller
         return view('admin.stock.stocks', compact('stocks'));
     }
 
+    /**
+     * Show devices (product list items) for a stock: model and IMEI.
+     */
+    public function showStock(Stock $stock)
+    {
+        $stock->load(['productListItems' => function ($q) {
+            $q->with(['category', 'product'])->orderBy('model')->orderBy('imei_number');
+        }]);
+
+        $available = $stock->productListItems->whereNull('sold_at')->count();
+        $atLimit = $available >= $stock->stock_limit;
+
+        return view('admin.stock.stock-show', compact('stock', 'atLimit'));
+    }
+
     public function purchases()
     {
         $purchases = Purchase::with('product')->latest('date')->get();
