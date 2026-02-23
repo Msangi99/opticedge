@@ -111,31 +111,14 @@ class StockController extends Controller
                     $fromStock->purchase_category_name = $fromStock->defaultCategory?->name ?? '–';
                     $fromStock->purchase_model = $fromStock->default_model ?? '–';
                     if (!$fromStock->purchase_category_id || !$fromStock->purchase_model) {
-                        return redirect()->route('admin.stock.stocks.edit', $fromStock)
-                            ->with('info', 'This stock has no products yet. Set default category and model first. Quantity will use the stock limit.');
+                        return redirect()->route('admin.stock.stocks')
+                            ->with('info', 'Add products to this stock in the app first. Then "Add via Purchases" will use that category and model.');
                     }
                 }
             }
         }
 
         return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock'));
-    }
-
-    public function editStock(Stock $stock)
-    {
-        $stock->load('defaultCategory');
-        $categories = \App\Models\Category::orderBy('name')->get();
-        return view('admin.stock.stock-edit', compact('stock', 'categories'));
-    }
-
-    public function updateStock(Request $request, Stock $stock)
-    {
-        $validated = $request->validate([
-            'default_category_id' => 'required|exists:categories,id',
-            'default_model' => 'required|string|max:255',
-        ]);
-        $stock->update($validated);
-        return redirect()->route('admin.stock.stocks')->with('success', 'Stock defaults updated. When this stock has no products yet, "Add via Purchases" will use these. Quantity always uses the stock limit.');
     }
 
     public function storePurchase(Request $request)

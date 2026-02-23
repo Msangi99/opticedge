@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductListItem;
 use App\Models\Product;
 use App\Models\AgentSale;
+use App\Models\Purchase;
 use App\Services\DistributionSaleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,8 +75,24 @@ class ProductListController extends Controller
             ->first();
 
         if (!$item) {
-            return response()->json(['message' => 'Device not found or already sold.'], 404);
+            return response()->json([
+                'message' => 'This device is not in stock or has already been sold. Only devices that are purchased and still in stock can be sold.',
+            ], 404);
         }
+
+        // Price from stock purchase (same stock + product), else product price
+        $purchasePrice = null;
+        if ($item->stock_id && $item->product_id) {
+            $purchase = Purchase::where('stock_id', $item->stock_id)
+                ->where('product_id', $item->product_id)
+                ->latest('date')
+                ->first();
+            $purchasePrice = $purchase ? (float) $purchase->unit_price : null;
+        }
+        if ($purchasePrice === null && $item->product) {
+            $purchasePrice = (float) $item->product->price;
+        }
+        $purchasePrice = $purchasePrice ?? 0.0;
 
         return response()->json([
             'data' => [
@@ -85,6 +102,7 @@ class ProductListController extends Controller
                 'category_id' => $item->category_id,
                 'category_name' => $item->category?->name,
                 'product_id' => $item->product_id,
+                'purchase_price' => $purchasePrice,
             ],
         ]);
     }
@@ -103,7 +121,9 @@ class ProductListController extends Controller
         $item = ProductListItem::with(['category', 'product'])->findOrFail($validated['product_list_id']);
 
         if ($item->isSold()) {
-            return response()->json(['message' => 'This device has already been sold.'], 422);
+            return response()->json([
+                'message' => 'This device is not in stock or has already been sold. Only purchased devices still in stock can be sold.',
+            ], 422);
         }
 
         $product = $item->product;
