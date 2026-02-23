@@ -93,6 +93,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         // Stock Management
         Route::prefix('stock')->name('stock.')->group(function () {
             Route::get('stocks', [App\Http\Controllers\Admin\StockController::class, 'stocks'])->name('stocks');
+            Route::get('stocks/{stock}/edit', [App\Http\Controllers\Admin\StockController::class, 'editStock'])->name('stocks.edit');
+            Route::put('stocks/{stock}', [App\Http\Controllers\Admin\StockController::class, 'updateStock'])->name('stocks.update');
             Route::get('stocks/{stock}', [App\Http\Controllers\Admin\StockController::class, 'showStock'])->name('stocks.show');
             Route::get('purchases', [App\Http\Controllers\Admin\StockController::class , 'purchases'])->name('purchases');
             Route::get('purchases/create', [App\Http\Controllers\Admin\StockController::class , 'createPurchase'])->name('create-purchase');

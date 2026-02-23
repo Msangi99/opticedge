@@ -94,9 +94,32 @@ class StockController extends Controller
         $fromStock = null;
         if ($request->has('from_stock')) {
             $fromStock = Stock::with('defaultCategory')->find($request->from_stock);
+            // When from stock: require defaults so name, category, model, quantity are from stock and not editable
+            if ($fromStock && (!$fromStock->default_category_id || !$fromStock->default_model || $fromStock->default_quantity === null)) {
+                return redirect()->route('admin.stock.stocks.edit', $fromStock)
+                    ->with('info', 'Set default category, model and quantity for this stock first. Then you can add purchases with those fields locked from the stock.');
+            }
         }
 
         return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock'));
+    }
+
+    public function editStock(Stock $stock)
+    {
+        $stock->load('defaultCategory');
+        $categories = \App\Models\Category::orderBy('name')->get();
+        return view('admin.stock.stock-edit', compact('stock', 'categories'));
+    }
+
+    public function updateStock(Request $request, Stock $stock)
+    {
+        $validated = $request->validate([
+            'default_category_id' => 'required|exists:categories,id',
+            'default_model' => 'required|string|max:255',
+            'default_quantity' => 'required|integer|min:1',
+        ]);
+        $stock->update($validated);
+        return redirect()->route('admin.stock.stocks')->with('success', 'Stock defaults updated. You can now use "Add via Purchases" with locked category, model and quantity.');
     }
 
     public function storePurchase(Request $request)
@@ -146,8 +169,6 @@ class StockController extends Controller
         }
 
         $stockId = !empty($validated['stock_id']) ? (int) $validated['stock_id'] : null;
-        $categoryId = $validated['category_id'] ?? null;
-        $modelName = $validated['model'] ?? null;
         $quantity = $validated['quantity'] ?? 0;
 
         // Remove non-purchase fields from validated data
@@ -167,18 +188,6 @@ class StockController extends Controller
         $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
 
         Purchase::create($validated);
-
-        // When from stock: save as stock defaults for next time if not already set
-        if ($stockId) {
-            $stock = Stock::find($stockId);
-            if ($stock && (is_null($stock->default_category_id) || is_null($stock->default_model) || is_null($stock->default_quantity))) {
-                $stock->update([
-                    'default_category_id' => $categoryId ?? $stock->default_category_id,
-                    'default_model' => $modelName ?? $stock->default_model,
-                    'default_quantity' => $quantity ?: $stock->default_quantity,
-                ]);
-            }
-        }
 
         // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
         $product->increment('stock_quantity', $validated['quantity']);

@@ -44,11 +44,10 @@
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-3 text-right">
+                            <td class="px-6 py-3 text-right space-x-2">
+                                <a href="{{ route('admin.stock.stocks.edit', $stock) }}" class="text-xs font-medium text-slate-600 hover:underline">Edit defaults</a>
                                 @if($atLimit)
                                     <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="text-xs font-medium text-[#fa8900] hover:underline">Add via Purchases</a>
-                                @else
-                                    <span class="text-slate-400">–</span>
                                 @endif
                             </td>
                         </tr>
