@@ -8,15 +8,14 @@ use App\Models\Purchase;
 class PurchaseController extends Controller
 {
     /**
-     * List purchases that have pending limit_status only (for admin app Add Product dropdown).
-     * Returns purchase name, and category/model from the purchase's product.
+     * List purchases with limit_status = 'pending' and limit_remaining > 0 (for admin app Add Product dropdown).
+     * stock_id can be null; returns purchase name and category/model from the purchase's product.
      */
     public function forAddProduct()
     {
         $purchases = Purchase::with(['product.category', 'stock'])
             ->where('limit_status', 'pending')
             ->where('limit_remaining', '>', 0)
-            ->whereNotNull('stock_id')
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
             ->get()
