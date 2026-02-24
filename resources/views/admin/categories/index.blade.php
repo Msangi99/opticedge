@@ -94,7 +94,9 @@
                                             <tbody class="divide-y divide-slate-100">
                                                 @foreach($category->products as $product)
                                                     <tr>
-                                                        <td class="py-1.5 text-slate-700">{{ $product->name }}</td>
+                                                        <td class="py-1.5 text-slate-700">
+                                                            <a href="{{ route('admin.products.imei', $product) }}" class="text-[#fa8900] hover:underline font-medium">{{ $product->name }}</a>
+                                                        </td>
                                                         <td class="py-1.5 text-right font-medium">{{ number_format($product->stock_quantity ?? 0) }}</td>
                                                     </tr>
                                                 @endforeach

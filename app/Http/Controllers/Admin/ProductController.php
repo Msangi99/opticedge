@@ -71,6 +71,18 @@ class ProductController extends Controller
 
         return redirect()->route('admin.products.index')->with('success', 'Stock added successfully.');
     }
+    /**
+     * Show product list items (IMEI numbers) for this model.
+     */
+    public function showImei(Product $product)
+    {
+        $product->load(['productListItems' => function ($q) {
+            $q->with('category:id,name')->orderBy('imei_number');
+        }]);
+
+        return view('admin.products.imei', compact('product'));
+    }
+
     public function edit(Product $product)
     {
         $categories = \App\Models\Category::all();

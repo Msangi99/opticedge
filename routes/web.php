@@ -52,6 +52,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics'));
         }
         )->name('dashboard');
+        Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
         Route::resource('products', ProductController::class);
         Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
 
