@@ -3,8 +3,9 @@
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Stocks</h1>
-                <p class="mt-2 text-slate-600">Stock buckets used in the app for product list and agents. Create new ones from the admin app.</p>
+                <p class="mt-2 text-slate-600">Stock buckets used in the app for product list and agents. Data from purchases (pending/complete limits).</p>
             </div>
+            <a href="{{ route('admin.stock.add-product') }}" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#e67d00] font-medium text-sm">Add Product (IMEI)</a>
         </div>
 
         @if(session('success'))

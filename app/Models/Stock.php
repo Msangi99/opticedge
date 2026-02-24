@@ -18,6 +18,11 @@ class Stock extends Model
         return $this->hasMany(ProductListItem::class, 'stock_id');
     }
 
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
     /** Count of items not yet sold (available quantity) */
     public function getQuantityAttribute(): int
     {

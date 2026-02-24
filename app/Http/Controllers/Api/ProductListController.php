@@ -28,10 +28,18 @@ class ProductListController extends Controller
         ]);
 
         $stock = \App\Models\Stock::findOrFail($validated['stock_id']);
-        $currentQty = $stock->productListItems()->whereNull('sold_at')->count();
-        if ($currentQty >= $stock->stock_limit) {
+
+        // Assign to a pending purchase for this stock (quantity = limit; decrement on each IMEI add)
+        $purchase = Purchase::where('stock_id', $stock->id)
+            ->where('limit_status', 'pending')
+            ->where('limit_remaining', '>', 0)
+            ->latest('date')
+            ->latest('id')
+            ->first();
+
+        if (!$purchase) {
             return response()->json([
-                'message' => 'This stock has reached its limit.',
+                'message' => 'No pending purchase limit for this stock. Create a purchase with this stock first.',
             ], 422);
         }
 
@@ -41,16 +49,23 @@ class ProductListController extends Controller
                 'name' => $validated['model'],
             ],
             [
-                'price' => 0,
+                'price' => (float) ($purchase->sell_price ?? 0),
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'From product list',
-                'images' => [],
+                'images' => $purchase->product?->images ?? [],
             ]
         );
 
         $validated['product_id'] = $product->id;
+        $validated['purchase_id'] = $purchase->id;
         $item = ProductListItem::create($validated);
+
+        // Decrement purchase limit; when 0, mark complete
+        $purchase->decrement('limit_remaining');
+        if ($purchase->fresh()->limit_remaining <= 0) {
+            $purchase->update(['limit_status' => 'complete']);
+        }
 
         return response()->json([
             'message' => 'Product added to list.',
@@ -66,10 +81,11 @@ class ProductListController extends Controller
 
     /**
      * Agent: Get device info by IMEI (only if not sold).
+     * Returns which stock the device is in, category and sell price from that stock's purchase.
      */
     public function showByImei(string $imei)
     {
-        $item = ProductListItem::with(['category', 'product'])
+        $item = ProductListItem::with(['category', 'product', 'stock', 'purchase'])
             ->where('imei_number', $imei)
             ->whereNull('sold_at')
             ->first();
@@ -80,9 +96,38 @@ class ProductListController extends Controller
             ], 404);
         }
 
-        // Price from stock purchase (same stock + product), else product price
+        // Stock: which stock this barcode is in
+        $stockName = $item->stock?->name;
+        $stockId = $item->stock_id;
+
+        // Category from item (linked to stock)
+        $categoryName = $item->category?->name;
+        $categoryId = $item->category_id;
+
+        // Sell price from the purchase for this stock (recommended selling price)
+        $sellPrice = null;
+        if ($item->purchase_id && $item->purchase) {
+            $sellPrice = $item->purchase->sell_price !== null ? (float) $item->purchase->sell_price : null;
+        }
+        if ($sellPrice === null && $item->stock_id && $item->product_id) {
+            $purchase = Purchase::where('stock_id', $item->stock_id)
+                ->where('product_id', $item->product_id)
+                ->whereNotNull('sell_price')
+                ->latest('date')
+                ->first();
+            $sellPrice = $purchase ? (float) $purchase->sell_price : null;
+        }
+        if ($sellPrice === null && $item->product) {
+            $sellPrice = $item->product->price > 0 ? (float) $item->product->price : null;
+        }
+        $sellPrice = $sellPrice ?? 0.0;
+
+        // Purchase (cost) price for reference
         $purchasePrice = null;
-        if ($item->stock_id && $item->product_id) {
+        if ($item->purchase_id && $item->purchase) {
+            $purchasePrice = (float) $item->purchase->unit_price;
+        }
+        if ($purchasePrice === null && $item->stock_id && $item->product_id) {
             $purchase = Purchase::where('stock_id', $item->stock_id)
                 ->where('product_id', $item->product_id)
                 ->latest('date')
@@ -99,10 +144,13 @@ class ProductListController extends Controller
                 'id' => $item->id,
                 'imei_number' => $item->imei_number,
                 'model' => $item->model,
-                'category_id' => $item->category_id,
-                'category_name' => $item->category?->name,
-                'product_id' => $item->product_id,
+                'category_id' => $categoryId,
+                'category_name' => $categoryName,
+                'stock_id' => $stockId,
+                'stock_name' => $stockName,
+                'sell_price' => $sellPrice,
                 'purchase_price' => $purchasePrice,
+                'product_id' => $item->product_id,
             ],
         ]);
     }

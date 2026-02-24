@@ -18,9 +18,9 @@
 
             <div>
                 <x-input-label for="quantity_sold" :value="__('Quantity')" />
-                <x-text-input id="quantity_sold" class="mt-1 block w-full" type="number" name="quantity_sold" :value="old('quantity_sold')" min="1" max="{{ $maxQty }}" required />
-                <p class="mt-1 text-xs text-slate-500">Max: {{ $maxQty }}</p>
-                <x-input-error :messages="$errors->get('quantity_sold')" class="mt-1" />
+                <input type="hidden" name="quantity_sold" value="1" />
+                <x-text-input id="quantity_sold" class="mt-1 block w-full bg-slate-100 cursor-not-allowed" type="number" value="1" min="1" max="1" readonly disabled />
+                <p class="mt-1 text-xs text-slate-500">Fixed at 1.</p>
             </div>
 
             <div>

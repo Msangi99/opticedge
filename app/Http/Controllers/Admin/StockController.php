@@ -12,13 +12,20 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     /**
-     * List stocks (created via app or API). These are the stock buckets used for product list / agents.
+     * List stocks; data derived from purchases (pending/complete limits) and product_list counts.
      */
     public function stocks()
     {
         $stocks = Stock::withCount(['productListItems as quantity_available' => function ($q) {
             $q->whereNull('sold_at');
-        }])->orderBy('name')->get();
+        }])
+            ->withCount(['purchases as purchases_pending' => function ($q) {
+                $q->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
+            }])
+            ->withCount(['purchases as purchases_complete' => function ($q) {
+                $q->where('limit_status', 'complete');
+            }])
+            ->orderBy('name')->get();
 
         return view('admin.stock.stocks', compact('stocks'));
     }
@@ -83,6 +90,95 @@ class StockController extends Controller
         return view('admin.stock.payables', compact('payables'));
     }
 
+    /**
+     * Form: scan IMEI, select stock (from pending purchases), select model from selected stock.
+     */
+    public function addProductForm()
+    {
+        $stocks = Stock::whereHas('purchases', function ($q) {
+            $q->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
+        })->orderBy('name')->get(['id', 'name']);
+        return view('admin.stock.add-product', compact('stocks'));
+    }
+
+    /**
+     * JSON: distinct models (and category_id) for a stock (from product_list + purchases).
+     */
+    public function modelsForStock(Stock $stock)
+    {
+        $fromList = \App\Models\ProductListItem::where('stock_id', $stock->id)
+            ->select('model', 'category_id')
+            ->distinct()
+            ->get()
+            ->map(fn ($r) => ['model' => $r->model, 'category_id' => $r->category_id]);
+        $fromPurchases = Purchase::where('stock_id', $stock->id)
+            ->with('product:id,category_id,name')
+            ->get()
+            ->map(function ($p) {
+                return $p->product ? ['model' => $p->product->name, 'category_id' => $p->product->category_id] : null;
+            })
+            ->filter()
+            ->unique('model')
+            ->values();
+        $combined = $fromList->concat($fromPurchases)->unique('model')->values()->all();
+        return response()->json(['data' => $combined]);
+    }
+
+    /**
+     * Save one IMEI: stock_id, model, imei_number (same logic as API product-list store).
+     */
+    public function storeProductFromForm(Request $request)
+    {
+        $validated = $request->validate([
+            'stock_id' => 'required|exists:stocks,id',
+            'model' => 'required|string|max:255',
+            'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        $stock = Stock::findOrFail($validated['stock_id']);
+        $purchase = Purchase::where('stock_id', $stock->id)
+            ->where('limit_status', 'pending')
+            ->where('limit_remaining', '>', 0)
+            ->latest('date')->latest('id')->first();
+
+        if (!$purchase) {
+            return redirect()->route('admin.stock.add-product')
+                ->withInput()
+                ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
+        }
+
+        $product = \App\Models\Product::firstOrCreate(
+            [
+                'category_id' => $validated['category_id'],
+                'name' => $validated['model'],
+            ],
+            [
+                'price' => (float) ($purchase->sell_price ?? 0),
+                'stock_quantity' => 0,
+                'rating' => 5.0,
+                'description' => 'From product list',
+                'images' => $purchase->product?->images ?? [],
+            ]
+        );
+
+        \App\Models\ProductListItem::create([
+            'stock_id' => $stock->id,
+            'purchase_id' => $purchase->id,
+            'category_id' => $validated['category_id'],
+            'model' => $validated['model'],
+            'imei_number' => $validated['imei_number'],
+            'product_id' => $product->id,
+        ]);
+
+        $purchase->decrement('limit_remaining');
+        if ($purchase->fresh()->limit_remaining <= 0) {
+            $purchase->update(['limit_status' => 'complete']);
+        }
+
+        return redirect()->route('admin.stock.add-product')->with('success', 'Product (IMEI) added.');
+    }
+
     public function createPurchase(Request $request)
     {
         $categories = \App\Models\Category::orderBy('name')->get();
@@ -131,6 +227,7 @@ class StockController extends Controller
             'model' => 'required|string|max:255',
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
+            'sell_price' => 'nullable|numeric|min:0',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
             'payment_status' => 'required|in:pending,paid,partial',
@@ -185,6 +282,10 @@ class StockController extends Controller
         // Calculate total amount (backend validation/calculation)
         $validated['total_amount'] = $quantity * $validated['unit_price'];
         $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
+        // Quantity = limit: track remaining; when app adds IMEIs, decrement until 0 then set complete
+        $validated['limit_status'] = 'pending';
+        $validated['limit_remaining'] = $quantity;
+        $validated['sell_price'] = $request->filled('sell_price') ? $request->input('sell_price') : null;
 
         Purchase::create($validated);
 

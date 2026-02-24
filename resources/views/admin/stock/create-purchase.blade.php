@@ -93,6 +93,13 @@
                             @error('unit_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
+                        <!-- Sell Price -->
+                        <div class="col-span-1">
+                            <label for="sell_price" class="block text-sm font-medium text-slate-700 mb-1">Sell Price</label>
+                            <input type="number" step="0.01" name="sell_price" id="sell_price" value="{{ old('sell_price') }}" min="0" placeholder="Optional" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('sell_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
                         <!-- Total Value (Read Only) -->
                         <div class="col-span-2">
                             <label for="total_amount" class="block text-sm font-medium text-slate-700 mb-1">Total Purchase Value</label>

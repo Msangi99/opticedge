@@ -17,7 +17,15 @@ class Purchase extends Model
         'paid_amount',
         'payment_status',
         'date',
+        'limit_status',
+        'limit_remaining',
+        'sell_price',
     ];
+
+    public function productListItems()
+    {
+        return $this->hasMany(ProductListItem::class, 'purchase_id');
+    }
 
     public function product()
     {

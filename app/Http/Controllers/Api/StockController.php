@@ -47,24 +47,31 @@ class StockController extends Controller
     }
 
     /**
-     * List stocks that have not hit their limit (for admin add-product dropdown).
+     * List stocks from purchases that have limit_status = pending (for app add-product).
      */
     public function stocksUnderLimit()
     {
-        $stocks = Stock::withCount(['productListItems as quantity_available' => function ($q) {
-            $q->whereNull('sold_at');
-        }])->get()->filter(function ($stock) {
-            $qty = $stock->quantity_available ?? $stock->quantity;
-            return $qty < $stock->stock_limit;
-        })->map(function ($stock) {
-            return [
-                'id' => $stock->id,
-                'name' => $stock->name,
-                'stock_limit' => $stock->stock_limit,
-                'quantity' => $stock->quantity_available ?? $stock->quantity,
-            ];
-        })->values();
+        $stockIds = \App\Models\Purchase::where('limit_status', 'pending')
+            ->where('limit_remaining', '>', 0)
+            ->whereNotNull('stock_id')
+            ->pluck('stock_id')
+            ->unique()
+            ->filter();
 
-        return response()->json(['data' => $stocks]);
+        $stocks = Stock::whereIn('id', $stockIds)
+            ->withCount(['productListItems as quantity_available' => function ($q) {
+                $q->whereNull('sold_at');
+            }])
+            ->get()
+            ->map(function ($stock) {
+                return [
+                    'id' => $stock->id,
+                    'name' => $stock->name,
+                    'stock_limit' => $stock->stock_limit,
+                    'quantity' => $stock->quantity_available ?? $stock->quantity,
+                ];
+            });
+
+        return response()->json(['data' => $stocks->values()->all()]);
     }
 }

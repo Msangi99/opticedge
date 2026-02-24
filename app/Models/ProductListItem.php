@@ -10,11 +10,17 @@ class ProductListItem extends Model
 
     protected $fillable = [
         'stock_id',
+        'purchase_id',
         'category_id',
         'model',
         'imei_number',
         'product_id',
     ];
+
+    public function purchase()
+    {
+        return $this->belongsTo(Purchase::class);
+    }
 
     protected $casts = [
         'sold_at' => 'datetime',

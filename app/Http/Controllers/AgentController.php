@@ -41,7 +41,6 @@ class AgentController extends Controller
         $validated = $request->validate([
             'assignment_id' => 'required|exists:agent_assignments,id',
             'customer_name' => 'required|string|max:255',
-            'quantity_sold' => 'required|integer|min:1',
             'selling_price' => 'required|numeric|min:0',
         ]);
 
@@ -50,14 +49,15 @@ class AgentController extends Controller
             abort(403);
         }
 
+        $quantitySold = 1;
         $maxQty = $assignment->quantity_assigned - $assignment->quantity_sold;
-        if ($validated['quantity_sold'] > $maxQty) {
+        if ($quantitySold > $maxQty) {
             return back()->withErrors(['quantity_sold' => "Maximum quantity available is {$maxQty}."])->withInput();
         }
 
         $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($assignment->product_id);
-        $totalBuy = $buyPrice * $validated['quantity_sold'];
-        $totalSell = $validated['quantity_sold'] * $validated['selling_price'];
+        $totalBuy = $buyPrice * $quantitySold;
+        $totalSell = $quantitySold * $validated['selling_price'];
         $profit = $totalSell - $totalBuy;
 
         AgentSale::create([
@@ -65,7 +65,7 @@ class AgentController extends Controller
             'customer_name' => $validated['customer_name'],
             'seller_name' => Auth::user()->name,
             'product_id' => $assignment->product_id,
-            'quantity_sold' => $validated['quantity_sold'],
+            'quantity_sold' => $quantitySold,
             'purchase_price' => $buyPrice,
             'selling_price' => $validated['selling_price'],
             'total_purchase_value' => $totalBuy,
@@ -76,7 +76,7 @@ class AgentController extends Controller
             'date' => now()->toDateString(),
         ]);
 
-        $assignment->increment('quantity_sold', $validated['quantity_sold']);
+        $assignment->increment('quantity_sold', $quantitySold);
 
         return redirect()->route('agent.dashboard')->with('success', 'Sale recorded. It will appear in admin Agent Sales.');
     }

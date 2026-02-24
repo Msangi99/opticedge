@@ -19,12 +19,15 @@ class ProductShowcase extends Component
     {
         $categories = \App\Models\Category::orderBy('name')->get();
         
-        $productsQuery = \App\Models\Product::query();
-        
+        $productsQuery = \App\Models\Product::query()
+            ->whereHas('purchases', function ($q) {
+                $q->where('limit_status', 'complete');
+            });
+
         if ($this->categoryId) {
             $productsQuery->where('category_id', $this->categoryId);
         }
-        
+
         $products = $productsQuery->with('category')->latest()->take(12)->get();
 
         return view('livewire.product-showcase', [

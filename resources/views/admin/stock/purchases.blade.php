@@ -27,6 +27,9 @@
                         <th class="px-6 py-3">Paid Date</th>
                         <th class="px-6 py-3">Paid Amount</th>
                         <th class="px-6 py-3">Pending Amount</th>
+                        <th class="px-6 py-3">Sell Price</th>
+                        <th class="px-6 py-3">Limit Status</th>
+                        <th class="px-6 py-3">Limit Left</th>
                         <th class="px-6 py-3">Status</th>
                         <th class="px-6 py-3">Action</th>
                     </tr>
@@ -45,6 +48,11 @@
                             <td class="px-6 py-3">{{ $purchase->paid_date ?? '-' }}</td>
                             <td class="px-6 py-3">{{ number_format($purchase->paid_amount, 2) }}</td>
                             <td class="px-6 py-3 font-medium">{{ number_format($pendingVal, 2) }}</td>
+                            <td class="px-6 py-3">{{ $purchase->sell_price !== null ? number_format($purchase->sell_price, 2) : '–' }}</td>
+                            <td class="px-6 py-3">
+                                <span class="px-2 py-1 rounded text-xs font-medium {{ $purchase->limit_status === 'complete' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">{{ $purchase->limit_status ?? 'pending' }}</span>
+                            </td>
+                            <td class="px-6 py-3">{{ $purchase->limit_remaining ?? '–' }}</td>
                             <td class="px-6 py-3">
                                 <span class="px-2 py-1 rounded text-xs font-bold uppercase 
                                     {{ $purchase->payment_status === 'paid' ? 'bg-green-100 text-green-800' : 
@@ -71,7 +79,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
+                            <td colspan="14" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
                         </tr>
                     @endforelse
                 </tbody>
