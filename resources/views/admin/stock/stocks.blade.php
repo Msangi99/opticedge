@@ -30,24 +30,26 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($stocks as $stock)
+                    @forelse($purchases as $purchase)
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">
-                                <a href="{{ route('admin.stock.stocks.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
+                                <a href="{{ route('admin.stock.purchase.show', $purchase->id) }}" class="text-[#fa8900] hover:underline">{{ $purchase->name }}</a>
                             </td>
-                            <td class="px-6 py-3">{{ number_format($stock->stock_limit) }}</td>
-                            <td class="px-6 py-3">{{ number_format($stock->quantity_available) }}</td>
+                            <td class="px-6 py-3">{{ number_format($purchase->limit) }}</td>
+                            <td class="px-6 py-3">{{ $purchase->available }}</td>
                             <td class="px-6 py-3">
-                                @if($stock->under_limit)
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Pending</span>
+                                @if($purchase->status === 'paid')
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Paid</span>
+                                @elseif($purchase->status === 'partial')
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Partial</span>
                                 @else
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">{{ $purchase->status }}</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No stocks yet. Add a purchase with a stock to see stocks here (all data from purchases).</td>
+                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No purchases yet. Add a purchase to see it here.</td>
                         </tr>
                     @endforelse
                 </tbody>

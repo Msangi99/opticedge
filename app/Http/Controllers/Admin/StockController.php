@@ -12,31 +12,43 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     /**
-     * Stocks page depends on purchase data only: list is built from purchases, not from stocks table.
-     * Distinct stock_ids come from purchases; name/limit/available/status all from purchase (and product_list) data.
+     * Stocks page: list all purchases (name, limit, available, status). Click name → purchase detail (model, category, IMEI).
      */
     public function stocks()
     {
-        $stockIds = Purchase::whereNotNull('stock_id')->distinct()->pluck('stock_id');
+        $purchases = Purchase::with(['product', 'stock'])
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(function ($p) {
+                return (object) [
+                    'id' => $p->id,
+                    'name' => $p->name ?? 'Purchase #' . $p->id,
+                    'limit' => (int) $p->quantity,
+                    'available' => $p->limit_status ?? '–',
+                    'status' => $p->payment_status ?? '–',
+                ];
+            });
 
-        $stocks = collect($stockIds)->map(function ($stockId) {
-            $purchasesForStock = Purchase::where('stock_id', $stockId)->get();
-            $limit = (int) $purchasesForStock->sum('quantity');
-            $hasPending = $purchasesForStock->where('limit_status', 'pending')->where('limit_remaining', '>', 0)->isNotEmpty();
-            $available = (int) \App\Models\ProductListItem::where('stock_id', $stockId)->whereNull('sold_at')->count();
-            $stock = Stock::find($stockId);
+        return view('admin.stock.stocks', compact('purchases'));
+    }
 
-            return (object) [
-                'id' => $stockId,
-                'name' => $stock?->name ?? 'Stock #' . $stockId,
-                'stock_limit' => $limit > 0 ? $limit : ($stock?->stock_limit ?? 0),
-                'quantity_available' => $available,
-                'under_limit' => $limit > 0 ? $available < $limit : ($available < ($stock?->stock_limit ?? 0)),
-                'has_pending' => $hasPending,
-            ];
-        })->sortBy('name')->values()->all();
+    /**
+     * Show items for one purchase: model, category, IMEI (product_list rows for this purchase).
+     */
+    public function showPurchase($id)
+    {
+        $purchase = Purchase::findOrFail($id);
+        $items = $purchase->productListItems()
+            ->with('category:id,name')
+            ->orderBy('model')
+            ->orderBy('imei_number')
+            ->get();
 
-        return view('admin.stock.stocks', compact('stocks'));
+        return view('admin.stock.purchase-show', [
+            'purchase' => $purchase,
+            'items' => $items,
+        ]);
     }
 
     /**
