@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Purchase extends Model
 {
     protected $fillable = [
+        'name',
         'stock_id',
         'product_id',
         'quantity',

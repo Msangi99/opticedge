@@ -221,6 +221,7 @@ class StockController extends Controller
     {
         $validated = $request->validate([
             'stock_id' => 'nullable|exists:stocks,id',
+            'name' => 'nullable|string|max:255',
             'date' => 'required|date',
             'distributor_name' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -316,6 +317,7 @@ class StockController extends Controller
         $purchase = Purchase::with('product')->findOrFail($id);
 
         $rules = [
+            'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
         ];
@@ -345,6 +347,7 @@ class StockController extends Controller
         $paymentStatus = $paidAmount >= $totalAmount ? 'paid' : ($paidAmount > 0 ? 'partial' : 'pending');
 
         $purchase->update([
+            'name' => $validated['name'] ?? $purchase->name,
             'paid_date' => $validated['paid_date'] ?? null,
             'paid_amount' => $paidAmount,
             'payment_status' => $paymentStatus,
