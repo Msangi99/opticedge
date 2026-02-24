@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\StockController as ApiStockController;
+use App\Http\Controllers\Api\PurchaseController as ApiPurchaseController;
 use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
 
@@ -20,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('stocks', [ApiStockController::class, 'store']);
         Route::get('stocks/under-limit', [ApiStockController::class, 'stocksUnderLimit']);
         Route::get('stocks/{id}/models', [ApiStockController::class, 'modelsForStock']);
+        Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
     });

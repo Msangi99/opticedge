@@ -15,38 +15,68 @@ use Illuminate\Support\Facades\DB;
 class ProductListController extends Controller
 {
     /**
-     * Admin: Add a product to product_list (stock_id, category_id, model, imei_number).
-     * Quantity for the stock is derived from count of product_list rows; enforce stock limit.
+     * Admin: Add a product to product_list.
+     * Accepts either purchase_id + imei_number (category/model from purchase) or stock_id + category_id + model + imei_number.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'stock_id' => 'required|exists:stocks,id',
-            'category_id' => 'required|exists:categories,id',
-            'model' => 'required|string|max:255',
+            'purchase_id' => 'nullable|exists:purchases,id',
+            'stock_id' => 'nullable|exists:stocks,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'model' => 'nullable|string|max:255',
             'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
         ]);
 
-        $stock = \App\Models\Stock::findOrFail($validated['stock_id']);
+        $purchase = null;
+        $stockId = null;
+        $categoryId = null;
+        $model = null;
 
-        // Assign to a pending purchase for this stock (quantity = limit; decrement on each IMEI add)
-        $purchase = Purchase::where('stock_id', $stock->id)
-            ->where('limit_status', 'pending')
-            ->where('limit_remaining', '>', 0)
-            ->latest('date')
-            ->latest('id')
-            ->first();
-
-        if (!$purchase) {
-            return response()->json([
-                'message' => 'No pending purchase limit for this stock. Create a purchase with this stock first.',
-            ], 422);
+        if (!empty($validated['purchase_id'])) {
+            // Use purchase: get category and model from the purchase's product
+            $purchase = Purchase::with('product')->findOrFail($validated['purchase_id']);
+            if ($purchase->limit_status !== 'pending' || $purchase->limit_remaining <= 0) {
+                return response()->json([
+                    'message' => 'This purchase has no remaining limit.',
+                ], 422);
+            }
+            if (!$purchase->product_id) {
+                return response()->json([
+                    'message' => 'Purchase has no product linked.',
+                ], 422);
+            }
+            $stockId = $purchase->stock_id;
+            $categoryId = $purchase->product->category_id;
+            $model = $purchase->product->name;
+        } else {
+            // Legacy: stock_id + category_id + model
+            if (empty($validated['stock_id']) || empty($validated['category_id']) || empty($validated['model'])) {
+                return response()->json([
+                    'message' => 'Provide either purchase_id or stock_id, category_id and model.',
+                ], 422);
+            }
+            $stock = \App\Models\Stock::findOrFail($validated['stock_id']);
+            $purchase = Purchase::where('stock_id', $stock->id)
+                ->where('limit_status', 'pending')
+                ->where('limit_remaining', '>', 0)
+                ->latest('date')
+                ->latest('id')
+                ->first();
+            if (!$purchase) {
+                return response()->json([
+                    'message' => 'No pending purchase limit for this stock.',
+                ], 422);
+            }
+            $stockId = $validated['stock_id'];
+            $categoryId = $validated['category_id'];
+            $model = $validated['model'];
         }
 
         $product = Product::firstOrCreate(
             [
-                'category_id' => $validated['category_id'],
-                'name' => $validated['model'],
+                'category_id' => $categoryId,
+                'name' => $model,
             ],
             [
                 'price' => (float) ($purchase->sell_price ?? 0),
@@ -57,11 +87,15 @@ class ProductListController extends Controller
             ]
         );
 
-        $validated['product_id'] = $product->id;
-        $validated['purchase_id'] = $purchase->id;
-        $item = ProductListItem::create($validated);
+        $item = ProductListItem::create([
+            'stock_id' => $stockId,
+            'purchase_id' => $purchase->id,
+            'category_id' => $categoryId,
+            'model' => $model,
+            'imei_number' => $validated['imei_number'],
+            'product_id' => $product->id,
+        ]);
 
-        // Decrement purchase limit; when 0, mark complete
         $purchase->decrement('limit_remaining');
         if ($purchase->fresh()->limit_remaining <= 0) {
             $purchase->update(['limit_status' => 'complete']);
