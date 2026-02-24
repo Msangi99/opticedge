@@ -43,7 +43,7 @@
                             <td class="px-6 py-3">{{ number_format($available) }}</td>
                             <td class="px-6 py-3">
                                 @if($underLimit)
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Under limit</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Pending</span>
                                 @else
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>
                                 @endif
