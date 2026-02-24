@@ -31,18 +31,14 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($stocks as $stock)
-                        @php
-                            $available = $stock->quantity_available ?? 0;
-                            $underLimit = $available < $stock->stock_limit;
-                        @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">
-                                <a href="{{ route('admin.stock.stocks.show', $stock) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
+                                <a href="{{ route('admin.stock.stocks.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
                             </td>
                             <td class="px-6 py-3">{{ number_format($stock->stock_limit) }}</td>
-                            <td class="px-6 py-3">{{ number_format($available) }}</td>
+                            <td class="px-6 py-3">{{ number_format($stock->quantity_available) }}</td>
                             <td class="px-6 py-3">
-                                @if($underLimit)
+                                @if($stock->under_limit)
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Pending</span>
                                 @else
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">OK</span>
@@ -51,7 +47,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No stocks yet. Create a stock from the admin app (Add Product → create stock).</td>
+                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No stocks yet. Add a purchase with a stock to see stocks here (all data from purchases).</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -12,20 +12,39 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     /**
-     * List stocks; data derived from purchases (pending/complete limits) and product_list counts.
+     * List stocks: all data derived from purchases. Only show stocks that have at least one purchase.
+     * Name, limit, available and status are driven by purchase data.
      */
     public function stocks()
     {
-        $stocks = Stock::withCount(['productListItems as quantity_available' => function ($q) {
-            $q->whereNull('sold_at');
-        }])
+        $stocks = Stock::whereHas('purchases')
+            ->withCount(['productListItems as quantity_available' => function ($q) {
+                $q->whereNull('sold_at');
+            }])
             ->withCount(['purchases as purchases_pending' => function ($q) {
                 $q->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
             }])
             ->withCount(['purchases as purchases_complete' => function ($q) {
                 $q->where('limit_status', 'complete');
             }])
-            ->orderBy('name')->get();
+            ->orderBy('name')
+            ->get()
+            ->map(function ($stock) {
+                // Limit: from purchases (sum of quantity for this stock) or fallback to stock_limit
+                $limitFromPurchases = (int) Purchase::where('stock_id', $stock->id)->sum('quantity');
+                $limit = $limitFromPurchases > 0 ? $limitFromPurchases : $stock->stock_limit;
+                $available = $stock->quantity_available ?? 0;
+                $hasPending = ($stock->purchases_pending ?? 0) > 0;
+
+                return (object) [
+                    'id' => $stock->id,
+                    'name' => $stock->name,
+                    'stock_limit' => $limit,
+                    'quantity_available' => $available,
+                    'under_limit' => $available < $limit,
+                    'has_pending' => $hasPending,
+                ];
+            });
 
         return view('admin.stock.stocks', compact('stocks'));
     }
