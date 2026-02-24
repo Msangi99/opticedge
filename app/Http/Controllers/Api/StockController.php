@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Purchase;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 
@@ -73,5 +74,50 @@ class StockController extends Controller
             });
 
         return response()->json(['data' => $stocks->values()->all()]);
+    }
+
+    /**
+     * Models and categories for a selected stock (from product_list + purchases).
+     * Used by app Add Product: category and model options come from the selected stock.
+     */
+    public function modelsForStock(int $id)
+    {
+        $stock = Stock::findOrFail($id);
+
+        $fromList = \App\Models\ProductListItem::where('stock_id', $stock->id)
+            ->with('category:id,name')
+            ->select('model', 'category_id')
+            ->distinct()
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'model' => $r->model,
+                    'category_id' => $r->category_id,
+                    'category_name' => $r->category?->name,
+                ];
+            });
+
+        $fromPurchases = Purchase::where('stock_id', $stock->id)
+            ->with('product:id,category_id,name')
+            ->get()
+            ->map(function ($p) {
+                if (!$p->product) {
+                    return null;
+                }
+                $cat = \App\Models\Category::find($p->product->category_id);
+
+                return [
+                    'model' => $p->product->name,
+                    'category_id' => $p->product->category_id,
+                    'category_name' => $cat?->name,
+                ];
+            })
+            ->filter()
+            ->unique('model')
+            ->values();
+
+        $combined = $fromList->concat($fromPurchases)->unique('model')->values()->all();
+
+        return response()->json(['data' => $combined]);
     }
 }

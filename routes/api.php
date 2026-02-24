@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('stocks', [ApiStockController::class, 'index']);
         Route::post('stocks', [ApiStockController::class, 'store']);
         Route::get('stocks/under-limit', [ApiStockController::class, 'stocksUnderLimit']);
+        Route::get('stocks/{id}/models', [ApiStockController::class, 'modelsForStock']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
     });
