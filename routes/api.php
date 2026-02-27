@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\StockController as ApiStockController;
 use App\Http\Controllers\Api\PurchaseController as ApiPurchaseController;
 use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
+use App\Http\Controllers\Api\DashboardController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -17,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin: stocks (with limit), create stock, add product to product_list
     Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index']);
         Route::get('stocks', [ApiStockController::class, 'index']);
         Route::post('stocks', [ApiStockController::class, 'store']);
         Route::get('stocks/under-limit', [ApiStockController::class, 'stocksUnderLimit']);
