@@ -26,6 +26,10 @@ class ProductListController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'model' => 'nullable|string|max:255',
             'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
+            'selected_images' => 'nullable|array',
+            'selected_images.*' => 'string|max:255',
+            'images' => 'nullable|array|min:1',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         $purchase = null;
@@ -73,6 +77,31 @@ class ProductListController extends Controller
             $model = $validated['model'];
         }
 
+        // Handle images: either selected from gallery or uploaded from device
+        $imagePaths = [];
+        
+        // If selected images from gallery are provided, use those
+        if ($request->has('selected_images') && is_array($request->selected_images) && !empty($request->selected_images)) {
+            $imagePaths = $request->selected_images;
+        }
+        // If new images are uploaded, upload them
+        elseif ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                if ($image->isValid()) {
+                    $path = $image->store('products', 'public');
+                    $imagePaths[] = $path;
+                }
+            }
+        }
+        // Otherwise, use images from purchase product if available
+        else {
+            $purchaseProductImages = $purchase->product?->images ?? [];
+            $imagePaths = is_string($purchaseProductImages) ? json_decode($purchaseProductImages, true) : $purchaseProductImages;
+            if (!is_array($imagePaths)) {
+                $imagePaths = [];
+            }
+        }
+
         $product = Product::firstOrCreate(
             [
                 'category_id' => $categoryId,
@@ -83,9 +112,14 @@ class ProductListController extends Controller
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'From product list',
-                'images' => $purchase->product?->images ?? [],
+                'images' => $imagePaths,
             ]
         );
+
+        // Update product images if they were provided (selected or uploaded)
+        if (!empty($imagePaths)) {
+            $product->update(['images' => $imagePaths]);
+        }
 
         $item = ProductListItem::create([
             'stock_id' => $stockId,

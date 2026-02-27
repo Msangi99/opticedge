@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases', [ApiPurchaseController::class, 'index']);
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
+        Route::get('purchases/images/gallery', [ApiPurchaseController::class, 'imagesGallery']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
     });

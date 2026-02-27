@@ -27,6 +27,8 @@ class StockController extends Controller
                     'limit' => (int) $p->quantity,
                     'available' => $p->limit_status ?? '–',
                     'status' => $p->payment_status ?? '–',
+                    'stock_id' => $p->stock_id,
+                    'stock_name' => $p->stock?->name,
                 ];
             });
 
@@ -70,6 +72,33 @@ class StockController extends Controller
     {
         $purchases = Purchase::with(['product', 'stock'])->latest('date')->get();
         return view('admin.stock.purchases', compact('purchases'));
+    }
+
+    /**
+     * View all payment receipts for all purchases.
+     */
+    public function viewAllReceipts()
+    {
+        $purchases = Purchase::with(['product', 'stock'])
+            ->whereNotNull('payment_receipt_image')
+            ->latest('date')
+            ->get();
+        
+        return view('admin.stock.all-receipts', compact('purchases'));
+    }
+
+    /**
+     * View payment receipts for a specific stock.
+     */
+    public function viewStockReceipts(Stock $stock)
+    {
+        $purchases = Purchase::with(['product'])
+            ->where('stock_id', $stock->id)
+            ->whereNotNull('payment_receipt_image')
+            ->latest('date')
+            ->get();
+        
+        return view('admin.stock.stock-receipts', compact('stock', 'purchases'));
     }
 
     public function distribution()
@@ -235,7 +264,38 @@ class StockController extends Controller
             }
         }
 
-        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock'));
+        // Get all purchase images for gallery
+        $purchaseImages = Purchase::with('product')
+            ->whereHas('product', function ($q) {
+                $q->whereNotNull('images');
+            })
+            ->get()
+            ->flatMap(function ($purchase) {
+                $product = $purchase->product;
+                if (!$product || empty($product->images)) {
+                    return [];
+                }
+
+                $images = is_string($product->images) ? json_decode($product->images, true) : $product->images;
+                if (!is_array($images)) {
+                    return [];
+                }
+
+                return collect($images)->map(function ($imagePath) use ($purchase, $product) {
+                    return [
+                        'id' => $purchase->id . '_' . md5($imagePath),
+                        'purchase_id' => $purchase->id,
+                        'purchase_name' => $purchase->name ?? 'Purchase #' . $purchase->id,
+                        'product_name' => $product->name,
+                        'image_path' => $imagePath,
+                        'image_url' => asset('storage/' . $imagePath),
+                    ];
+                });
+            })
+            ->values()
+            ->all();
+
+        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock', 'purchaseImages'));
     }
 
     public function storePurchase(Request $request)
@@ -253,9 +313,23 @@ class StockController extends Controller
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
             'payment_status' => 'required|in:pending,paid,partial',
-            'images' => 'required|array|min:3',
+            'selected_images' => 'nullable|array',
+            'selected_images.*' => 'string|max:255',
+            'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
+
+        // Validate that at least 3 images are provided (either from gallery or upload)
+        $selectedCount = count($request->input('selected_images', []));
+        $uploadedCount = $request->hasFile('images') ? count($request->file('images')) : 0;
+        $totalImages = $selectedCount + $uploadedCount;
+        
+        if ($totalImages < 3) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['images' => 'Please select at least 3 images from gallery or upload from device.']);
+        }
 
         // Find or create the product based on category and model name
         $product = \App\Models\Product::firstOrCreate(
@@ -272,8 +346,20 @@ class StockController extends Controller
             ]
         );
 
-        // Upload and save product images
+        // Combine selected images from gallery and uploaded images
         $imagePaths = [];
+        
+        // Add selected images from gallery
+        if ($request->has('selected_images') && is_array($request->selected_images)) {
+            foreach ($request->selected_images as $selectedPath) {
+                // Validate that the image path exists in storage
+                if (\Storage::disk('public')->exists($selectedPath)) {
+                    $imagePaths[] = $selectedPath;
+                }
+            }
+        }
+        
+        // Add uploaded images from device
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 if ($image->isValid()) {
@@ -282,6 +368,7 @@ class StockController extends Controller
                 }
             }
         }
+        
         if (!empty($imagePaths)) {
             $product->update(['images' => $imagePaths]);
         }
@@ -309,7 +396,18 @@ class StockController extends Controller
         $validated['limit_remaining'] = $quantity;
         $validated['sell_price'] = $request->filled('sell_price') ? $request->input('sell_price') : null;
 
-        Purchase::create($validated);
+        // Create purchase first to get the ID
+        $purchase = Purchase::create($validated);
+
+        // Upload payment receipt image if provided (store in purchase-specific directory)
+        if ($request->hasFile('payment_receipt_image')) {
+            $receiptImage = $request->file('payment_receipt_image');
+            if ($receiptImage->isValid()) {
+                $receiptDir = 'receipts/purchase-' . $purchase->id;
+                $paymentReceiptPath = $receiptImage->store($receiptDir, 'public');
+                $purchase->update(['payment_receipt_image' => $paymentReceiptPath]);
+            }
+        }
 
         // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
         $product->increment('stock_quantity', $validated['quantity']);
@@ -341,6 +439,7 @@ class StockController extends Controller
             'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
+            'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
         if ($request->hasFile('images')) {
             $rules['images'] = 'required|array|min:3';
@@ -362,6 +461,21 @@ class StockController extends Controller
             }
         }
 
+        // Upload payment receipt image if provided (store in purchase-specific directory)
+        $paymentReceiptPath = $purchase->payment_receipt_image;
+        if ($request->hasFile('payment_receipt_image')) {
+            $receiptImage = $request->file('payment_receipt_image');
+            if ($receiptImage->isValid()) {
+                // Delete old receipt image if exists
+                if ($purchase->payment_receipt_image && \Storage::disk('public')->exists($purchase->payment_receipt_image)) {
+                    \Storage::disk('public')->delete($purchase->payment_receipt_image);
+                }
+                // Store in purchase-specific directory: receipts/purchase-{id}/
+                $receiptDir = 'receipts/purchase-' . $purchase->id;
+                $paymentReceiptPath = $receiptImage->store($receiptDir, 'public');
+            }
+        }
+
         // Auto status from paid amount: pending / partial / paid
         $totalAmount = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
         $paidAmount = (float) ($validated['paid_amount'] ?? 0);
@@ -372,6 +486,7 @@ class StockController extends Controller
             'paid_date' => $validated['paid_date'] ?? null,
             'paid_amount' => $paidAmount,
             'payment_status' => $paymentStatus,
+            'payment_receipt_image' => $paymentReceiptPath,
         ]);
 
         return redirect()->route('admin.stock.purchases')->with('success', 'Purchase updated successfully.');

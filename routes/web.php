@@ -96,10 +96,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('stocks', [App\Http\Controllers\Admin\StockController::class, 'stocks'])->name('stocks');
             Route::get('stocks/{stock}/models', [App\Http\Controllers\Admin\StockController::class, 'modelsForStock'])->name('stocks.models');
             Route::get('stocks/{stock}', [App\Http\Controllers\Admin\StockController::class, 'showStock'])->name('stocks.show');
+            Route::get('stocks/{stock}/receipts', [App\Http\Controllers\Admin\StockController::class, 'viewStockReceipts'])->name('stock-receipts');
             Route::get('add-product', [App\Http\Controllers\Admin\StockController::class, 'addProductForm'])->name('add-product');
             Route::post('add-product', [App\Http\Controllers\Admin\StockController::class, 'storeProductFromForm'])->name('store-add-product');
             Route::get('purchase/{id}', [App\Http\Controllers\Admin\StockController::class, 'showPurchase'])->name('purchase.show');
             Route::get('purchases', [App\Http\Controllers\Admin\StockController::class , 'purchases'])->name('purchases');
+            Route::get('purchases/receipts', [App\Http\Controllers\Admin\StockController::class , 'viewAllReceipts'])->name('purchases.receipts');
             Route::get('purchases/create', [App\Http\Controllers\Admin\StockController::class , 'createPurchase'])->name('create-purchase');
             Route::post('purchases', [App\Http\Controllers\Admin\StockController::class , 'storePurchase'])->name('store-purchase');
             Route::get('purchases/{id}/edit', [App\Http\Controllers\Admin\StockController::class , 'editPurchase'])->name('edit-purchase');

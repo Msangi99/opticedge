@@ -123,6 +123,22 @@
                             <input type="text" id="pending_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="{{ number_format(max(0, $purchaseTotal - $purchase->paid_amount), 2) }}">
                             <p class="text-xs text-slate-500 mt-1">Auto: Total − Paid. Status updates automatically when you save.</p>
                         </div>
+
+                        <!-- Payment Receipt Image -->
+                        <div class="col-span-2">
+                            <label for="payment_receipt_image" class="block text-sm font-medium text-slate-700 mb-1">Payment Receipt Image</label>
+                            @if($purchase->payment_receipt_image)
+                                <div class="mb-2">
+                                    <img src="{{ asset('storage/' . $purchase->payment_receipt_image) }}" alt="Payment Receipt" class="w-32 h-32 object-cover rounded border border-slate-200">
+                                </div>
+                            @endif
+                            <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                            <p class="text-xs text-slate-500 mt-1">Upload or replace payment receipt image (optional). Formats: JPG, PNG, GIF, WebP. Max 5MB.</p>
+                            @error('payment_receipt_image')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">

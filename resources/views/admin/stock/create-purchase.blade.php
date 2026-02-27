@@ -114,11 +114,193 @@
                         </div>
 
                         <!-- Product Images (for home page & product details) -->
-                        <div class="col-span-2">
-                            <label for="images" class="block text-sm font-medium text-slate-700 mb-1">Product Images (min 3)</label>
-                            <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
-                            <p class="text-xs text-slate-500 mt-1">Upload at least 3 images for product cards and product details. Formats: JPG, PNG, GIF, WebP. Max 5MB each.</p>
+                        <div class="col-span-2" x-data="{
+                            selectedImages: [],
+                            showGalleryModal: false,
+                            showUpload: false,
+                            galleryImages: @js($purchaseImages ?? []),
+                            uploadedFiles: [],
+                            toggleImage(imagePath) {
+                                const index = this.selectedImages.indexOf(imagePath);
+                                if (index > -1) {
+                                    this.selectedImages.splice(index, 1);
+                                } else {
+                                    this.selectedImages.push(imagePath);
+                                }
+                            },
+                            isSelected(imagePath) {
+                                return this.selectedImages.includes(imagePath);
+                            },
+                            openGallery() {
+                                this.showGalleryModal = true;
+                            },
+                            closeGallery() {
+                                this.showGalleryModal = false;
+                            },
+                            toggleUpload() {
+                                this.showUpload = !this.showUpload;
+                            },
+                            getSelectedCount() {
+                                return this.selectedImages.length;
+                            },
+                            getTotalCount() {
+                                const fileInput = document.getElementById('images');
+                                const fileCount = fileInput ? fileInput.files.length : 0;
+                                return this.selectedImages.length + fileCount;
+                            },
+                            updateFileList() {
+                                const fileInput = document.getElementById('images');
+                                this.uploadedFiles = fileInput ? Array.from(fileInput.files) : [];
+                            }
+                        }" x-init="$watch('showUpload', value => { if(value) { setTimeout(() => updateFileList(), 100); } })">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                Product Images (min 3)
+                                <span class="text-xs font-normal text-slate-500 ml-2" x-text="'Total: ' + getTotalCount() + ' selected'"></span>
+                            </label>
+                            
+                            <!-- Gallery Button -->
+                            <div class="mb-4">
+                                <button type="button" 
+                                        @click="openGallery()"
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-[#fa8900] text-white rounded-lg hover:bg-[#e67d00] transition-colors text-sm font-medium">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>Select from Purchase Gallery</span>
+                                    <span x-show="getSelectedCount() > 0" 
+                                          class="bg-white text-[#fa8900] rounded-full px-2 py-0.5 text-xs font-bold"
+                                          x-text="getSelectedCount()"></span>
+                                </button>
+                                <p class="text-xs text-slate-500 mt-1">Click to browse and select images from existing purchases.</p>
+                            </div>
+                            
+                            <!-- Hidden inputs for selected gallery images -->
+                            <template x-for="(imagePath, index) in selectedImages" :key="index">
+                                <input type="hidden" name="selected_images[]" :value="imagePath">
+                            </template>
+                            
+                            <!-- Gallery Modal -->
+                            <div x-show="showGalleryModal" 
+                                 x-transition:enter="ease-out duration-300"
+                                 x-transition:enter-start="opacity-0"
+                                 x-transition:enter-end="opacity-100"
+                                 x-transition:leave="ease-in duration-200"
+                                 x-transition:leave-start="opacity-100"
+                                 x-transition:leave-end="opacity-0"
+                                 class="fixed inset-0 z-50 overflow-y-auto"
+                                 style="display: none;"
+                                 @click.self="closeGallery()">
+                                <!-- Modal Backdrop -->
+                                <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+                                
+                                <!-- Modal Content -->
+                                <div class="flex min-h-full items-center justify-center p-4">
+                                    <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+                                         x-transition:enter="ease-out duration-300"
+                                         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                         x-transition:leave="ease-in duration-200"
+                                         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                         @click.stop>
+                                        <!-- Modal Header -->
+                                        <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-slate-900">Select Images from Purchase Gallery</h3>
+                                                <p class="text-sm text-slate-500 mt-1">Click images to select. Selected: <span class="font-medium text-[#fa8900]" x-text="getSelectedCount()"></span></p>
+                                            </div>
+                                            <button type="button" 
+                                                    @click="closeGallery()"
+                                                    class="text-slate-400 hover:text-slate-600 transition-colors">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Modal Body - Gallery -->
+                                        <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                                            @if(count($purchaseImages ?? []) > 0)
+                                                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                                    @foreach($purchaseImages as $img)
+                                                        <div class="relative cursor-pointer group" 
+                                                             @click="toggleImage('{{ $img['image_path'] }}')"
+                                                             :class="isSelected('{{ $img['image_path'] }}') ? 'ring-2 ring-[#fa8900] ring-offset-2' : ''">
+                                                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 transition-all"
+                                                                 :class="isSelected('{{ $img['image_path'] }}') ? 'border-[#fa8900]' : 'border-slate-200'">
+                                                                <img src="{{ $img['image_url'] }}" 
+                                                                     alt="{{ $img['product_name'] }}"
+                                                                     class="w-full h-full object-cover transition-all"
+                                                                     :class="isSelected('{{ $img['image_path'] }}') ? 'opacity-100' : 'opacity-75 group-hover:opacity-100'">
+                                                            </div>
+                                                            <div x-show="isSelected('{{ $img['image_path'] }}')" 
+                                                                 class="absolute top-2 right-2 bg-[#fa8900] text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
+                                                                ✓
+                                                            </div>
+                                                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
+                                                                <p class="text-white text-xs font-medium truncate">{{ $img['product_name'] }}</p>
+                                                                <p class="text-white/80 text-xs truncate">{{ $img['purchase_name'] }}</p>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <div class="border border-slate-200 rounded-lg p-8 bg-slate-50 text-center">
+                                                    <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    <p class="text-slate-600 font-medium">No images found in purchase gallery</p>
+                                                    <p class="text-slate-500 text-sm mt-1">Please upload images from device instead.</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Modal Footer -->
+                                        <div class="flex items-center justify-between p-6 border-t border-slate-200 bg-slate-50">
+                                            <div class="text-sm text-slate-600">
+                                                <span class="font-medium" x-text="getSelectedCount()"></span> image(s) selected
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <button type="button" 
+                                                        @click="closeGallery()"
+                                                        class="px-4 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium">
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Upload from Device Section -->
+                            <div class="mb-2">
+                                <button type="button" 
+                                        @click="toggleUpload()"
+                                        class="text-sm text-[#fa8900] hover:text-[#e67d00] font-medium flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    <span x-text="showUpload ? 'Hide Upload' : 'Upload from Device'"></span>
+                                </button>
+                            </div>
+                            
+                            <div x-show="showUpload" class="mb-4">
+                                <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                    @change="updateFileList()"
+                                    class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                                <p class="text-xs text-slate-500 mt-1">Upload new images from your device. Formats: JPG, PNG, GIF, WebP. Max 5MB each.</p>
+                                <div x-show="uploadedFiles.length > 0" class="mt-2 text-xs text-slate-600">
+                                    <span x-text="'Uploaded: ' + uploadedFiles.length + ' file(s)'"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <p class="text-xs" :class="getTotalCount() >= 3 ? 'text-green-600 font-medium' : 'text-slate-500'">
+                                    <span x-text="getTotalCount() >= 3 ? '✓ ' : ''"></span>
+                                    Select at least 3 images from gallery or upload from device. You can combine both methods.
+                                    <span x-show="getTotalCount() < 3" class="text-red-500 font-medium" x-text="' (Need ' + (3 - getTotalCount()) + ' more)'"></span>
+                                </p>
+                            </div>
                             @error('images')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
@@ -153,6 +335,17 @@
                                 <option value="paid" {{ old('payment_status') == 'paid' ? 'selected' : '' }}>Paid</option>
                             </select>
                             @error('payment_status') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Payment Receipt Image -->
+                        <div class="col-span-2">
+                            <label for="payment_receipt_image" class="block text-sm font-medium text-slate-700 mb-1">Payment Receipt Image</label>
+                            <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                            <p class="text-xs text-slate-500 mt-1">Upload payment receipt image (optional). Formats: JPG, PNG, GIF, WebP. Max 5MB.</p>
+                            @error('payment_receipt_image')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
                         </div>
                     </div>
 

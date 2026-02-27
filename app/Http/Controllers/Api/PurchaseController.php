@@ -86,4 +86,44 @@ class PurchaseController extends Controller
 
         return response()->json(['data' => $purchases]);
     }
+
+    /**
+     * Get all purchase images (gallery) for mobile app image selection.
+     * Returns all product images from all purchases, grouped by purchase.
+     */
+    public function imagesGallery()
+    {
+        $purchases = Purchase::with('product')
+            ->whereHas('product', function ($q) {
+                $q->whereNotNull('images');
+            })
+            ->get()
+            ->flatMap(function ($purchase) {
+                $product = $purchase->product;
+                if (!$product || empty($product->images)) {
+                    return [];
+                }
+
+                $images = is_string($product->images) ? json_decode($product->images, true) : $product->images;
+                if (!is_array($images)) {
+                    return [];
+                }
+
+                return collect($images)->map(function ($imagePath) use ($purchase, $product) {
+                    return [
+                        'id' => $purchase->id . '_' . md5($imagePath),
+                        'purchase_id' => $purchase->id,
+                        'purchase_name' => $purchase->name ?? 'Purchase #' . $purchase->id,
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'image_path' => $imagePath,
+                        'image_url' => asset('storage/' . $imagePath),
+                    ];
+                });
+            })
+            ->values()
+            ->all();
+
+        return response()->json(['data' => $purchases]);
+    }
 }

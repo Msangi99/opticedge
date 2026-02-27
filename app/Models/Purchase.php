@@ -17,6 +17,7 @@ class Purchase extends Model
         'paid_date',
         'paid_amount',
         'payment_status',
+        'payment_receipt_image',
         'date',
         'limit_status',
         'limit_remaining',
