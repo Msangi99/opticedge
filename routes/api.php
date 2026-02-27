@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PurchaseController as ApiPurchaseController;
 use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AgentSaleController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -27,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
         Route::get('purchases/images/gallery', [ApiPurchaseController::class, 'imagesGallery']);
+        Route::get('agent-sales', [AgentSaleController::class, 'index']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
     });
