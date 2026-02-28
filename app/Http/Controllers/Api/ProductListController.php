@@ -26,10 +26,6 @@ class ProductListController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'model' => 'nullable|string|max:255',
             'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
-            'selected_images' => 'nullable|array',
-            'selected_images.*' => 'string|max:255',
-            'images' => 'nullable|array|min:1',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         $purchase = null;
@@ -77,31 +73,6 @@ class ProductListController extends Controller
             $model = $validated['model'];
         }
 
-        // Handle images: either selected from gallery or uploaded from device
-        $imagePaths = [];
-        
-        // If selected images from gallery are provided, use those
-        if ($request->has('selected_images') && is_array($request->selected_images) && !empty($request->selected_images)) {
-            $imagePaths = $request->selected_images;
-        }
-        // If new images are uploaded, upload them
-        elseif ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $path = $image->store('products', 'public');
-                    $imagePaths[] = $path;
-                }
-            }
-        }
-        // Otherwise, use images from purchase product if available
-        else {
-            $purchaseProductImages = $purchase->product?->images ?? [];
-            $imagePaths = is_string($purchaseProductImages) ? json_decode($purchaseProductImages, true) : $purchaseProductImages;
-            if (!is_array($imagePaths)) {
-                $imagePaths = [];
-            }
-        }
-
         $product = Product::firstOrCreate(
             [
                 'category_id' => $categoryId,
@@ -112,14 +83,9 @@ class ProductListController extends Controller
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'From product list',
-                'images' => $imagePaths,
+                'images' => $purchase->product?->images ?? [],
             ]
         );
-
-        // Update product images if they were provided (selected or uploaded)
-        if (!empty($imagePaths)) {
-            $product->update(['images' => $imagePaths]);
-        }
 
         $item = ProductListItem::create([
             'stock_id' => $stockId,
@@ -148,67 +114,66 @@ class ProductListController extends Controller
     }
 
     /**
-     * Agent: Get available products from purchases (not sold items).
-     * Returns list of products with IMEI that can be sold.
+     * Agent: List product_list items that are available to sell (not yet sold).
+     * Only returns items where sold_at is null.
      */
-    public function availableProducts()
+    public function available()
     {
         $items = ProductListItem::with(['category', 'product', 'stock', 'purchase'])
             ->whereNull('sold_at')
             ->orderBy('model')
             ->orderBy('imei_number')
-            ->get()
-            ->map(function ($item) {
-                $sellPrice = null;
-                if ($item->purchase_id && $item->purchase) {
-                    $sellPrice = $item->purchase->sell_price !== null ? (float) $item->purchase->sell_price : null;
-                }
-                if ($sellPrice === null && $item->stock_id && $item->product_id) {
-                    $purchase = Purchase::where('stock_id', $item->stock_id)
-                        ->where('product_id', $item->product_id)
-                        ->whereNotNull('sell_price')
-                        ->latest('date')
-                        ->first();
-                    $sellPrice = $purchase ? (float) $purchase->sell_price : null;
-                }
-                if ($sellPrice === null && $item->product) {
-                    $sellPrice = $item->product->price > 0 ? (float) $item->product->price : null;
-                }
-                $sellPrice = $sellPrice ?? 0.0;
+            ->get();
 
-                $purchasePrice = null;
-                if ($item->purchase_id && $item->purchase) {
-                    $purchasePrice = (float) $item->purchase->unit_price;
-                }
-                if ($purchasePrice === null && $item->stock_id && $item->product_id) {
-                    $purchase = Purchase::where('stock_id', $item->stock_id)
-                        ->where('product_id', $item->product_id)
-                        ->latest('date')
-                        ->first();
-                    $purchasePrice = $purchase ? (float) $purchase->unit_price : null;
-                }
-                if ($purchasePrice === null && $item->product) {
-                    $purchasePrice = (float) $item->product->price;
-                }
-                $purchasePrice = $purchasePrice ?? 0.0;
+        $data = $items->map(function ($item) {
+            $sellPrice = null;
+            if ($item->purchase_id && $item->purchase) {
+                $sellPrice = $item->purchase->sell_price !== null ? (float) $item->purchase->sell_price : null;
+            }
+            if ($sellPrice === null && $item->stock_id && $item->product_id) {
+                $purchase = Purchase::where('stock_id', $item->stock_id)
+                    ->where('product_id', $item->product_id)
+                    ->whereNotNull('sell_price')
+                    ->latest('date')
+                    ->first();
+                $sellPrice = $purchase ? (float) $purchase->sell_price : null;
+            }
+            if ($sellPrice === null && $item->product) {
+                $sellPrice = $item->product->price > 0 ? (float) $item->product->price : null;
+            }
+            $sellPrice = $sellPrice ?? 0.0;
 
-                return [
-                    'id' => $item->id,
-                    'imei_number' => $item->imei_number,
-                    'model' => $item->model,
-                    'category_id' => $item->category_id,
-                    'category_name' => $item->category?->name,
-                    'stock_id' => $item->stock_id,
-                    'stock_name' => $item->stock?->name,
-                    'sell_price' => $sellPrice,
-                    'purchase_price' => $purchasePrice,
-                    'product_id' => $item->product_id,
-                ];
-            })
-            ->values()
-            ->all();
+            $purchasePrice = null;
+            if ($item->purchase_id && $item->purchase) {
+                $purchasePrice = (float) $item->purchase->unit_price;
+            }
+            if ($purchasePrice === null && $item->stock_id && $item->product_id) {
+                $purchase = Purchase::where('stock_id', $item->stock_id)
+                    ->where('product_id', $item->product_id)
+                    ->latest('date')
+                    ->first();
+                $purchasePrice = $purchase ? (float) $purchase->unit_price : null;
+            }
+            if ($purchasePrice === null && $item->product) {
+                $purchasePrice = (float) $item->product->price;
+            }
+            $purchasePrice = $purchasePrice ?? 0.0;
 
-        return response()->json(['data' => $items]);
+            return [
+                'id' => $item->id,
+                'imei_number' => $item->imei_number,
+                'model' => $item->model,
+                'category_id' => $item->category_id,
+                'category_name' => $item->category?->name,
+                'stock_id' => $item->stock_id,
+                'stock_name' => $item->stock?->name,
+                'sell_price' => $sellPrice,
+                'purchase_price' => $purchasePrice,
+                'product_id' => $item->product_id,
+            ];
+        })->values()->all();
+
+        return response()->json(['data' => $data]);
     }
 
     /**

@@ -7,9 +7,6 @@ use App\Http\Controllers\Api\StockController as ApiStockController;
 use App\Http\Controllers\Api\PurchaseController as ApiPurchaseController;
 use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\AgentSaleController;
-use App\Http\Controllers\Api\AgentDashboardController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -20,7 +17,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin: stocks (with limit), create stock, add product to product_list
     Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('dashboard', [DashboardController::class, 'index']);
         Route::get('stocks', [ApiStockController::class, 'index']);
         Route::post('stocks', [ApiStockController::class, 'store']);
         Route::get('stocks/under-limit', [ApiStockController::class, 'stocksUnderLimit']);
@@ -28,17 +24,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases', [ApiPurchaseController::class, 'index']);
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
-        Route::get('purchases/images/gallery', [ApiPurchaseController::class, 'imagesGallery']);
-        Route::get('agent-sales', [AgentSaleController::class, 'index']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
     });
 
-    // Agent: get device by IMEI, record sale (deduct from product_list)
+    // Agent: dashboard, available products (unsold only), get device by IMEI, record sale
     Route::middleware('agent')->prefix('agent')->group(function () {
-        Route::get('dashboard', [AgentDashboardController::class, 'index']);
+        Route::get('dashboard', [\App\Http\Controllers\Api\AgentDashboardController::class, 'index']);
+        Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
-        Route::get('product-list/available', [ProductListController::class, 'availableProducts']);
         Route::post('sell', [ProductListController::class, 'sell']);
     });
 });
