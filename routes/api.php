@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AgentSaleController;
+use App\Http\Controllers\Api\AgentDashboardController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -35,7 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Agent: get device by IMEI, record sale (deduct from product_list)
     Route::middleware('agent')->prefix('agent')->group(function () {
+        Route::get('dashboard', [AgentDashboardController::class, 'index']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
+        Route::get('product-list/available', [ProductListController::class, 'availableProducts']);
         Route::post('sell', [ProductListController::class, 'sell']);
     });
 });
