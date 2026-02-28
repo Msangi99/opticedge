@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class AgentSale extends Model
 {
@@ -22,6 +23,11 @@ class AgentSale extends Model
         'balance',
         'stock_remaining',
         'date',
+    ];
+
+    protected $casts = [
+        'date' => 'datetime',
+        'date_of_collection' => 'datetime',
     ];
 
     public function product()

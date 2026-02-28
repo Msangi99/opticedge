@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DashboardFinancialService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -33,7 +34,7 @@ class DashboardController extends Controller
                     'customer_name' => $order->user->name ?? 'Guest',
                     'total_price' => (float) $order->total_price,
                     'status' => $order->status,
-                    'created_at' => $order->created_at->toISOString(),
+                    'created_at' => $order->created_at ? (is_string($order->created_at) ? Carbon::parse($order->created_at)->toISOString() : $order->created_at->toISOString()) : null,
                 ];
             });
 

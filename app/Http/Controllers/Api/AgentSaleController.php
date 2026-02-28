@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentSale;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AgentSaleController extends Controller
@@ -29,7 +30,7 @@ class AgentSaleController extends Controller
                     'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
                     'profit' => (float) ($sale->profit ?? 0),
                     'commission_paid' => (float) ($sale->commission_paid ?? 0),
-                    'date' => $sale->date ? $sale->date->toISOString() : null,
+                    'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
                 ];
             })
             ->values()

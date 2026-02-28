@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
 use App\Models\AgentSale;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -57,7 +58,7 @@ class AgentDashboardController extends Controller
                     'selling_price' => (float) ($sale->selling_price ?? 0),
                     'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
                     'profit' => (float) ($sale->profit ?? 0),
-                    'date' => $sale->date ? $sale->date->toISOString() : null,
+                    'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
                 ];
             })
             ->values()
