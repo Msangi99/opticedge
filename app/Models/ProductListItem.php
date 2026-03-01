@@ -15,6 +15,8 @@ class ProductListItem extends Model
         'model',
         'imei_number',
         'product_id',
+        'sold_at',
+        'agent_sale_id',
     ];
 
     public function purchase()
