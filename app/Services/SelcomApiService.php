@@ -66,8 +66,9 @@ class SelcomApiService
         $headers = $this->buildHeaders($signedFields, $payload);
 
         try {
-            $response = Http::timeout(60)
-                ->retry(2, 1000)
+            $response = Http::connectTimeout(30)
+                ->timeout(90)
+                ->retry(3, 2000)
                 ->withHeaders($headers)
                 ->post($url, $payload);
             
@@ -99,8 +100,9 @@ class SelcomApiService
         $headers = $this->buildHeaders($signedFields, $payload);
 
         try {
-            $response = Http::timeout(60)
-                ->retry(2, 1000)
+            $response = Http::connectTimeout(30)
+                ->timeout(90)
+                ->retry(3, 2000)
                 ->withHeaders($headers)
                 ->post($url, $payload);
             
@@ -128,8 +130,9 @@ class SelcomApiService
         $headers = $this->buildHeaders($signedFields, $payload);
 
         try {
-            $response = Http::timeout(60)
-                ->retry(2, 1000)
+            $response = Http::connectTimeout(30)
+                ->timeout(90)
+                ->retry(3, 2000)
                 ->withHeaders($headers)
                 ->get($url);
             
