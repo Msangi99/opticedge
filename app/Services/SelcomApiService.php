@@ -65,12 +65,22 @@ class SelcomApiService
         $url = $this->baseUrl . '/checkout/create-order-minimal';
         $headers = $this->buildHeaders($signedFields, $payload);
 
-        $response = Http::withHeaders($headers)->post($url, $payload);
-        $body = $response->json();
-        if ($response->failed()) {
-            return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+        try {
+            $response = Http::timeout(60)
+                ->retry(2, 1000)
+                ->withHeaders($headers)
+                ->post($url, $payload);
+            
+            $body = $response->json();
+            if ($response->failed()) {
+                return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+            }
+            return $body;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'CONNECTION_ERROR', 'message' => 'Connection timeout: ' . $e->getMessage()];
+        } catch (\Exception $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'ERROR', 'message' => $e->getMessage()];
         }
-        return $body;
     }
 
     /**
@@ -88,12 +98,22 @@ class SelcomApiService
         $url = $this->baseUrl . '/checkout/wallet-payment';
         $headers = $this->buildHeaders($signedFields, $payload);
 
-        $response = Http::withHeaders($headers)->post($url, $payload);
-        $body = $response->json();
-        if ($response->failed()) {
-            return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+        try {
+            $response = Http::timeout(60)
+                ->retry(2, 1000)
+                ->withHeaders($headers)
+                ->post($url, $payload);
+            
+            $body = $response->json();
+            if ($response->failed()) {
+                return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+            }
+            return $body;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'CONNECTION_ERROR', 'message' => 'Connection timeout: ' . $e->getMessage()];
+        } catch (\Exception $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'ERROR', 'message' => $e->getMessage()];
         }
-        return $body;
     }
 
     /**
@@ -107,11 +127,21 @@ class SelcomApiService
         $url = $this->baseUrl . '/checkout/order-status?' . http_build_query($payload);
         $headers = $this->buildHeaders($signedFields, $payload);
 
-        $response = Http::withHeaders($headers)->get($url);
-        $body = $response->json();
-        if ($response->failed()) {
-            return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+        try {
+            $response = Http::timeout(60)
+                ->retry(2, 1000)
+                ->withHeaders($headers)
+                ->get($url);
+            
+            $body = $response->json();
+            if ($response->failed()) {
+                return $body ?? ['result' => 'FAIL', 'resultcode' => (string) $response->status(), 'message' => $response->body()];
+            }
+            return $body;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'CONNECTION_ERROR', 'message' => 'Connection timeout: ' . $e->getMessage()];
+        } catch (\Exception $e) {
+            return ['result' => 'FAIL', 'resultcode' => 'ERROR', 'message' => $e->getMessage()];
         }
-        return $body;
     }
 }
