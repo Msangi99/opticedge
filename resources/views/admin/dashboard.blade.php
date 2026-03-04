@@ -63,6 +63,135 @@
             </a>
         </div>
 
+        <!-- Sales Metrics Cards -->
+        @if(isset($salesMetrics))
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Today Sales -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-medium text-slate-500 mb-1">Mauzo ya Leo</p>
+                <p class="text-2xl font-bold text-slate-900 mb-2">{{ number_format($salesMetrics['today']['sales'], 0) }} TZS</p>
+                @if($salesMetrics['today']['percentage_change'] !== null)
+                    <div class="flex items-center gap-1">
+                        @if($salesMetrics['today']['is_increase'])
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span class="text-sm font-medium text-green-600">{{ number_format(abs($salesMetrics['today']['percentage_change']), 1) }}%</span>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span class="text-sm font-medium text-red-600">{{ number_format(abs($salesMetrics['today']['percentage_change']), 1) }}%</span>
+                        @endif
+                        <span class="text-xs text-slate-500">vs jana</span>
+                    </div>
+                @else
+                    <span class="text-xs text-slate-500">Hakuna data ya jana</span>
+                @endif
+            </div>
+
+            <!-- WTD Sales -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-purple-50 text-purple-600 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-medium text-slate-500 mb-1">WTD (Weekly To Date)</p>
+                <p class="text-2xl font-bold text-slate-900 mb-2">{{ number_format($salesMetrics['wtd']['sales'], 0) }} TZS</p>
+                @if($salesMetrics['wtd']['percentage_change'] !== null)
+                    <div class="flex items-center gap-1">
+                        @if($salesMetrics['wtd']['is_increase'])
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span class="text-sm font-medium text-green-600">{{ number_format(abs($salesMetrics['wtd']['percentage_change']), 1) }}%</span>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span class="text-sm font-medium text-red-600">{{ number_format(abs($salesMetrics['wtd']['percentage_change']), 1) }}%</span>
+                        @endif
+                        <span class="text-xs text-slate-500">vs wiki iliyopita</span>
+                    </div>
+                @else
+                    <span class="text-xs text-slate-500">Hakuna data ya wiki iliyopita</span>
+                @endif
+            </div>
+
+            <!-- MTD Sales -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-green-50 text-green-600 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-medium text-slate-500 mb-1">MTD (Monthly To Date)</p>
+                <p class="text-2xl font-bold text-slate-900 mb-2">{{ number_format($salesMetrics['mtd']['sales'], 0) }} TZS</p>
+                @if($salesMetrics['mtd']['percentage_change'] !== null)
+                    <div class="flex items-center gap-1">
+                        @if($salesMetrics['mtd']['is_increase'])
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span class="text-sm font-medium text-green-600">{{ number_format(abs($salesMetrics['mtd']['percentage_change']), 1) }}%</span>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span class="text-sm font-medium text-red-600">{{ number_format(abs($salesMetrics['mtd']['percentage_change']), 1) }}%</span>
+                        @endif
+                        <span class="text-xs text-slate-500">vs mwezi uliopita</span>
+                    </div>
+                @else
+                    <span class="text-xs text-slate-500">Hakuna data ya mwezi uliopita</span>
+                @endif
+            </div>
+
+            <!-- YTD Sales -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-medium text-slate-500 mb-1">YTD (Yearly To Date)</p>
+                <p class="text-2xl font-bold text-slate-900 mb-2">{{ number_format($salesMetrics['ytd']['sales'], 0) }} TZS</p>
+                @if($salesMetrics['ytd']['percentage_change'] !== null)
+                    <div class="flex items-center gap-1">
+                        @if($salesMetrics['ytd']['is_increase'])
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            <span class="text-sm font-medium text-green-600">{{ number_format(abs($salesMetrics['ytd']['percentage_change']), 1) }}%</span>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                            </svg>
+                            <span class="text-sm font-medium text-red-600">{{ number_format(abs($salesMetrics['ytd']['percentage_change']), 1) }}%</span>
+                        @endif
+                        <span class="text-xs text-slate-500">vs mwaka uliopita</span>
+                    </div>
+                @else
+                    <span class="text-xs text-slate-500">Hakuna data ya mwaka uliopita</span>
+                @endif
+            </div>
+        </div>
+        @endif
+
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -114,10 +243,52 @@
                         <p class="text-xl font-bold mt-1 {{ $financialMetrics['net_profit'] >= 0 ? 'text-green-800' : 'text-red-800' }}">{{ number_format($financialMetrics['net_profit'], 0) }} TZS</p>
                         <p class="text-xs text-slate-500 mt-1">Gross profit − Total expenses</p>
                     </div>
+                    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
+                        <p class="text-sm font-medium text-slate-600">Total Purchase Buy Price</p>
+                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_purchase_buy_price'], 0) }} TZS</p>
+                        <p class="text-xs text-slate-500 mt-1">Total buy price of all purchases</p>
+                    </div>
+                    <div class="p-4 rounded-lg bg-teal-50 border border-teal-100">
+                        <p class="text-sm font-medium text-slate-600">Total Products in Purchases</p>
+                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_products_in_purchases'], 0) }}</p>
+                        <p class="text-xs text-slate-500 mt-1">Total products in all purchases</p>
+                    </div>
                 </div>
             </div>
         </div>
         @endif
+
+        <!-- Top Selling Products Chart -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800">Top Selling Products (Models)</h3>
+                    <p class="text-sm text-slate-500 mt-0.5">Products sold by quantity</p>
+                </div>
+                <form method="GET" action="{{ route('admin.dashboard') }}" class="flex gap-3 items-end">
+                    <div>
+                        <label for="start_date" class="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
+                        <input type="date" name="start_date" id="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="rounded-md border-slate-300 shadow-sm text-sm">
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-xs font-medium text-slate-600 mb-1">End Date</label>
+                        <input type="date" name="end_date" id="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="rounded-md border-slate-300 shadow-sm text-sm">
+                    </div>
+                    <button type="submit" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors text-sm font-medium">
+                        Filter
+                    </button>
+                </form>
+            </div>
+            <div class="p-6">
+                @if(count($topProducts) > 0)
+                    <canvas id="topProductsChart" style="max-height: 400px;"></canvas>
+                @else
+                    <div class="text-center py-8 text-slate-500">
+                        <p>No sales data found for the selected date range.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
 
         <!-- Recent Orders -->
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -164,4 +335,58 @@
             </table>
         </div>
     </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        @if(count($topProducts) > 0)
+        const ctx = document.getElementById('topProductsChart');
+        if (ctx) {
+            const chartData = @json($topProducts);
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(item => item.model),
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: chartData.map(item => item.total_quantity),
+                        backgroundColor: '#fa8900',
+                        borderColor: '#e67d00',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Quantity: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        @endif
+    </script>
 </x-admin-layout>

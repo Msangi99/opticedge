@@ -6,8 +6,11 @@ use App\Models\AgentAssignment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\Expense;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Purchase;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardFinancialService
 {
@@ -115,6 +118,244 @@ class DashboardFinancialService
             'gross_profit' => $this->grossProfit(),
             'total_expenses' => $this->totalExpenses(),
             'net_profit' => $this->netProfit(),
+            'total_purchase_buy_price' => $this->totalPurchaseBuyPrice(),
+            'total_products_in_purchases' => $this->totalProductsInPurchases(),
         ];
+    }
+
+    /**
+     * Calculate total sales from Orders, DistributionSales, and AgentSales for a date range.
+     */
+    private function calculateSalesForPeriod(Carbon $startDate, Carbon $endDate): float
+    {
+        $start = $startDate->copy()->startOfDay();
+        $end = $endDate->copy()->endOfDay();
+
+        // Orders: use created_at
+        $ordersSales = Order::whereBetween('created_at', [$start, $end])
+            ->sum('total_price');
+
+        // DistributionSales: use date field
+        $distributionSales = DistributionSale::whereBetween('date', [$start, $end])
+            ->sum('total_selling_value');
+
+        // AgentSales: use date field
+        $agentSales = AgentSale::whereBetween('date', [$start, $end])
+            ->sum('total_selling_value');
+
+        return (float) ($ordersSales + $distributionSales + $agentSales);
+    }
+
+    /**
+     * Calculate percentage change between two values.
+     */
+    private function calculatePercentageChange(float $current, float $previous): ?float
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100.0 : null;
+        }
+        return (($current - $previous) / $previous) * 100;
+    }
+
+    /**
+     * Get today's sales vs yesterday.
+     */
+    public function getTodaySales(): array
+    {
+        $today = Carbon::today();
+        $yesterday = Carbon::yesterday();
+
+        $todaySales = $this->calculateSalesForPeriod($today, $today);
+        $yesterdaySales = $this->calculateSalesForPeriod($yesterday, $yesterday);
+        $percentageChange = $this->calculatePercentageChange($todaySales, $yesterdaySales);
+
+        return [
+            'sales' => $todaySales,
+            'previous_sales' => $yesterdaySales,
+            'percentage_change' => $percentageChange,
+            'is_increase' => $percentageChange !== null && $percentageChange >= 0,
+        ];
+    }
+
+    /**
+     * Get Weekly To Date sales vs previous week same period.
+     */
+    public function getWTDSales(): array
+    {
+        $now = Carbon::now();
+        $startOfWeek = $now->copy()->startOfWeek();
+        $endOfWeek = $now->copy();
+
+        // Previous week same period: from start of previous week to same day of previous week
+        $previousWeekStart = $now->copy()->subWeek()->startOfWeek();
+        $previousWeekEnd = $now->copy()->subWeek();
+
+        $wtdSales = $this->calculateSalesForPeriod($startOfWeek, $endOfWeek);
+        $previousWeekSales = $this->calculateSalesForPeriod($previousWeekStart, $previousWeekEnd);
+        $percentageChange = $this->calculatePercentageChange($wtdSales, $previousWeekSales);
+
+        return [
+            'sales' => $wtdSales,
+            'previous_sales' => $previousWeekSales,
+            'percentage_change' => $percentageChange,
+            'is_increase' => $percentageChange !== null && $percentageChange >= 0,
+        ];
+    }
+
+    /**
+     * Get Monthly To Date sales vs previous month same period.
+     */
+    public function getMTDSales(): array
+    {
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy();
+
+        // Previous month same period
+        $previousMonthStart = $startOfMonth->copy()->subMonth();
+        $previousMonthEnd = $endOfMonth->copy()->subMonth();
+
+        $mtdSales = $this->calculateSalesForPeriod($startOfMonth, $endOfMonth);
+        $previousMonthSales = $this->calculateSalesForPeriod($previousMonthStart, $previousMonthEnd);
+        $percentageChange = $this->calculatePercentageChange($mtdSales, $previousMonthSales);
+
+        return [
+            'sales' => $mtdSales,
+            'previous_sales' => $previousMonthSales,
+            'percentage_change' => $percentageChange,
+            'is_increase' => $percentageChange !== null && $percentageChange >= 0,
+        ];
+    }
+
+    /**
+     * Get Yearly To Date sales vs previous year same period.
+     */
+    public function getYTDSales(): array
+    {
+        $now = Carbon::now();
+        $startOfYear = $now->copy()->startOfYear();
+        $endOfYear = $now->copy();
+
+        // Previous year same period
+        $previousYearStart = $startOfYear->copy()->subYear();
+        $previousYearEnd = $endOfYear->copy()->subYear();
+
+        $ytdSales = $this->calculateSalesForPeriod($startOfYear, $endOfYear);
+        $previousYearSales = $this->calculateSalesForPeriod($previousYearStart, $previousYearEnd);
+        $percentageChange = $this->calculatePercentageChange($ytdSales, $previousYearSales);
+
+        return [
+            'sales' => $ytdSales,
+            'previous_sales' => $previousYearSales,
+            'percentage_change' => $percentageChange,
+            'is_increase' => $percentageChange !== null && $percentageChange >= 0,
+        ];
+    }
+
+    /**
+     * Get all sales metrics.
+     */
+    public function getSalesMetrics(): array
+    {
+        return [
+            'today' => $this->getTodaySales(),
+            'wtd' => $this->getWTDSales(),
+            'mtd' => $this->getMTDSales(),
+            'ytd' => $this->getYTDSales(),
+        ];
+    }
+
+    /**
+     * Get top selling products (models) by quantity sold within a date range.
+     */
+    public function getTopSellingProducts(?Carbon $startDate = null, ?Carbon $endDate = null, int $limit = 10): array
+    {
+        $start = $startDate ? $startDate->copy()->startOfDay() : Carbon::now()->subMonths(1)->startOfDay();
+        $end = $endDate ? $endDate->copy()->endOfDay() : Carbon::now()->endOfDay();
+
+        // Get sales from Orders (via OrderItems)
+        $orderSales = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->whereBetween('orders.created_at', [$start, $end])
+            ->select(
+                'products.id',
+                'products.name as model',
+                DB::raw('CAST(SUM(order_items.quantity) AS UNSIGNED) as total_quantity')
+            )
+            ->groupBy('products.id', 'products.name');
+
+        // Get sales from DistributionSales
+        $distributionSales = DB::table('distribution_sales')
+            ->join('products', 'distribution_sales.product_id', '=', 'products.id')
+            ->whereBetween('distribution_sales.date', [$start, $end])
+            ->select(
+                'products.id',
+                'products.name as model',
+                DB::raw('CAST(SUM(distribution_sales.quantity_sold) AS UNSIGNED) as total_quantity')
+            )
+            ->groupBy('products.id', 'products.name');
+
+        // Get sales from AgentSales
+        $agentSales = DB::table('agent_sales')
+            ->join('products', 'agent_sales.product_id', '=', 'products.id')
+            ->whereBetween('agent_sales.date', [$start, $end])
+            ->select(
+                'products.id',
+                'products.name as model',
+                DB::raw('CAST(SUM(agent_sales.quantity_sold) AS UNSIGNED) as total_quantity')
+            )
+            ->groupBy('products.id', 'products.name');
+
+        // Combine all sales by product
+        $allSales = collect();
+        
+        // Add order sales
+        foreach ($orderSales->get() as $sale) {
+            $allSales->push($sale);
+        }
+        
+        // Add distribution sales
+        foreach ($distributionSales->get() as $sale) {
+            $allSales->push($sale);
+        }
+        
+        // Add agent sales
+        foreach ($agentSales->get() as $sale) {
+            $allSales->push($sale);
+        }
+
+        // Group by product ID and sum quantities
+        $combined = $allSales
+            ->groupBy('id')
+            ->map(function ($group) {
+                return [
+                    'id' => $group->first()->id,
+                    'model' => $group->first()->model,
+                    'total_quantity' => (int) $group->sum('total_quantity'),
+                ];
+            })
+            ->sortByDesc('total_quantity')
+            ->take($limit)
+            ->values()
+            ->all();
+
+        return $combined;
+    }
+
+    /**
+     * Get total buy price of all purchases (regardless of status).
+     */
+    public function totalPurchaseBuyPrice(): float
+    {
+        return (float) Purchase::sum(DB::raw('quantity * unit_price'));
+    }
+
+    /**
+     * Get total products count in all purchases.
+     */
+    public function totalProductsInPurchases(): int
+    {
+        return (int) Purchase::sum('quantity');
     }
 }

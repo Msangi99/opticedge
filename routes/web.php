@@ -48,8 +48,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             $totalOrders = \App\Models\Order::count();
             $totalProducts = \App\Models\Product::count();
             $recentOrders = \App\Models\Order::with('user')->latest()->take(5)->get();
-            $financialMetrics = app(\App\Services\DashboardFinancialService::class)->getMetrics();
-            return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics'));
+            $financialService = app(\App\Services\DashboardFinancialService::class);
+            $financialMetrics = $financialService->getMetrics();
+            $salesMetrics = $financialService->getSalesMetrics();
+            
+            // Get date range from request or use defaults
+            $startDate = request('start_date') ? \Carbon\Carbon::parse(request('start_date')) : \Carbon\Carbon::now()->subMonths(1);
+            $endDate = request('end_date') ? \Carbon\Carbon::parse(request('end_date')) : \Carbon\Carbon::now();
+            $topProducts = $financialService->getTopSellingProducts($startDate, $endDate, 10);
+            
+            return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics', 'salesMetrics', 'topProducts', 'startDate', 'endDate'));
         }
         )->name('dashboard');
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
