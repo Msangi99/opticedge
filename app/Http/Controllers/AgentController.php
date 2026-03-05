@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgentAssignment;
 use App\Models\AgentSale;
+use App\Models\PendingSale;
 use App\Models\Purchase;
 use App\Services\DistributionSaleService;
 use Illuminate\Http\Request;
@@ -60,8 +61,8 @@ class AgentController extends Controller
         $totalSell = $quantitySold * $validated['selling_price'];
         $profit = $totalSell - $totalBuy;
 
-        AgentSale::create([
-            'agent_id' => Auth::id(),
+        // Save to pending sales instead of agent_sales
+        PendingSale::create([
             'customer_name' => $validated['customer_name'],
             'seller_name' => Auth::user()->name,
             'product_id' => $assignment->product_id,
@@ -71,13 +72,11 @@ class AgentController extends Controller
             'total_purchase_value' => $totalBuy,
             'total_selling_value' => $totalSell,
             'profit' => $profit,
-            'commission_paid' => 0,
-            'balance' => $totalSell,
             'date' => now()->toDateString(),
         ]);
 
         $assignment->increment('quantity_sold', $quantitySold);
 
-        return redirect()->route('agent.dashboard')->with('success', 'Sale recorded. It will appear in admin Agent Sales.');
+        return redirect()->route('agent.dashboard')->with('success', 'Sale recorded. It will appear in admin Pending Sales for payment option selection.');
     }
 }

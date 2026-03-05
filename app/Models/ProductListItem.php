@@ -17,6 +17,7 @@ class ProductListItem extends Model
         'product_id',
         'sold_at',
         'agent_sale_id',
+        'pending_sale_id',
     ];
 
     public function purchase()
@@ -46,6 +47,11 @@ class ProductListItem extends Model
     public function agentSale()
     {
         return $this->belongsTo(AgentSale::class, 'agent_sale_id');
+    }
+
+    public function pendingSale()
+    {
+        return $this->belongsTo(PendingSale::class, 'pending_sale_id');
     }
 
     public function isSold(): bool

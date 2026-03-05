@@ -637,7 +637,7 @@ class StockController extends Controller
         }
 
         // Move to agent_sales table
-        AgentSale::create([
+        $agentSale = AgentSale::create([
             'customer_name' => $pendingSale->customer_name,
             'seller_name' => $pendingSale->seller_name,
             'product_id' => $pendingSale->product_id,
@@ -650,6 +650,13 @@ class StockController extends Controller
             'balance' => 0, // Already paid via payment option
             'date' => $pendingSale->date,
         ]);
+
+        // Update product_list items linked to this pending sale
+        \App\Models\ProductListItem::where('pending_sale_id', $pendingSale->id)
+            ->update([
+                'agent_sale_id' => $agentSale->id,
+                'pending_sale_id' => null,
+            ]);
 
         // Delete from pending sales
         $pendingSale->delete();

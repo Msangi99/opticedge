@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductListItem;
 use App\Models\Product;
 use App\Models\AgentSale;
+use App\Models\PendingSale;
 use App\Models\Purchase;
 use App\Services\DistributionSaleService;
 use Illuminate\Http\Request;
@@ -297,8 +298,8 @@ class ProductListController extends Controller
         $agent = Auth::user();
 
         $sale = DB::transaction(function () use ($item, $product, $validated, $buyPrice, $totalSell, $totalBuy, $profit, $agent) {
-            $sale = AgentSale::create([
-                'agent_id' => $agent->id,
+            // Save to pending sales instead of agent_sales
+            $sale = PendingSale::create([
                 'customer_name' => $validated['customer_name'],
                 'seller_name' => $agent->name,
                 'product_id' => $product->id,
@@ -308,14 +309,12 @@ class ProductListController extends Controller
                 'total_purchase_value' => $totalBuy,
                 'total_selling_value' => $totalSell,
                 'profit' => $profit,
-                'commission_paid' => 0,
-                'balance' => $totalSell,
                 'date' => now()->toDateString(),
             ]);
 
             $item->update([
                 'sold_at' => now(),
-                'agent_sale_id' => $sale->id,
+                'pending_sale_id' => $sale->id,
             ]);
 
             $product->decrement('stock_quantity'); // keep product.stock_quantity in sync if used elsewhere
@@ -324,9 +323,9 @@ class ProductListController extends Controller
         });
 
         return response()->json([
-            'message' => 'Sale recorded.',
+            'message' => 'Sale recorded. Waiting for payment option selection.',
             'data' => [
-                'agent_sale_id' => $sale->id,
+                'pending_sale_id' => $sale->id,
                 'customer_name' => $sale->customer_name,
                 'selling_price' => $sale->selling_price,
             ],
