@@ -26,10 +26,10 @@
                             </div>
                         @endif
 
-                        <!-- Transcript Number -->
+                        <!-- Invoice Number -->
                         <div class="col-span-2">
-                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Transcript Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter transcript number">
+                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
+                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter invoice number">
                             @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 

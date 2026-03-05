@@ -26,7 +26,7 @@
             <table class="w-full text-left min-w-[1200px]">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Transcript Number</th>
+                        <th class="px-6 py-3">Invoice Number</th>
                         <th class="px-6 py-3">Date</th>
                         <th class="px-6 py-3">Distributor</th>
                         <th class="px-6 py-3">Product</th>

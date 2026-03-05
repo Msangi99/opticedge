@@ -31,9 +31,14 @@ class PaymentOptionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'type' => 'required|in:mobile,bank',
+            'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
+            'opening_balance' => 'nullable|numeric|min:0',
         ]);
+
+        $openingBalance = $validated['opening_balance'] ?? 0;
+        $validated['opening_balance'] = $openingBalance;
+        $validated['balance'] = $openingBalance; // Set initial balance to opening balance
 
         PaymentOption::create($validated);
 
@@ -63,7 +68,7 @@ class PaymentOptionController extends Controller
     public function update(Request $request, PaymentOption $paymentOption)
     {
         $validated = $request->validate([
-            'type' => 'required|in:mobile,bank',
+            'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
         ]);
 

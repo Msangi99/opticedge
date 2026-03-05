@@ -10,20 +10,24 @@ class PaymentOption extends Model
         'type',
         'name',
         'balance',
+        'opening_balance',
     ];
 
     protected $casts = [
         'balance' => 'decimal:2',
+        'opening_balance' => 'decimal:2',
     ];
 
     public const TYPE_MOBILE = 'mobile';
     public const TYPE_BANK = 'bank';
+    public const TYPE_CASH = 'cash';
 
     public static function types(): array
     {
         return [
             self::TYPE_MOBILE => 'Mobile',
             self::TYPE_BANK => 'Bank',
+            self::TYPE_CASH => 'Cash',
         ];
     }
 

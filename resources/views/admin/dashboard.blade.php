@@ -268,14 +268,15 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach($paymentOptions as $option)
-                        <div class="p-4 rounded-lg border {{ $option->type === 'mobile' ? 'bg-blue-50 border-blue-100' : 'bg-green-50 border-green-100' }}">
+                        <div class="p-4 rounded-lg border {{ $option->type === 'mobile' ? 'bg-blue-50 border-blue-100' : ($option->type === 'bank' ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100') }}">
                             <div class="flex items-center justify-between mb-2">
                                 <p class="text-sm font-medium text-slate-600">{{ $option->name }}</p>
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : ($option->type === 'bank' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') }}">
                                     {{ ucfirst($option->type) }}
                                 </span>
                             </div>
                             <p class="text-2xl font-bold text-slate-900">{{ number_format($option->balance ?? 0, 0) }} TZS</p>
+                            <p class="text-xs text-slate-500 mt-1">Opening Balance: {{ number_format($option->opening_balance ?? 0, 0) }} TZS</p>
                         </div>
                     @endforeach
                 </div>

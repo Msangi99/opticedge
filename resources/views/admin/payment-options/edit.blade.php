@@ -3,8 +3,8 @@
         <div class="max-w-2xl mx-auto">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Edit Payment Option</h1>
-                    <p class="mt-2 text-slate-600">Update payment option details.</p>
+                    <h1 class="text-2xl font-bold text-slate-900">Edit Channel</h1>
+                    <p class="mt-2 text-slate-600">Update channel details.</p>
                 </div>
                 <a href="{{ route('admin.payment-options.index') }}" class="text-slate-600 hover:text-slate-900">Back to List</a>
             </div>
@@ -22,6 +22,7 @@
                                 <option value="">Select Type...</option>
                                 <option value="mobile" {{ old('type', $paymentOption->type) === 'mobile' ? 'selected' : '' }}>Mobile</option>
                                 <option value="bank" {{ old('type', $paymentOption->type) === 'bank' ? 'selected' : '' }}>Bank</option>
+                                <option value="cash" {{ old('type', $paymentOption->type) === 'cash' ? 'selected' : '' }}>Cash</option>
                             </select>
                             @error('type')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -42,7 +43,7 @@
                     <div class="mt-6 flex gap-3">
                         <button type="submit"
                             class="px-4 py-2 bg-[#fa8900] text-white font-medium rounded-md hover:bg-[#e67d00] transition-colors">
-                            Update Payment Option
+                            Update Channel
                         </button>
                         <a href="{{ route('admin.payment-options.index') }}"
                             class="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-md hover:bg-slate-200 transition-colors">

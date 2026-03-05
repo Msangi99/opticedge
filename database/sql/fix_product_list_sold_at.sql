@@ -33,4 +33,5 @@ WHERE pl.agent_sale_id IS NOT NULL
 -- UPDATE product_list pl
 -- INNER JOIN agent_sales s ON s.id = pl.agent_sale_id
 -- SET pl.sold_at = COALESCE(pl.sold_at, s.created_at)
+-- Mys
 -- WHERE pl.agent_sale_id IS NOT NULL AND pl.sold_at IS NULL;

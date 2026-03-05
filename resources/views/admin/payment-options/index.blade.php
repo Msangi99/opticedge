@@ -2,15 +2,15 @@
     <div class="py-12 px-8">
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Payment Options</h1>
-                <p class="mt-2 text-slate-600">Manage payment options (Mobile and Bank).</p>
+                <h1 class="text-2xl font-bold text-slate-900">Channels</h1>
+                <p class="mt-2 text-slate-600">Manage payment channels (Mobile, Bank, and Cash).</p>
             </div>
             <a href="{{ route('admin.payment-options.create') }}"
                 class="inline-flex items-center gap-2 px-4 py-2 bg-[#fa8900] text-white font-medium rounded-md hover:bg-[#e67d00] transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Add Payment Option
+                Add Channel
             </a>
         </div>
 
@@ -33,7 +33,7 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">{{ $option->name }}</td>
                             <td class="px-6 py-3">
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : ($option->type === 'bank' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') }}">
                                     {{ ucfirst($option->type) }}
                                 </span>
                             </td>
@@ -52,7 +52,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="px-6 py-8 text-center text-slate-500">
-                                No payment options yet. <a href="{{ route('admin.payment-options.create') }}" class="text-[#fa8900] hover:underline">Add your first payment option</a>
+                                No channels yet. <a href="{{ route('admin.payment-options.create') }}" class="text-[#fa8900] hover:underline">Add your first channel</a>
                             </td>
                         </tr>
                     @endforelse
