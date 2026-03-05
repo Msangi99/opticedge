@@ -34,15 +34,17 @@
                         </div>
 
                         <div>
-                            <label for="cash_used" class="block text-sm font-medium text-slate-700 mb-1">Cash Used</label>
-                            <select name="cash_used" id="cash_used" required
+                            <label for="payment_option_id" class="block text-sm font-medium text-slate-700 mb-1">Payment Option</label>
+                            <select name="payment_option_id" id="payment_option_id" required
                                 class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
-                                <option value="">Select...</option>
-                                @foreach(\App\Models\Expense::cashOptions() as $value => $label)
-                                    <option value="{{ $value }}" {{ old('cash_used') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                <option value="">Select Payment Option...</option>
+                                @foreach($paymentOptions as $option)
+                                    <option value="{{ $option->id }}" {{ old('payment_option_id') == $option->id ? 'selected' : '' }}>
+                                        {{ $option->name }} ({{ ucfirst($option->type) }}) - Balance: {{ number_format($option->balance ?? 0, 0) }} TZS
+                                    </option>
                                 @endforeach
                             </select>
-                            @error('cash_used')
+                            @error('payment_option_id')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
                         </div>

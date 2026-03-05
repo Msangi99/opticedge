@@ -10,6 +10,7 @@ class Expense extends Model
         'activity',
         'amount',
         'cash_used',
+        'payment_option_id',
         'date',
     ];
 
@@ -22,5 +23,10 @@ class Expense extends Model
             self::CASH_SYSTEM => 'System',
             self::CASH_CASH => 'Cash',
         ];
+    }
+
+    public function paymentOption()
+    {
+        return $this->belongsTo(PaymentOption::class);
     }
 }

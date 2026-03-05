@@ -326,6 +326,8 @@
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Purchases</a>
                                 <a href="{{ route('admin.stock.distribution') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Distribution</a>
+                                <a href="{{ route('admin.stock.pending-sales') }}"
+                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Pending Sales</a>
                                 <a href="{{ route('admin.stock.agent-sales') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Sales</a>
                             </div>
@@ -337,6 +339,16 @@
                 <div>
                     <h3 class="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Operations</h3>
                     <div class="space-y-1">
+                        <a href="{{ route('admin.payment-options.index') }}"
+                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Payment Options
+                        </a>
                         <a href="{{ route('admin.expenses.index') }}"
                             class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
                             <svg xmlns="http://www.w3.org/2000/svg"

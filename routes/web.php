@@ -57,7 +57,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             $endDate = request('end_date') ? \Carbon\Carbon::parse(request('end_date')) : \Carbon\Carbon::now();
             $topProducts = $financialService->getTopSellingProducts($startDate, $endDate, 10);
             
-            return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics', 'salesMetrics', 'topProducts', 'startDate', 'endDate'));
+            // Get payment options with balances
+            $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+            
+            return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics', 'salesMetrics', 'topProducts', 'startDate', 'endDate', 'paymentOptions'));
         }
         )->name('dashboard');
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
@@ -99,6 +102,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         // Expenses
         Route::resource('expenses', App\Http\Controllers\Admin\ExpenseController::class)->except(['show']);
 
+        // Payment Options
+        Route::resource('payment-options', App\Http\Controllers\Admin\PaymentOptionController::class)->except(['show']);
+
         // Stock Management
         Route::prefix('stock')->name('stock.')->group(function () {
             Route::get('stocks', [App\Http\Controllers\Admin\StockController::class, 'stocks'])->name('stocks');
@@ -124,6 +130,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::put('distribution/{id}', [App\Http\Controllers\Admin\StockController::class, 'updateDistribution'])->name('update-distribution');
             Route::patch('distribution/{id}/status', [App\Http\Controllers\Admin\StockController::class, 'updateDistributionStatus'])->name('distribution-update-status');
 
+            // Pending Sales
+            Route::get('pending-sales', [App\Http\Controllers\Admin\StockController::class, 'pendingSales'])->name('pending-sales');
+            Route::post('pending-sales/{id}/save', [App\Http\Controllers\Admin\StockController::class, 'savePendingSale'])->name('save-pending-sale');
+            
             // Agent Sales
             Route::get('agent-sales', [App\Http\Controllers\Admin\StockController::class , 'agentSales'])->name('agent-sales');
             Route::get('agent-sales/create', [App\Http\Controllers\Admin\StockController::class, 'createAgentSale'])->name('create-agent-sale');

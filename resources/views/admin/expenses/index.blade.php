@@ -25,7 +25,7 @@
                         <th class="px-6 py-3">Date</th>
                         <th class="px-6 py-3">Activity</th>
                         <th class="px-6 py-3">Amount (TZS)</th>
-                        <th class="px-6 py-3">Cash Used</th>
+                        <th class="px-6 py-3">Payment Option</th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
@@ -36,9 +36,15 @@
                             <td class="px-6 py-3 font-medium">{{ $expense->activity }}</td>
                             <td class="px-6 py-3 font-bold">{{ number_format($expense->amount, 0) }}</td>
                             <td class="px-6 py-3">
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $expense->cash_used === 'system' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800' }}">
-                                    {{ $expense->cash_used === 'system' ? 'System' : 'Cash' }}
-                                </span>
+                                @if($expense->paymentOption)
+                                    <span class="px-2 py-1 rounded text-xs font-medium {{ $expense->paymentOption->type === 'mobile' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                        {{ $expense->paymentOption->name }} ({{ ucfirst($expense->paymentOption->type) }})
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800">
+                                        N/A
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-3 text-right flex gap-2 justify-end">
                                 <a href="{{ route('admin.expenses.edit', $expense) }}"

@@ -218,8 +218,8 @@
                     </div>
                     <div class="p-4 rounded-lg bg-violet-50 border border-violet-100">
                         <p class="text-sm font-medium text-slate-600">Cash in Hand</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['cash_in_hand'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Total value of stocks given to agents</p>
+                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format(isset($paymentOptions) ? $paymentOptions->sum('balance') : $financialMetrics['cash_in_hand'], 0) }} TZS</p>
+                        <p class="text-xs text-slate-500 mt-1">Total amount in all payment options</p>
                     </div>
                 </div>
                 <div class="mt-4 pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -252,6 +252,37 @@
                         <p class="text-sm font-medium text-slate-600">Total Products in Purchases</p>
                         <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_products_in_purchases'], 0) }}</p>
                         <p class="text-xs text-slate-500 mt-1">Total products in all purchases</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Cash in Hand Section -->
+        @if(isset($paymentOptions) && $paymentOptions->count() > 0)
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h3 class="font-bold text-slate-800">Cash in Hand</h3>
+                <p class="text-sm text-slate-500 mt-0.5">Payment options and their current balances</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($paymentOptions as $option)
+                        <div class="p-4 rounded-lg border {{ $option->type === 'mobile' ? 'bg-blue-50 border-blue-100' : 'bg-green-50 border-green-100' }}">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-sm font-medium text-slate-600">{{ $option->name }}</p>
+                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                    {{ ucfirst($option->type) }}
+                                </span>
+                            </div>
+                            <p class="text-2xl font-bold text-slate-900">{{ number_format($option->balance ?? 0, 0) }} TZS</p>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium text-slate-600">Total Cash in Hand</p>
+                        <p class="text-xl font-bold text-slate-900">{{ number_format($paymentOptions->sum('balance'), 0) }} TZS</p>
                     </div>
                 </div>
             </div>

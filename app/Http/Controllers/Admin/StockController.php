@@ -596,26 +596,64 @@ class StockController extends Controller
             'product_id' => 'required|exists:products,id',
             'quantity_sold' => 'required|integer|min:1',
             'selling_price' => 'required|numeric|min:0',
-            'paid_amount' => 'nullable|numeric|min:0', // Note: Schema calls it total_selling_value and balance?
-            // Agent sales schema has: total_selling_value, balance. No explicit 'paid_amount' column in create_stock_tables for agnet_sales?
-            // Let's check schema again.
-            // agent_sales: total_selling_value, balance. commission_paid.
-            // It seems for agent sales, "paid_amount" might not be the right term if it's credit sales?
-            // "total_selling_value" is Amount to collect.
-            // Let's assume for now we just store the basic info.
         ]);
 
+        $service = app(\App\Services\DistributionSaleService::class);
+        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']);
+        
+        $validated['purchase_price'] = $buyPrice;
         $validated['total_selling_value'] = $validated['quantity_sold'] * $validated['selling_price'];
-        // Assuming balance is initially total value if nothing paid? 
-        // Or if we have a paid field? Schema didn't have specific 'paid_amount' for agent_sales like distribution did.
-        // It has 'balance'. So maybe start with balance = total.
-        $validated['balance'] = $validated['total_selling_value'];
+        $validated['total_purchase_value'] = $validated['quantity_sold'] * $buyPrice;
+        $validated['profit'] = $validated['total_selling_value'] - $validated['total_purchase_value'];
 
-        AgentSale::create($validated);
+        // Save to pending sales instead of agent_sales
+        \App\Models\PendingSale::create($validated);
 
         // Keep product.stock_quantity in sync for Category Management / dashboards
         \App\Models\Product::where('id', $validated['product_id'])->decrement('stock_quantity', $validated['quantity_sold']);
 
-        return redirect()->route('admin.stock.agent-sales')->with('success', 'Agent sale recorded successfully.');
+        return redirect()->route('admin.stock.pending-sales')->with('success', 'Sale recorded successfully. Please select payment option and save.');
+    }
+
+    public function pendingSales()
+    {
+        $pendingSales = \App\Models\PendingSale::with(['product.category', 'paymentOption'])->latest('date')->get();
+        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        return view('admin.stock.pending-sales', compact('pendingSales', 'paymentOptions'));
+    }
+
+    public function savePendingSale(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'payment_option_id' => 'required|exists:payment_options,id',
+        ]);
+
+        $pendingSale = \App\Models\PendingSale::findOrFail($id);
+        $pendingSale->update($validated);
+
+        // Add amount to payment option balance
+        if ($pendingSale->paymentOption) {
+            $pendingSale->paymentOption->increment('balance', $pendingSale->total_selling_value);
+        }
+
+        // Move to agent_sales table
+        AgentSale::create([
+            'customer_name' => $pendingSale->customer_name,
+            'seller_name' => $pendingSale->seller_name,
+            'product_id' => $pendingSale->product_id,
+            'quantity_sold' => $pendingSale->quantity_sold,
+            'purchase_price' => $pendingSale->purchase_price,
+            'selling_price' => $pendingSale->selling_price,
+            'total_purchase_value' => $pendingSale->total_purchase_value,
+            'total_selling_value' => $pendingSale->total_selling_value,
+            'profit' => $pendingSale->profit,
+            'balance' => 0, // Already paid via payment option
+            'date' => $pendingSale->date,
+        ]);
+
+        // Delete from pending sales
+        $pendingSale->delete();
+
+        return redirect()->route('admin.stock.pending-sales')->with('success', 'Sale saved successfully. Amount added to payment option balance.');
     }
 }

@@ -10,13 +10,14 @@ class ExpenseController extends Controller
 {
     public function index()
     {
-        $expenses = Expense::latest('date')->latest('id')->get();
+        $expenses = Expense::with('paymentOption')->latest('date')->latest('id')->get();
         return view('admin.expenses.index', compact('expenses'));
     }
 
     public function create()
     {
-        return view('admin.expenses.create');
+        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        return view('admin.expenses.create', compact('paymentOptions'));
     }
 
     public function store(Request $request)
@@ -24,18 +25,24 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'activity' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'cash_used' => 'required|in:system,cash',
+            'payment_option_id' => 'required|exists:payment_options,id',
             'date' => 'required|date',
         ]);
 
-        Expense::create($validated);
+        $expense = Expense::create($validated);
+
+        // Deduct amount from payment option balance
+        if ($expense->paymentOption) {
+            $expense->paymentOption->decrement('balance', $validated['amount']);
+        }
 
         return redirect()->route('admin.expenses.index')->with('success', 'Expense added successfully.');
     }
 
     public function edit(Expense $expense)
     {
-        return view('admin.expenses.edit', compact('expense'));
+        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        return view('admin.expenses.edit', compact('expense', 'paymentOptions'));
     }
 
     public function update(Request $request, Expense $expense)
@@ -43,17 +50,49 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'activity' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'cash_used' => 'required|in:system,cash',
+            'payment_option_id' => 'required|exists:payment_options,id',
             'date' => 'required|date',
         ]);
 
+        $oldAmount = $expense->amount;
+        $oldPaymentOptionId = $expense->payment_option_id;
+
         $expense->update($validated);
+
+        // Adjust payment option balances
+        if ($oldPaymentOptionId && $oldPaymentOptionId != $validated['payment_option_id']) {
+            // Return old amount to old payment option
+            $oldPaymentOption = \App\Models\PaymentOption::find($oldPaymentOptionId);
+            if ($oldPaymentOption) {
+                $oldPaymentOption->increment('balance', $oldAmount);
+            }
+        } elseif ($oldPaymentOptionId == $validated['payment_option_id']) {
+            // Same payment option, adjust difference
+            $difference = $validated['amount'] - $oldAmount;
+            if ($difference != 0 && $expense->paymentOption) {
+                if ($difference > 0) {
+                    $expense->paymentOption->decrement('balance', $difference);
+                } else {
+                    $expense->paymentOption->increment('balance', abs($difference));
+                }
+            }
+        }
+
+        // Deduct new amount from new payment option
+        if ($oldPaymentOptionId != $validated['payment_option_id'] && $expense->paymentOption) {
+            $expense->paymentOption->decrement('balance', $validated['amount']);
+        }
 
         return redirect()->route('admin.expenses.index')->with('success', 'Expense updated successfully.');
     }
 
     public function destroy(Expense $expense)
     {
+        // Return amount to payment option balance
+        if ($expense->paymentOption) {
+            $expense->paymentOption->increment('balance', $expense->amount);
+        }
+        
         $expense->delete();
         return redirect()->route('admin.expenses.index')->with('success', 'Expense deleted successfully.');
     }
