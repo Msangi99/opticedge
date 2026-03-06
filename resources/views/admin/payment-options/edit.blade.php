@@ -38,6 +38,16 @@
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
                         </div>
+
+                        <div>
+                            <label for="opening_balance" class="block text-sm font-medium text-slate-700 mb-1">Opening Balance (TZS)</label>
+                            <input type="number" name="opening_balance" id="opening_balance" value="{{ old('opening_balance', $paymentOption->opening_balance ?? 0) }}" min="0" step="0.01"
+                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
+                            <p class="text-xs text-slate-500 mt-1">The initial balance when this channel was created. Current balance: {{ number_format($paymentOption->balance ?? 0, 0) }} TZS</p>
+                            @error('opening_balance')
+                                <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="mt-6 flex gap-3">

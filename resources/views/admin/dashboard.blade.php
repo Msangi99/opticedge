@@ -268,6 +268,14 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach($paymentOptions as $option)
+                        @php
+                            $currentBalance = $option->balance ?? 0;
+                            $openingBalance = $option->opening_balance ?? 0;
+                            $difference = $currentBalance - $openingBalance;
+                            $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
+                            $isIncrease = $difference > 0;
+                            $isDecrease = $difference < 0;
+                        @endphp
                         <div class="p-4 rounded-lg border {{ $option->type === 'mobile' ? 'bg-blue-50 border-blue-100' : ($option->type === 'bank' ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100') }}">
                             <div class="flex items-center justify-between mb-2">
                                 <p class="text-sm font-medium text-slate-600">{{ $option->name }}</p>
@@ -275,8 +283,30 @@
                                     {{ ucfirst($option->type) }}
                                 </span>
                             </div>
-                            <p class="text-2xl font-bold text-slate-900">{{ number_format($option->balance ?? 0, 0) }} TZS</p>
-                            <p class="text-xs text-slate-500 mt-1">Opening Balance: {{ number_format($option->opening_balance ?? 0, 0) }} TZS</p>
+                            <p class="text-2xl font-bold text-slate-900">{{ number_format($currentBalance, 0) }} TZS</p>
+                            <div class="mt-2 pt-2 border-t border-slate-200 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-medium text-slate-600">Opening Balance:</p>
+                                    <p class="text-xs font-semibold text-slate-800">{{ number_format($openingBalance, 0) }} TZS</p>
+                                </div>
+                                @if($difference != 0)
+                                    <div class="flex items-center gap-1">
+                                        @if($isIncrease)
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                            <span class="text-xs font-semibold text-green-600">Imepanda {{ number_format(abs($difference), 0) }} TZS ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                        @elseif($isDecrease)
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                            </svg>
+                                            <span class="text-xs font-semibold text-red-600">Imeshuka {{ number_format(abs($difference), 0) }} TZS ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <p class="text-xs text-slate-500">Hakuna mabadiliko</p>
+                                @endif
+                            </div>
                         </div>
                     @endforeach
                 </div>

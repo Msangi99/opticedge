@@ -70,7 +70,11 @@ class PaymentOptionController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
+            'opening_balance' => 'nullable|numeric|min:0',
         ]);
+
+        $openingBalance = $validated['opening_balance'] ?? $paymentOption->opening_balance ?? 0;
+        $validated['opening_balance'] = $openingBalance;
 
         $paymentOption->update($validated);
 

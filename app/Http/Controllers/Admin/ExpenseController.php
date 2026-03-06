@@ -29,6 +29,9 @@ class ExpenseController extends Controller
             'date' => 'required|date',
         ]);
 
+        // Set cash_used to null since we're using payment_option_id now
+        $validated['cash_used'] = null;
+
         $expense = Expense::create($validated);
 
         // Deduct amount from payment option balance
@@ -53,6 +56,9 @@ class ExpenseController extends Controller
             'payment_option_id' => 'required|exists:payment_options,id',
             'date' => 'required|date',
         ]);
+
+        // Set cash_used to null since we're using payment_option_id now
+        $validated['cash_used'] = null;
 
         $oldAmount = $expense->amount;
         $oldPaymentOptionId = $expense->payment_option_id;

@@ -24,12 +24,22 @@
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3">Name</th>
                         <th class="px-6 py-3">Type</th>
-                        <th class="px-6 py-3">Balance (TZS)</th>
+                        <th class="px-6 py-3">Opening Balance (TZS)</th>
+                        <th class="px-6 py-3">Current Balance (TZS)</th>
+                        <th class="px-6 py-3">Change</th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($paymentOptions as $option)
+                        @php
+                            $currentBalance = $option->balance ?? 0;
+                            $openingBalance = $option->opening_balance ?? 0;
+                            $difference = $currentBalance - $openingBalance;
+                            $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
+                            $isIncrease = $difference > 0;
+                            $isDecrease = $difference < 0;
+                        @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">{{ $option->name }}</td>
                             <td class="px-6 py-3">
@@ -37,7 +47,27 @@
                                     {{ ucfirst($option->type) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($option->balance ?? 0, 0) }}</td>
+                            <td class="px-6 py-3 font-semibold text-slate-700">{{ number_format($openingBalance, 0) }}</td>
+                            <td class="px-6 py-3 font-bold">{{ number_format($currentBalance, 0) }}</td>
+                            <td class="px-6 py-3">
+                                @if($difference > 0)
+                                    <div class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                        </svg>
+                                        <span class="text-xs font-semibold text-green-600">{{ number_format(abs($difference), 0) }} ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                    </div>
+                                @elseif($difference < 0)
+                                    <div class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                        </svg>
+                                        <span class="text-xs font-semibold text-red-600">{{ number_format(abs($difference), 0) }} ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-slate-500">-</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-3 text-right flex gap-2 justify-end">
                                 <a href="{{ route('admin.payment-options.edit', $option) }}"
                                     class="text-blue-600 hover:text-blue-900 font-medium">Edit</a>
@@ -51,7 +81,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-500">
                                 No channels yet. <a href="{{ route('admin.payment-options.create') }}" class="text-[#fa8900] hover:underline">Add your first channel</a>
                             </td>
                         </tr>

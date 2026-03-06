@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\DB;
 
 Artisan::command('inspire', function () {
@@ -26,3 +27,9 @@ Artisan::command('stock:recalc', function () {
     }
     $this->info("Done. Updated {$updated} product(s).");
 })->purpose('Recalculate product stock_quantity from purchases and sales (fix Category Management counts)');
+
+// Update opening balance daily at 6:00 PM
+Schedule::command('payment-options:update-opening-balance')
+    ->dailyAt('18:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->description('Update opening balance for all payment options daily at 6:00 PM');
