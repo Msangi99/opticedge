@@ -33,12 +33,10 @@ class PaymentOptionController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
-            'opening_balance' => 'nullable|numeric|min:0',
         ]);
 
-        $openingBalance = $validated['opening_balance'] ?? 0;
-        $validated['opening_balance'] = $openingBalance;
-        $validated['balance'] = $openingBalance; // Set initial balance to opening balance
+        $validated['opening_balance'] = 0;
+        $validated['balance'] = 0;
 
         PaymentOption::create($validated);
 
@@ -70,11 +68,7 @@ class PaymentOptionController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
-            'opening_balance' => 'nullable|numeric|min:0',
         ]);
-
-        $openingBalance = $validated['opening_balance'] ?? $paymentOption->opening_balance ?? 0;
-        $validated['opening_balance'] = $openingBalance;
 
         $paymentOption->update($validated);
 

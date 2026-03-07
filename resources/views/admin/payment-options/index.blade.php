@@ -25,22 +25,12 @@
                         <th class="px-6 py-3">Name</th>
                         <th class="px-6 py-3">Type</th>
                         <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3">Opening Balance (TZS)</th>
-                        <th class="px-6 py-3">Current Balance (TZS)</th>
-                        <th class="px-6 py-3">Change</th>
+                        <th class="px-6 py-3">Balance (TZS)</th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($paymentOptions as $option)
-                        @php
-                            $currentBalance = $option->balance ?? 0;
-                            $openingBalance = $option->opening_balance ?? 0;
-                            $difference = $currentBalance - $openingBalance;
-                            $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
-                            $isIncrease = $difference > 0;
-                            $isDecrease = $difference < 0;
-                        @endphp
                         <tr class="hover:bg-slate-50 {{ $option->is_hidden ? 'bg-slate-100/70' : '' }}">
                             <td class="px-6 py-3 font-medium">{{ $option->name }}</td>
                             <td class="px-6 py-3">
@@ -55,50 +45,20 @@
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">Visible</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-3 font-semibold text-slate-700">{{ number_format($openingBalance, 0) }}</td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($currentBalance, 0) }}</td>
-                            <td class="px-6 py-3">
-                                @if($difference > 0)
-                                    <div class="flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                        </svg>
-                                        <span class="text-xs font-semibold text-green-600">{{ number_format(abs($difference), 0) }} ({{ number_format(abs($percentageChange), 1) }}%)</span>
-                                    </div>
-                                @elseif($difference < 0)
-                                    <div class="flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                                        </svg>
-                                        <span class="text-xs font-semibold text-red-600">{{ number_format(abs($difference), 0) }} ({{ number_format(abs($percentageChange), 1) }}%)</span>
-                                    </div>
-                                @else
-                                    <span class="text-xs text-slate-500">-</span>
-                                @endif
-                            </td>
+                            <td class="px-6 py-3 font-bold">{{ number_format($option->balance ?? 0, 0) }}</td>
                             <td class="px-6 py-3 text-right">
-                                <div class="flex gap-2 justify-end items-center flex-wrap">
-                                    <form action="{{ route('admin.payment-options.toggle-visibility', $option) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="font-medium {{ $option->is_hidden ? 'text-emerald-600 hover:text-emerald-900' : 'text-slate-600 hover:text-slate-900' }}">
-                                            {{ $option->is_hidden ? 'Show' : 'Hide' }}
-                                        </button>
-                                    </form>
-                                    <a href="{{ route('admin.payment-options.edit', $option) }}"
-                                        class="text-blue-600 hover:text-blue-900 font-medium">Edit</a>
-                                    <form action="{{ route('admin.payment-options.destroy', $option) }}" method="POST" class="inline"
-                                        onsubmit="return confirm('Are you sure you want to delete this payment option?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900 font-medium">Delete</button>
-                                    </form>
-                                </div>
+                                <form action="{{ route('admin.payment-options.toggle-visibility', $option) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="font-medium {{ $option->is_hidden ? 'text-emerald-600 hover:text-emerald-900' : 'text-slate-600 hover:text-slate-900' }}">
+                                        {{ $option->is_hidden ? 'Show' : 'Hide' }}
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">
                                 No channels yet. <a href="{{ route('admin.payment-options.create') }}" class="text-[#fa8900] hover:underline">Add your first channel</a>
                             </td>
                         </tr>
