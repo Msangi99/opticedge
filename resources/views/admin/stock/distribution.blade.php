@@ -11,6 +11,9 @@
         @if(session('success'))
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
+        @if(session('error'))
+            <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
+        @endif
 
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
             <table class="w-full text-left">
@@ -30,11 +33,13 @@
                         <th class="px-6 py-3">Commission</th>
                         <th class="px-6 py-3">Profit</th>
                         <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Channel (Bank)</th>
                         <th class="px-6 py-3">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($distributionSales as $sale)
+                        @php $st = $sale->status ?? 'pending'; @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3">{{ $sale->date }}</td>
                             <td class="px-6 py-3 font-medium">{{ $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A' }}</td>
@@ -50,8 +55,27 @@
                             <td class="px-6 py-3">{{ number_format($sale->commission ?? 0, 0) }}</td>
                             <td class="px-6 py-3 text-green-600">{{ number_format($sale->profit ?? 0, 0) }}</td>
                             <td class="px-6 py-3">
-                                @php $st = $sale->status ?? 'pending'; @endphp
                                 <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $st === 'complete' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">{{ ucfirst($st) }}</span>
+                            </td>
+                            <td class="px-6 py-3">
+                                @if($st === 'pending')
+                                    @if($sale->payment_option_id)
+                                        <span class="text-slate-600">{{ $sale->paymentOption?->name ?? '—' }}</span>
+                                    @else
+                                        <form action="{{ route('admin.stock.distribution-save-channel', $sale->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <select name="payment_option_id" required onchange="this.form.submit()"
+                                                class="text-sm rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
+                                                <option value="">Chagua channel...</option>
+                                                @foreach($bankPaymentOptions as $option)
+                                                    <option value="{{ $option->id }}">{{ $option->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </form>
+                                    @endif
+                                @else
+                                    <span class="text-slate-400">{{ $sale->paymentOption?->name ?? '—' }}</span>
+                                @endif
                             </td>
                             <td class="px-6 py-3 flex gap-2 items-center">
                                 <a href="{{ route('admin.stock.edit-distribution', $sale->id) }}" class="text-blue-600 hover:text-blue-900 text-sm">Edit</a>
@@ -66,7 +90,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="15" class="px-6 py-4 text-center text-slate-500">No distribution sales found.</td>
+                            <td colspan="16" class="px-6 py-4 text-center text-slate-500">No distribution sales found.</td>
                         </tr>
                     @endforelse
                 </tbody>

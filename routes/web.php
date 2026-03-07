@@ -130,6 +130,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('distribution/{id}/edit', [App\Http\Controllers\Admin\StockController::class, 'editDistribution'])->name('edit-distribution');
             Route::put('distribution/{id}', [App\Http\Controllers\Admin\StockController::class, 'updateDistribution'])->name('update-distribution');
             Route::patch('distribution/{id}/status', [App\Http\Controllers\Admin\StockController::class, 'updateDistributionStatus'])->name('distribution-update-status');
+            Route::post('distribution/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveDistributionChannel'])->name('distribution-save-channel');
 
             // Pending Sales
             Route::get('pending-sales', [App\Http\Controllers\Admin\StockController::class, 'pendingSales'])->name('pending-sales');

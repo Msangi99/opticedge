@@ -25,6 +25,7 @@ class DistributionSale extends Model
         'collection_date',
         'collected_amount',
         'balance',
+        'payment_option_id',
         'date',
     ];
 
@@ -41,5 +42,10 @@ class DistributionSale extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function paymentOption()
+    {
+        return $this->belongsTo(PaymentOption::class);
     }
 }

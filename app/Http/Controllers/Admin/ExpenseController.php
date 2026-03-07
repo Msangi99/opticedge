@@ -29,7 +29,7 @@ class ExpenseController extends Controller
             'date' => 'required|date',
         ]);
 
-        // Set cash_used to null since we're using payment_option_id now
+        // We use payment_option_id; cash_used is legacy. Use empty string if DB column not yet nullable.
         $validated['cash_used'] = null;
 
         $expense = Expense::create($validated);

@@ -28,6 +28,14 @@ class PaymentOption extends Model
         return $query->where('is_hidden', false);
     }
 
+    /**
+     * Scope to only bank-type channels (e.g. for dealer pending sales).
+     */
+    public function scopeBank($query)
+    {
+        return $query->where('type', self::TYPE_BANK);
+    }
+
     public const TYPE_MOBILE = 'mobile';
     public const TYPE_BANK = 'bank';
     public const TYPE_CASH = 'cash';

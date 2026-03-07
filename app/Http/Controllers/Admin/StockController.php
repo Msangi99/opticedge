@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Purchase;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
+use App\Models\PaymentOption;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 
@@ -103,8 +104,38 @@ class StockController extends Controller
 
     public function distribution()
     {
-        $distributionSales = DistributionSale::with(['product.category', 'dealer'])->latest('date')->get();
-        return view('admin.stock.distribution', compact('distributionSales'));
+        $distributionSales = DistributionSale::with(['product.category', 'dealer', 'paymentOption'])->latest('date')->get();
+        $bankPaymentOptions = PaymentOption::visible()->bank()->orderBy('name')->get();
+        return view('admin.stock.distribution', compact('distributionSales', 'bankPaymentOptions'));
+    }
+
+    /**
+     * Save payment channel (bank only) for a pending distribution sale. Amount is added to the selected bank option balance.
+     */
+    public function saveDistributionChannel(Request $request, $id)
+    {
+        $sale = DistributionSale::findOrFail($id);
+        $st = $sale->status ?? 'pending';
+        if ($st !== 'pending') {
+            return redirect()->route('admin.stock.distribution')->with('error', 'Only pending distribution sales can have channel updated.');
+        }
+
+        $validated = $request->validate([
+            'payment_option_id' => 'required|exists:payment_options,id',
+        ]);
+
+        $option = PaymentOption::findOrFail($validated['payment_option_id']);
+        if ($option->type !== PaymentOption::TYPE_BANK) {
+            return redirect()->route('admin.stock.distribution')->with('error', 'Only bank channels are allowed for dealer sales.');
+        }
+
+        $sale->update(['payment_option_id' => $option->id]);
+        $amount = (float) ($sale->total_selling_value ?? 0);
+        if ($amount > 0) {
+            $option->increment('balance', $amount);
+        }
+
+        return redirect()->route('admin.stock.distribution')->with('success', 'Channel saved. Amount added to ' . $option->name . '.');
     }
 
     public function updateDistributionStatus($id)
