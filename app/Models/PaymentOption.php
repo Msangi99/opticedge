@@ -11,12 +11,22 @@ class PaymentOption extends Model
         'name',
         'balance',
         'opening_balance',
+        'is_hidden',
     ];
 
     protected $casts = [
         'balance' => 'decimal:2',
         'opening_balance' => 'decimal:2',
+        'is_hidden' => 'boolean',
     ];
+
+    /**
+     * Scope to only visible (non-hidden) channels for dropdowns and selection.
+     */
+    public function scopeVisible($query)
+    {
+        return $query->where('is_hidden', false);
+    }
 
     public const TYPE_MOBILE = 'mobile';
     public const TYPE_BANK = 'bank';

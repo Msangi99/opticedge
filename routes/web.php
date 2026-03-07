@@ -58,7 +58,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             $topProducts = $financialService->getTopSellingProducts($startDate, $endDate, 10);
             
             // Get payment options with balances
-            $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+            $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
             
             return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics', 'salesMetrics', 'topProducts', 'startDate', 'endDate', 'paymentOptions'));
         }
@@ -103,6 +103,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::resource('expenses', App\Http\Controllers\Admin\ExpenseController::class)->except(['show']);
 
         // Payment Options
+        Route::patch('payment-options/{payment_option}/toggle-visibility', [App\Http\Controllers\Admin\PaymentOptionController::class, 'toggleVisibility'])->name('payment-options.toggle-visibility');
         Route::resource('payment-options', App\Http\Controllers\Admin\PaymentOptionController::class)->except(['show']);
 
         // Stock Management

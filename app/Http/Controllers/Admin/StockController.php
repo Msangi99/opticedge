@@ -618,7 +618,7 @@ class StockController extends Controller
     public function pendingSales()
     {
         $pendingSales = \App\Models\PendingSale::with(['product.category', 'paymentOption'])->latest('date')->get();
-        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
         return view('admin.stock.pending-sales', compact('pendingSales', 'paymentOptions'));
     }
 

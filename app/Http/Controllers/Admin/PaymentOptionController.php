@@ -91,4 +91,15 @@ class PaymentOptionController extends Controller
         return redirect()->route('admin.payment-options.index')
             ->with('success', 'Payment option deleted successfully.');
     }
+
+    /**
+     * Toggle channel visibility (hide/show).
+     */
+    public function toggleVisibility(PaymentOption $paymentOption)
+    {
+        $paymentOption->update(['is_hidden' => ! $paymentOption->is_hidden]);
+        $message = $paymentOption->is_hidden ? 'Channel hidden.' : 'Channel is now visible.';
+        return redirect()->route('admin.payment-options.index')
+            ->with('success', $message);
+    }
 }

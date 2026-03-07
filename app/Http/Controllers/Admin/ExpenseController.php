@@ -16,7 +16,7 @@ class ExpenseController extends Controller
 
     public function create()
     {
-        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
         return view('admin.expenses.create', compact('paymentOptions'));
     }
 
@@ -44,7 +44,7 @@ class ExpenseController extends Controller
 
     public function edit(Expense $expense)
     {
-        $paymentOptions = \App\Models\PaymentOption::orderBy('name')->get();
+        $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
         return view('admin.expenses.edit', compact('expense', 'paymentOptions'));
     }
 
