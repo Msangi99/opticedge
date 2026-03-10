@@ -14,6 +14,10 @@ class Expense extends Model
         'date',
     ];
 
+    protected $casts = [
+        'date' => 'date',
+    ];
+
     public const CASH_SYSTEM = 'system';
     public const CASH_CASH = 'cash';
 
