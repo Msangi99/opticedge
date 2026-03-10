@@ -10,13 +10,15 @@ use Illuminate\Http\Request;
 class AgentSaleController extends Controller
 {
     /**
-     * List all agent sales for admin dashboard.
+     * List agent sales for admin (dashboard or full list).
+     * Optional query: limit (default 50, max 200).
      */
-    public function index()
+    public function index(Request $request)
     {
+        $limit = min((int) $request->query('limit', 50), 200);
         $sales = AgentSale::with(['product.category', 'agent'])
             ->latest('date')
-            ->take(10)
+            ->take($limit)
             ->get()
             ->map(function ($sale) {
                 return [

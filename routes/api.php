@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\PurchaseController as ApiPurchaseController;
 use App\Http\Controllers\Api\ProductListController;
 use App\Http\Controllers\Api\CategoryController as ApiCategoryController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ExpenseController as ApiExpenseController;
+use App\Http\Controllers\Api\PaymentOptionController as ApiPaymentOptionController;
+use App\Http\Controllers\Api\AgentSaleController as ApiAgentSaleController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -28,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
+        Route::get('expenses', [ApiExpenseController::class, 'index']);
+        Route::get('payment-options', [ApiPaymentOptionController::class, 'index']);
+        Route::get('agent-sales', [ApiAgentSaleController::class, 'index']);
     });
 
     // Agent: dashboard, available products (unsold only), get device by IMEI, record sale
