@@ -11,6 +11,12 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController as ApiExpenseController;
 use App\Http\Controllers\Api\PaymentOptionController as ApiPaymentOptionController;
 use App\Http\Controllers\Api\AgentSaleController as ApiAgentSaleController;
+use App\Http\Controllers\Api\OrderController as ApiOrderController;
+use App\Http\Controllers\Api\UserController as ApiUserController;
+use App\Http\Controllers\Api\DistributionSaleController as ApiDistributionSaleController;
+use App\Http\Controllers\Api\PendingSaleController as ApiPendingSaleController;
+use App\Http\Controllers\Api\ReportController as ApiReportController;
+use App\Http\Controllers\Api\SettingController as ApiSettingController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -34,6 +40,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('expenses', [ApiExpenseController::class, 'index']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'index']);
         Route::get('agent-sales', [ApiAgentSaleController::class, 'index']);
+        Route::get('orders', [ApiOrderController::class, 'index']);
+        Route::get('users', [ApiUserController::class, 'index']); // ?role=customer|dealer|agent
+        Route::get('distribution-sales', [ApiDistributionSaleController::class, 'index']);
+        Route::get('pending-sales', [ApiPendingSaleController::class, 'index']);
+        Route::get('reports', [ApiReportController::class, 'index']);
+        Route::get('settings', [ApiSettingController::class, 'index']);
+        Route::put('settings', [ApiSettingController::class, 'update']);
     });
 
     // Agent: dashboard, available products (unsold only), get device by IMEI, record sale
