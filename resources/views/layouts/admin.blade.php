@@ -326,8 +326,6 @@
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Purchases</a>
                                 <a href="{{ route('admin.stock.distribution') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Distribution</a>
-                                <a href="{{ route('admin.stock.pending-sales') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Pending Sales</a>
                                 <a href="{{ route('admin.stock.agent-sales') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Sales</a>
                             </div>

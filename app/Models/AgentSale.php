@@ -22,6 +22,7 @@ class AgentSale extends Model
         'date_of_collection',
         'balance',
         'stock_remaining',
+        'payment_option_id',
         'date',
     ];
 
@@ -38,5 +39,10 @@ class AgentSale extends Model
     public function agent()
     {
         return $this->belongsTo(User::class, 'agent_id');
+    }
+
+    public function paymentOption()
+    {
+        return $this->belongsTo(PaymentOption::class);
     }
 }

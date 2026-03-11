@@ -15,20 +15,20 @@
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
             <table class="w-full text-left">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Date</th>
-                        <th class="px-6 py-3">Customer</th>
-                        <th class="px-6 py-3">Seller</th>
-                        <th class="px-6 py-3">Product</th>
-                        <th class="px-6 py-3">Qty</th>
-                        <th class="px-6 py-3">Buy Price</th>
-                        <th class="px-6 py-3">Sell Price</th>
-                        <th class="px-6 py-3">Total Buy</th>
-                        <th class="px-6 py-3">Total Sell</th>
-                        <th class="px-6 py-3">Profit</th>
-                        <th class="px-6 py-3">Comm.</th>
-                        <th class="px-6 py-3">Collection</th>
-                        <th class="px-6 py-3">Edit Comm.</th>
+                    <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
+                        <th class="px-6 py-3 bg-blue-100">Date</th>
+                        <th class="px-6 py-3 bg-green-100">Customer</th>
+                        <th class="px-6 py-3 bg-yellow-100">Seller</th>
+                        <th class="px-6 py-3 bg-purple-100">Product</th>
+                        <th class="px-6 py-3 bg-pink-100">Qty</th>
+                        <th class="px-6 py-3 bg-indigo-100">Buy Price</th>
+                        <th class="px-6 py-3 bg-red-100">Sell Price</th>
+                        <th class="px-6 py-3 bg-orange-100">Total Buy</th>
+                        <th class="px-6 py-3 bg-teal-100">Total Sell</th>
+                        <th class="px-6 py-3 bg-cyan-100">Profit</th>
+                        <th class="px-6 py-3 bg-amber-100">Comm.</th>
+                        <th class="px-6 py-3 bg-lime-100">Channel</th>
+                        <th class="px-6 py-3 bg-rose-100">Edit Comm.</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
@@ -45,7 +45,22 @@
                             <td class="px-6 py-3 font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
                             <td class="px-6 py-3 text-green-600">{{ number_format($sale->profit ?? 0, 0) }}</td>
                             <td class="px-6 py-3">{{ number_format($sale->commission_paid ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">{{ number_format(($sale->total_selling_value ?? 0) - ($sale->balance ?? 0), 0) }}</td>
+                            <td class="px-6 py-3">
+                                @if($sale->payment_option_id)
+                                    <span class="text-slate-600">{{ $sale->paymentOption?->name ?? '—' }}</span>
+                                @else
+                                    <form action="{{ route('admin.stock.agent-sales-save-channel', $sale->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <select name="payment_option_id" required onchange="this.form.submit()"
+                                            class="text-sm rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
+                                            <option value="">Choose channel...</option>
+                                            @foreach($paymentOptions as $option)
+                                                <option value="{{ $option->id }}">{{ $option->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                @endif
+                            </td>
                             <td class="px-6 py-3">
                                 <form action="{{ route('admin.stock.agent-sales-update-commission', $sale->id) }}" method="POST" class="inline flex items-center gap-1">
                                     @csrf

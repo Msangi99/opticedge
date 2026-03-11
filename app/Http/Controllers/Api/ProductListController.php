@@ -74,19 +74,26 @@ class ProductListController extends Controller
             $model = $validated['model'];
         }
 
+        // Use sell_price if available, otherwise use unit_price
+        $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
         $product = Product::firstOrCreate(
             [
                 'category_id' => $categoryId,
                 'name' => $model,
             ],
             [
-                'price' => (float) ($purchase->sell_price ?? 0),
+                'price' => (float) $productPrice,
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'From product list',
                 'images' => $purchase->product?->images ?? [],
             ]
         );
+        
+        // Update product price if sell_price is available
+        if ($purchase->sell_price && $product->price != $purchase->sell_price) {
+            $product->update(['price' => (float) $purchase->sell_price]);
+        }
 
         $item = ProductListItem::create([
             'stock_id' => $stockId,

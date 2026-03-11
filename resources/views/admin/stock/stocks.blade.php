@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Stocks</h1>
-                <p class="mt-2 text-slate-600">Stock buckets used in the app for product list and agents. Data from purchases (pending/complete limits).</p>
+                <p class="mt-2 text-slate-600">Stock buckets used in the app for product list and agents. Shows stock quantity, added quantity from purchases, and status.</p>
             </div>
             <a href="{{ route('admin.stock.add-product') }}" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#e67d00] font-medium text-sm">Add Product (IMEI)</a>
         </div>
@@ -22,53 +22,42 @@
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
             <table class="w-full text-left">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Name</th>
-                        <th class="px-6 py-3">Limit</th>
-                        <th class="px-6 py-3">Available</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3">Actions</th>
+                    <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
+                        <th class="px-6 py-3 bg-blue-100">Name</th>
+                        <th class="px-6 py-3 bg-green-100">Stock Quantity</th>
+                        <th class="px-6 py-3 bg-yellow-100">Added</th>
+                        <th class="px-6 py-3 bg-purple-100">Status</th>
+                        <th class="px-6 py-3 bg-pink-100">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($purchases as $purchase)
+                    @forelse($stocks as $stock)
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">
-                                <a href="{{ route('admin.stock.purchase.show', $purchase->id) }}" class="text-[#fa8900] hover:underline">{{ $purchase->name }}</a>
+                                <a href="{{ route('admin.stock.stock.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
                             </td>
-                            <td class="px-6 py-3">{{ number_format($purchase->limit) }}</td>
-                            <td class="px-6 py-3">{{ $purchase->available }}</td>
+                            <td class="px-6 py-3">{{ number_format($stock->stock_quantity) }}</td>
+                            <td class="px-6 py-3">{{ number_format($stock->added) }}</td>
                             <td class="px-6 py-3">
-                                @if($purchase->status === 'paid')
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Paid</span>
-                                @elseif($purchase->status === 'partial')
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Partial</span>
+                                @if($stock->status === 'complete')
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Complete</span>
                                 @else
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">{{ $purchase->status }}</span>
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Pending</span>
                                 @endif
                             </td>
                             <td class="px-6 py-3">
-                                @if($purchase->stock_id)
-                                    <a href="{{ route('admin.stock.stock-receipts', $purchase->stock_id) }}" 
-                                       class="px-3 py-1 text-xs bg-[#fa8900] text-white rounded hover:bg-[#e67d00] transition-colors flex items-center gap-1 inline-flex">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
-                                        Receipts
-                                    </a>
-                                @else
-                                    <span class="px-3 py-1 text-xs bg-slate-100 text-slate-700 rounded cursor-not-allowed flex items-center gap-1 inline-flex">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
-                                        No Receipts
-                                    </span>
-                                @endif
+                                <a href="{{ route('admin.stock.stock-receipts', $stock->id) }}" 
+                                   class="px-3 py-1 text-xs bg-[#fa8900] text-white rounded hover:bg-[#e67d00] transition-colors flex items-center gap-1 inline-flex">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                    </svg>
+                                    Receipts
+                                </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No purchases yet. Add a purchase to see it here.</td>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No stocks yet. Add a stock to see it here.</td>
                         </tr>
                     @endforelse
                 </tbody>

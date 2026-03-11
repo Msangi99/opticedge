@@ -141,6 +141,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('agent-sales/create', [App\Http\Controllers\Admin\StockController::class, 'createAgentSale'])->name('create-agent-sale');
             Route::post('agent-sales', [App\Http\Controllers\Admin\StockController::class, 'storeAgentSale'])->name('store-agent-sale');
             Route::patch('agent-sales/{id}/commission', [App\Http\Controllers\Admin\StockController::class, 'updateAgentSaleCommission'])->name('agent-sales-update-commission');
+            Route::post('agent-sales/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveAgentSaleChannel'])->name('agent-sales-save-channel');
 
             Route::get('shop-records', [App\Http\Controllers\Admin\StockController::class , 'shopRecords'])->name('shop-records');
             Route::get('payables', [App\Http\Controllers\Admin\StockController::class , 'payables'])->name('payables');

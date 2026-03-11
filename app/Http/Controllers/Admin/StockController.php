@@ -13,27 +13,25 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     /**
-     * Stocks page: list all purchases (name, limit, available, status). Click name → purchase detail (model, category, IMEI).
+     * Stocks page: list all stocks with stock quantity, added (from purchases), and status.
      */
     public function stocks()
     {
-        $purchases = Purchase::with(['product', 'stock'])
-            ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get()
-            ->map(function ($p) {
-                return (object) [
-                    'id' => $p->id,
-                    'name' => $p->name ?? 'Purchase #' . $p->id,
-                    'limit' => (int) $p->quantity,
-                    'available' => $p->limit_status ?? '–',
-                    'status' => $p->payment_status ?? '–',
-                    'stock_id' => $p->stock_id,
-                    'stock_name' => $p->stock?->name,
-                ];
-            });
+        $stocks = Stock::with('purchases')->get()->map(function ($stock) {
+            $added = $stock->purchases->sum('quantity');
+            $stockQuantity = $stock->stock_limit;
+            $status = ($stockQuantity == $added) ? 'complete' : 'pending';
+            
+            return (object) [
+                'id' => $stock->id,
+                'name' => $stock->name,
+                'stock_quantity' => $stockQuantity,
+                'added' => $added,
+                'status' => $status,
+            ];
+        });
 
-        return view('admin.stock.stocks', compact('purchases'));
+        return view('admin.stock.stocks', compact('stocks'));
     }
 
     /**
@@ -129,13 +127,16 @@ class StockController extends Controller
             return redirect()->route('admin.stock.distribution')->with('error', 'Only bank channels are allowed for dealer sales.');
         }
 
-        $sale->update(['payment_option_id' => $option->id]);
+        $sale->update([
+            'payment_option_id' => $option->id,
+            'status' => 'complete'
+        ]);
         $amount = (float) ($sale->total_selling_value ?? 0);
         if ($amount > 0) {
             $option->increment('balance', $amount);
         }
 
-        return redirect()->route('admin.stock.distribution')->with('success', 'Channel saved. Amount added to ' . $option->name . '.');
+        return redirect()->route('admin.stock.distribution')->with('success', 'Channel saved. Status updated to complete. Amount added to ' . $option->name . '.');
     }
 
     public function updateDistributionStatus($id)
@@ -147,8 +148,28 @@ class StockController extends Controller
 
     public function agentSales()
     {
-        $agentSales = AgentSale::with(['product.category', 'agent'])->latest('date')->get();
-        return view('admin.stock.agent-sales', compact('agentSales'));
+        $agentSales = AgentSale::with(['product.category', 'agent', 'paymentOption'])->latest('date')->get();
+        $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
+        return view('admin.stock.agent-sales', compact('agentSales', 'paymentOptions'));
+    }
+
+    public function saveAgentSaleChannel(Request $request, $id)
+    {
+        $sale = AgentSale::findOrFail($id);
+
+        $validated = $request->validate([
+            'payment_option_id' => 'required|exists:payment_options,id',
+        ]);
+
+        $option = PaymentOption::findOrFail($validated['payment_option_id']);
+        $sale->update(['payment_option_id' => $option->id]);
+        
+        $amount = (float) ($sale->total_selling_value ?? 0);
+        if ($amount > 0) {
+            $option->increment('balance', $amount);
+        }
+
+        return redirect()->route('admin.stock.agent-sales')->with('success', 'Channel saved. Amount added to ' . $option->name . '.');
     }
 
     public function updateAgentSaleCommission(Request $request, $id)
@@ -229,19 +250,26 @@ class StockController extends Controller
                 ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
         }
 
+        // Use sell_price if available, otherwise use unit_price
+        $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
         $product = \App\Models\Product::firstOrCreate(
             [
                 'category_id' => $validated['category_id'],
                 'name' => $validated['model'],
             ],
             [
-                'price' => (float) ($purchase->sell_price ?? 0),
+                'price' => (float) $productPrice,
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'From product list',
                 'images' => $purchase->product?->images ?? [],
             ]
         );
+        
+        // Update product price if sell_price is available
+        if ($purchase->sell_price && $product->price != $purchase->sell_price) {
+            $product->update(['price' => (float) $purchase->sell_price]);
+        }
 
         \App\Models\ProductListItem::create([
             'stock_id' => $stock->id,
@@ -363,19 +391,26 @@ class StockController extends Controller
         }
 
         // Find or create the product based on category and model name
+        // Use sell_price if available, otherwise use unit_price
+        $productPrice = $validated['sell_price'] ?? $validated['unit_price'];
         $product = \App\Models\Product::firstOrCreate(
             [
                 'category_id' => $validated['category_id'],
                 'name' => $validated['model']
             ],
             [
-                'price' => $validated['unit_price'],
+                'price' => $productPrice,
                 'stock_quantity' => 0,
                 'rating' => 5.0,
                 'description' => 'Auto-created from purchase',
                 'images' => [],
             ]
         );
+        
+        // Update product price if sell_price is provided
+        if (!empty($validated['sell_price']) && $product->price != $validated['sell_price']) {
+            $product->update(['price' => $validated['sell_price']]);
+        }
 
         // Combine selected images from gallery and uploaded images
         $imagePaths = [];
