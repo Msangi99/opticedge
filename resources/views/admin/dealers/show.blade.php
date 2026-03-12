@@ -1,15 +1,11 @@
 <x-admin-layout>
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h1>
-                    <p class="text-sm text-gray-500">Dealer Account Details</p>
-                </div>
-                <div>
-                    <a href="{{ route('admin.dealers.index') }}" class="text-indigo-600 hover:text-indigo-900">Back to List</a>
-                </div>
-            </div>
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">{{ $user->name }}</h1>
+            <p class="text-sm text-slate-500">Dealer Account Details</p>
+        </div>
+        <a href="{{ route('admin.dealers.index') }}" class="text-[#fa8900] hover:text-[#e67d00] font-medium">Back to List</a>
+    </div>
 
             <!-- Dealer Info Card -->
             <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6 border border-gray-200">
@@ -130,9 +126,6 @@
                     </form>
                 @endif
              </div>
-
-        </div>
-    </div>
 
     @push('styles')
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
