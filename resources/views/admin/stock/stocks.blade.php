@@ -57,7 +57,11 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No stocks yet. Add a stock to see it here.</td>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">
+                                <p>No stocks found in the database.</p>
+                                <p class="text-xs mt-2 text-slate-400">Note: This page shows Stock records, not Purchases. To view purchases, go to the Purchases page.</p>
+                                <p class="text-xs mt-1 text-slate-400">If you have purchases but no stocks, you may need to create stock records first.</p>
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

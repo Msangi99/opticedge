@@ -20,26 +20,39 @@ class StockController extends Controller
      */
     public function stocks()
     {
-        $stocks = Stock::with('purchases')->orderBy('name')->get()->map(function ($stock) {
-            try {
-                $added = $stock->purchases->sum('quantity') ?? 0;
-            } catch (\Exception $e) {
-                $added = 0;
-            }
+        try {
+            // Get all stocks
+            $stocks = Stock::orderBy('name')->get();
             
-            $stockQuantity = (int) ($stock->stock_limit ?? 0);
-            $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
-            
-            return (object) [
-                'id' => $stock->id,
-                'name' => $stock->name ?? 'Unnamed Stock',
-                'stock_quantity' => $stockQuantity,
-                'added' => (int) $added,
-                'status' => $status,
-            ];
-        });
+            $stocksData = $stocks->map(function ($stock) {
+                try {
+                    // Calculate added quantity from purchases for this stock
+                    $added = (float) Purchase::where('stock_id', $stock->id)->sum('quantity');
+                    if (is_null($added) || $added < 0) {
+                        $added = 0;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Error calculating added quantity for stock ' . $stock->id . ': ' . $e->getMessage());
+                    $added = 0;
+                }
+                
+                $stockQuantity = (int) ($stock->stock_limit ?? 0);
+                $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
+                
+                return (object) [
+                    'id' => $stock->id,
+                    'name' => $stock->name ?? 'Unnamed Stock',
+                    'stock_quantity' => $stockQuantity,
+                    'added' => (int) $added,
+                    'status' => $status,
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::error('Error loading stocks: ' . $e->getMessage());
+            $stocksData = collect([]);
+        }
 
-        return view('admin.stock.stocks', compact('stocks'));
+        return view('admin.stock.stocks', ['stocks' => $stocksData]);
     }
 
     /**
