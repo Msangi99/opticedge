@@ -129,6 +129,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::post('distribution', [App\Http\Controllers\Admin\StockController::class, 'storeDistribution'])->name('store-distribution');
             Route::get('distribution/{id}/edit', [App\Http\Controllers\Admin\StockController::class, 'editDistribution'])->name('edit-distribution');
             Route::put('distribution/{id}', [App\Http\Controllers\Admin\StockController::class, 'updateDistribution'])->name('update-distribution');
+            Route::delete('distribution/{id}', [App\Http\Controllers\Admin\StockController::class, 'destroyDistribution'])->name('destroy-distribution');
             Route::patch('distribution/{id}/status', [App\Http\Controllers\Admin\StockController::class, 'updateDistributionStatus'])->name('distribution-update-status');
             Route::post('distribution/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveDistributionChannel'])->name('distribution-save-channel');
 

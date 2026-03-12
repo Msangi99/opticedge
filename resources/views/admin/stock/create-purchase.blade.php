@@ -322,19 +322,15 @@
                         <!-- Paid Amount -->
                         <div class="col-span-1">
                             <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Paid Amount</label>
-                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount') }}" min="0" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount') }}" min="0" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="updatePaymentStatus()">
                             @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Payment Status -->
-                        <div class="col-span-2">
-                            <label for="payment_status" class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                            <select name="payment_status" id="payment_status" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="pending" {{ old('payment_status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="partial" {{ old('payment_status') == 'partial' ? 'selected' : '' }}>Partial</option>
-                                <option value="paid" {{ old('payment_status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                            </select>
-                            @error('payment_status') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <!-- Payment Status (Auto-calculated) -->
+                        <div class="col-span-1">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <input type="text" id="payment_status_display" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="Pending">
+                            <p class="text-xs text-slate-500 mt-1">Auto: Updates based on paid amount.</p>
                         </div>
 
                         <!-- Payment Receipt Image -->
@@ -366,7 +362,33 @@
             const total = qty * price;
             const el = document.getElementById('total_amount');
             if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            updatePaymentStatus();
         }
-        document.addEventListener('DOMContentLoaded', calculateTotal);
+        
+        function updatePaymentStatus() {
+            const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
+            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
+            const total = qty * price;
+            const paid = parseFloat(document.getElementById('paid_amount')?.value) || 0;
+            const statusEl = document.getElementById('payment_status_display');
+            
+            if (statusEl) {
+                let status = 'Pending';
+                if (paid >= total && total > 0) {
+                    status = 'Paid';
+                } else if (paid > 0) {
+                    status = 'Partial';
+                }
+                statusEl.value = status;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateTotal();
+            const paidInput = document.getElementById('paid_amount');
+            if (paidInput) {
+                paidInput.addEventListener('input', updatePaymentStatus);
+            }
+        });
     </script>
 </x-admin-layout>

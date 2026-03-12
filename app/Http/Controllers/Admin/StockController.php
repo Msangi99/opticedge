@@ -371,7 +371,6 @@ class StockController extends Controller
             'sell_price' => 'nullable|numeric|min:0',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
-            'payment_status' => 'required|in:pending,paid,partial',
             'selected_images' => 'nullable|array',
             'selected_images.*' => 'string|max:255',
             'images' => 'nullable|array',
@@ -456,7 +455,14 @@ class StockController extends Controller
 
         // Calculate total amount (backend validation/calculation)
         $validated['total_amount'] = $quantity * $validated['unit_price'];
-        $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
+        $paidAmount = (float) ($validated['paid_amount'] ?? 0);
+        
+        // Auto status from paid amount: pending / partial / paid (like in edit)
+        $totalAmount = $validated['total_amount'];
+        $paymentStatus = $paidAmount >= $totalAmount ? 'paid' : ($paidAmount > 0 ? 'partial' : 'pending');
+        $validated['payment_status'] = $paymentStatus;
+        $validated['paid_amount'] = $paidAmount;
+        
         // Quantity = limit: track remaining; when app adds IMEIs, decrement until 0 then set complete
         $validated['limit_status'] = 'pending';
         $validated['limit_remaining'] = $quantity;
@@ -597,7 +603,7 @@ class StockController extends Controller
         ]);
 
         $service = app(\App\Services\DistributionSaleService::class);
-        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']);
+        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']); // Now uses sell_price from purchases
         $validated['purchase_price'] = $buyPrice;
         $validated['total_selling_value'] = $validated['quantity_sold'] * $validated['selling_price'];
         $validated['total_purchase_value'] = $validated['quantity_sold'] * $buyPrice;
@@ -642,6 +648,22 @@ class StockController extends Controller
         ]);
 
         return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale updated. Pending amount (balance) updated.');
+    }
+
+    public function destroyDistribution($id)
+    {
+        $sale = DistributionSale::findOrFail($id);
+        $product = $sale->product;
+        $quantitySold = $sale->quantity_sold;
+        
+        $sale->delete();
+        
+        // Keep product.stock_quantity in sync
+        if ($product) {
+            $product->increment('stock_quantity', $quantitySold);
+        }
+
+        return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale deleted successfully.');
     }
 
     // Agent Sales
