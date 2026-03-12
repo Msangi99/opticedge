@@ -301,7 +301,7 @@
                 <div>
                     <h3 class="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Stock Management</h3>
                     <div class="space-y-1">
-                        <div x-data="{ open: false }">
+                        <div x-data="{ open: true }">
                             <button @click="open = !open"
                                 class="w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
                                 <div class="flex items-center gap-3">
