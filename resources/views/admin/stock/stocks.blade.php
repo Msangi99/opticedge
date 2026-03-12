@@ -34,7 +34,7 @@
                     @forelse($stocks as $stock)
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">
-                                <a href="{{ route('admin.stock.stock.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
+                                <a href="{{ route('admin.stock.stocks.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
                             </td>
                             <td class="px-6 py-3">{{ number_format($stock->stock_quantity) }}</td>
                             <td class="px-6 py-3">{{ number_format($stock->added) }}</td>

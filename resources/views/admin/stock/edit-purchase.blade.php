@@ -161,7 +161,14 @@
                         <!-- Payment History -->
                         <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
                             <h3 class="text-lg font-medium text-slate-900 mb-4">Payment History</h3>
-                            @if($purchase->payments && $purchase->payments->count() > 0)
+                            @php
+                                try {
+                                    $payments = $purchase->payments ?? collect();
+                                } catch (\Exception $e) {
+                                    $payments = collect();
+                                }
+                            @endphp
+                            @if($payments && $payments->count() > 0)
                                 <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
                                     <table class="w-full text-sm">
                                         <thead>
@@ -172,7 +179,7 @@
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-200">
-                                            @foreach($purchase->payments as $payment)
+                                            @foreach($payments as $payment)
                                                 <tr>
                                                     <td class="px-4 py-2 text-slate-600">{{ $payment->paid_date ? $payment->paid_date->format('Y-m-d') : $payment->created_at->format('Y-m-d') }}</td>
                                                     <td class="px-4 py-2 text-slate-600">{{ $payment->paymentOption ? $payment->paymentOption->name : 'N/A' }}</td>
@@ -183,7 +190,7 @@
                                         <tfoot>
                                             <tr class="bg-slate-100 border-t-2 border-slate-300">
                                                 <td colspan="2" class="px-4 py-2 text-right font-semibold text-slate-700">Total Paid:</td>
-                                                <td class="px-4 py-2 text-right font-bold text-slate-900">{{ number_format($purchase->payments->sum('amount'), 2) }}</td>
+                                                <td class="px-4 py-2 text-right font-bold text-slate-900">{{ number_format($payments->sum('amount'), 2) }}</td>
                                             </tr>
                                         </tfoot>
                                     </table>

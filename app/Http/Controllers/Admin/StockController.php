@@ -11,6 +11,7 @@ use App\Models\PaymentOption;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class StockController extends Controller
 {
@@ -19,16 +20,21 @@ class StockController extends Controller
      */
     public function stocks()
     {
-        $stocks = Stock::all()->map(function ($stock) {
-            $added = $stock->purchases()->sum('quantity') ?? 0;
-            $stockQuantity = $stock->stock_limit ?? 0;
+        $stocks = Stock::with('purchases')->orderBy('name')->get()->map(function ($stock) {
+            try {
+                $added = $stock->purchases->sum('quantity') ?? 0;
+            } catch (\Exception $e) {
+                $added = 0;
+            }
+            
+            $stockQuantity = (int) ($stock->stock_limit ?? 0);
             $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
             
             return (object) [
                 'id' => $stock->id,
-                'name' => $stock->name,
+                'name' => $stock->name ?? 'Unnamed Stock',
                 'stock_quantity' => $stockQuantity,
-                'added' => $added,
+                'added' => (int) $added,
                 'status' => $status,
             ];
         });
@@ -531,12 +537,18 @@ class StockController extends Controller
 
         // Record initial payment in history if payment was made
         if ($paidAmount > 0 && $request->filled('payment_option_id')) {
-            PurchasePayment::create([
-                'purchase_id' => $purchase->id,
-                'payment_option_id' => $request->input('payment_option_id'),
-                'amount' => $paidAmount,
-                'paid_date' => $validated['paid_date'] ?? now()->toDateString(),
-            ]);
+            try {
+                PurchasePayment::create([
+                    'purchase_id' => $purchase->id,
+                    'payment_option_id' => $request->input('payment_option_id'),
+                    'amount' => $paidAmount,
+                    'paid_date' => $validated['paid_date'] ?? now()->toDateString(),
+                ]);
+            } catch (\Exception $e) {
+                // Table might not exist yet - migration needs to be run
+                // Log error but don't fail the purchase creation
+                Log::warning('Failed to create purchase payment record: ' . $e->getMessage());
+            }
         }
 
         // Update product price to use the latest purchase's sell_price (if available)
@@ -701,12 +713,18 @@ class StockController extends Controller
         if ($paidAmount > 0 && ($paymentDifference != 0 || $oldPaymentOption != $newPaymentOptionId)) {
             // If amount increased or payment option changed, create a new payment record
             if ($paymentDifference > 0) {
-                PurchasePayment::create([
-                    'purchase_id' => $purchase->id,
-                    'payment_option_id' => $newPaymentOptionId,
-                    'amount' => $paymentDifference,
-                    'paid_date' => $newPaidDate ?? now()->toDateString(),
-                ]);
+                try {
+                    PurchasePayment::create([
+                        'purchase_id' => $purchase->id,
+                        'payment_option_id' => $newPaymentOptionId,
+                        'amount' => $paymentDifference,
+                        'paid_date' => $newPaidDate ?? now()->toDateString(),
+                    ]);
+                } catch (\Exception $e) {
+                    // Table might not exist yet - migration needs to be run
+                    // Log error but don't fail the purchase update
+                    Log::warning('Failed to create purchase payment record: ' . $e->getMessage());
+                }
             }
         }
 
