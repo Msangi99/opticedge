@@ -23,11 +23,11 @@
             <table class="w-full text-left">
                 <thead>
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3 bg-blue-100">Name</th>
-                        <th class="px-6 py-3 bg-green-100">Stock Quantity</th>
-                        <th class="px-6 py-3 bg-yellow-100">Added</th>
-                        <th class="px-6 py-3 bg-purple-100">Status</th>
-                        <th class="px-6 py-3 bg-pink-100">Actions</th>
+                        <th class="px-6 py-3 bg-gray-100">Name</th>
+                        <th class="px-6 py-3 bg-gray-100">Stock Quantity</th>
+                        <th class="px-6 py-3 bg-gray-100">Added</th>
+                        <th class="px-6 py-3 bg-gray-100">Status</th>
+                        <th class="px-6 py-3 bg-gray-100">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
+use App\Models\PurchasePayment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\PaymentOption;
@@ -18,10 +19,10 @@ class StockController extends Controller
      */
     public function stocks()
     {
-        $stocks = Stock::with('purchases')->get()->map(function ($stock) {
-            $added = $stock->purchases->sum('quantity');
-            $stockQuantity = $stock->stock_limit;
-            $status = ($stockQuantity == $added) ? 'complete' : 'pending';
+        $stocks = Stock::all()->map(function ($stock) {
+            $added = $stock->purchases()->sum('quantity') ?? 0;
+            $stockQuantity = $stock->stock_limit ?? 0;
+            $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
             
             return (object) [
                 'id' => $stock->id,
@@ -68,9 +69,19 @@ class StockController extends Controller
         return view('admin.stock.stock-show', compact('stock', 'atLimit'));
     }
 
-    public function purchases()
+    public function purchases(Request $request)
     {
-        $purchases = Purchase::with(['product', 'stock'])->latest('date')->get();
+        $query = Purchase::with(['product', 'stock']);
+        
+        // Date range filter
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+        
+        $purchases = $query->latest('date')->get();
         return view('admin.stock.purchases', compact('purchases'));
     }
 
@@ -101,9 +112,19 @@ class StockController extends Controller
         return view('admin.stock.stock-receipts', compact('stock', 'purchases'));
     }
 
-    public function distribution()
+    public function distribution(Request $request)
     {
-        $distributionSales = DistributionSale::with(['product.category', 'dealer', 'paymentOption'])->latest('date')->get();
+        $query = DistributionSale::with(['product.category', 'dealer', 'paymentOption']);
+        
+        // Date range filter
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+        
+        $distributionSales = $query->latest('date')->get();
         $bankPaymentOptions = PaymentOption::visible()->bank()->orderBy('name')->get();
         return view('admin.stock.distribution', compact('distributionSales', 'bankPaymentOptions'));
     }
@@ -147,9 +168,19 @@ class StockController extends Controller
         return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale marked as complete.');
     }
 
-    public function agentSales()
+    public function agentSales(Request $request)
     {
-        $agentSales = AgentSale::with(['product.category', 'agent', 'paymentOption'])->latest('date')->get();
+        $query = AgentSale::with(['product.category', 'agent', 'paymentOption']);
+        
+        // Date range filter
+        if ($request->filled('date_from')) {
+            $query->where('date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->where('date', '<=', $request->date_to);
+        }
+        
+        $agentSales = $query->latest('date')->get();
         $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
         return view('admin.stock.agent-sales', compact('agentSales', 'paymentOptions'));
     }
@@ -372,6 +403,7 @@ class StockController extends Controller
             'sell_price' => 'nullable|numeric|min:0',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
+            'payment_option_id' => 'nullable|exists:payment_options,id',
             'selected_images' => 'nullable|array',
             'selected_images.*' => 'string|max:255',
             'images' => 'nullable|array',
@@ -465,6 +497,21 @@ class StockController extends Controller
         $validated['limit_status'] = 'pending';
         $validated['limit_remaining'] = $quantity;
         $validated['sell_price'] = $request->filled('sell_price') ? $request->input('sell_price') : null;
+        $validated['payment_option_id'] = $request->filled('payment_option_id') ? $request->input('payment_option_id') : null;
+
+        // Handle payment option balance deduction if payment is made
+        if ($paidAmount > 0 && $validated['payment_option_id']) {
+            $paymentOption = PaymentOption::find($validated['payment_option_id']);
+            if ($paymentOption) {
+                if ($paymentOption->balance >= $paidAmount) {
+                    $paymentOption->decrement('balance', $paidAmount);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
+                }
+            }
+        }
 
         // Create purchase first to get the ID
         $purchase = Purchase::create($validated);
@@ -481,6 +528,16 @@ class StockController extends Controller
 
         // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
         $product->increment('stock_quantity', $validated['quantity']);
+
+        // Record initial payment in history if payment was made
+        if ($paidAmount > 0 && $request->filled('payment_option_id')) {
+            PurchasePayment::create([
+                'purchase_id' => $purchase->id,
+                'payment_option_id' => $request->input('payment_option_id'),
+                'amount' => $paidAmount,
+                'paid_date' => $validated['paid_date'] ?? now()->toDateString(),
+            ]);
+        }
 
         // Update product price to use the latest purchase's sell_price (if available)
         // This ensures front page products show the correct sell_price instead of unit_price
@@ -499,7 +556,7 @@ class StockController extends Controller
 
     public function editPurchase($id)
     {
-        $purchase = Purchase::with('product.category')->findOrFail($id);
+        $purchase = Purchase::with(['product.category', 'payments.paymentOption'])->findOrFail($id);
         
         // Get all categories for the select dropdown
         $categories = \App\Models\Category::orderBy('name')->get();
@@ -509,8 +566,11 @@ class StockController extends Controller
             ->whereNotNull('distributor_name')
             ->distinct()
             ->pluck('distributor_name');
+        
+        // Get payment options with balance for selection
+        $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
             
-        return view('admin.stock.edit-purchase', compact('purchase', 'categories', 'distributors'));
+        return view('admin.stock.edit-purchase', compact('purchase', 'categories', 'distributors', 'paymentOptions'));
     }
 
     public function updatePurchase(Request $request, $id)
@@ -521,6 +581,7 @@ class StockController extends Controller
             'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
+            'payment_option_id' => 'nullable|exists:payment_options,id',
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
         if ($request->hasFile('images')) {
@@ -561,15 +622,93 @@ class StockController extends Controller
         // Auto status from paid amount: pending / partial / paid
         $totalAmount = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
         $paidAmount = (float) ($validated['paid_amount'] ?? 0);
+        
+        // Ensure paid amount doesn't exceed total amount
+        if ($paidAmount > $totalAmount) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['paid_amount' => 'Paid amount cannot exceed total purchase value.']);
+        }
+        
         $paymentStatus = $paidAmount >= $totalAmount ? 'paid' : ($paidAmount > 0 ? 'partial' : 'pending');
+        
+        // Handle payment option and balance deduction
+        $oldPaymentOption = $purchase->payment_option_id;
+        $oldPaidAmount = $purchase->paid_amount ?? 0;
+        $newPaymentOptionId = $validated['payment_option_id'] ?? null;
+        $newPaidDate = $validated['paid_date'] ?? null;
+        
+        // Calculate the difference in payment amount
+        $paymentDifference = $paidAmount - $oldPaidAmount;
+        
+        // If payment option changed or paid amount changed, update balances
+        if ($newPaymentOptionId && $paidAmount > 0) {
+            $paymentOption = PaymentOption::find($newPaymentOptionId);
+            if ($paymentOption) {
+                // If there was a previous payment option, refund the old amount
+                if ($oldPaymentOption && $oldPaymentOption != $newPaymentOptionId) {
+                    $oldOption = PaymentOption::find($oldPaymentOption);
+                    if ($oldOption) {
+                        $oldOption->increment('balance', $oldPaidAmount);
+                    }
+                }
+                
+                // Deduct new amount from selected payment option
+                if ($paymentOption->balance >= $paidAmount) {
+                    $paymentOption->decrement('balance', $paidAmount);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
+                }
+            }
+        } elseif ($oldPaymentOption && (!$newPaymentOptionId || $paidAmount == 0)) {
+            // If payment option removed or amount set to 0, refund to old option
+            $oldOption = PaymentOption::find($oldPaymentOption);
+            if ($oldOption) {
+                $oldOption->increment('balance', $oldPaidAmount);
+            }
+        } elseif ($oldPaymentOption && $oldPaymentOption == $newPaymentOptionId && $paymentDifference != 0) {
+            // Same payment option but amount changed - adjust balance
+            $paymentOption = PaymentOption::find($newPaymentOptionId);
+            if ($paymentOption) {
+                if ($paymentDifference > 0) {
+                    // Additional payment - deduct difference
+                    if ($paymentOption->balance >= $paymentDifference) {
+                        $paymentOption->decrement('balance', $paymentDifference);
+                    } else {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['paid_amount' => 'Insufficient balance in selected payment channel for additional payment.']);
+                    }
+                } else {
+                    // Payment reduced - refund difference
+                    $paymentOption->increment('balance', abs($paymentDifference));
+                }
+            }
+        }
 
         $purchase->update([
             'name' => $validated['name'] ?? $purchase->name,
-            'paid_date' => $validated['paid_date'] ?? null,
+            'paid_date' => $newPaidDate,
             'paid_amount' => $paidAmount,
             'payment_status' => $paymentStatus,
             'payment_receipt_image' => $paymentReceiptPath,
+            'payment_option_id' => $newPaymentOptionId,
         ]);
+
+        // Record payment history if payment was made/changed
+        if ($paidAmount > 0 && ($paymentDifference != 0 || $oldPaymentOption != $newPaymentOptionId)) {
+            // If amount increased or payment option changed, create a new payment record
+            if ($paymentDifference > 0) {
+                PurchasePayment::create([
+                    'purchase_id' => $purchase->id,
+                    'payment_option_id' => $newPaymentOptionId,
+                    'amount' => $paymentDifference,
+                    'paid_date' => $newPaidDate ?? now()->toDateString(),
+                ]);
+            }
+        }
 
         // Update product price to use the latest purchase's sell_price (if available)
         // This ensures front page products show the correct sell_price instead of unit_price

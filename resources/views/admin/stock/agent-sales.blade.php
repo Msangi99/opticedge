@@ -12,6 +12,26 @@
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
 
+        <!-- Date Range Filter -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+            <form method="GET" action="{{ route('admin.stock.agent-sales') }}" class="flex gap-4 items-end">
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-slate-700 mb-1">From Date</label>
+                    <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-slate-700 mb-1">To Date</label>
+                    <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">Filter</button>
+                    @if(request('date_from') || request('date_to'))
+                        <a href="{{ route('admin.stock.agent-sales') }}" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors font-medium">Clear</a>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
             <table class="w-full text-left">
                 <thead>

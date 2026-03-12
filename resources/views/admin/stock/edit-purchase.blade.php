@@ -112,8 +112,26 @@
                         <!-- Paid Amount -->
                         <div class="col-span-1">
                             <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Paid Amount</label>
-                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', $purchase->paid_amount) }}" min="0" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', $purchase->paid_amount) }}" min="0" max="{{ $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="updatePendingAmount()">
                             @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1">Max: {{ number_format($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price), 2) }}</p>
+                        </div>
+
+                        <!-- Payment Channel -->
+                        <div class="col-span-1">
+                            <label for="payment_option_id" class="block text-sm font-medium text-slate-700 mb-1">Payment Channel</label>
+                            <select name="payment_option_id" id="payment_option_id" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">Select Channel (Optional)</option>
+                                @foreach($paymentOptions as $option)
+                                    <option value="{{ $option->id }}" 
+                                        data-balance="{{ $option->balance }}"
+                                        {{ old('payment_option_id', $purchase->payment_option_id) == $option->id ? 'selected' : '' }}>
+                                        {{ $option->name }} (Balance: {{ number_format($option->balance, 2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('payment_option_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1">Select channel to deduct payment from. Amount will be deducted from channel balance.</p>
                         </div>
 
                         <!-- Pending Amount (read-only, decreases when paid amount increases) -->
@@ -139,6 +157,43 @@
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
                             @enderror
                         </div>
+
+                        <!-- Payment History -->
+                        <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                            <h3 class="text-lg font-medium text-slate-900 mb-4">Payment History</h3>
+                            @if($purchase->payments && $purchase->payments->count() > 0)
+                                <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="bg-slate-100 border-b border-slate-200">
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-slate-700">Date</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-slate-700">Channel</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-700">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200">
+                                            @foreach($purchase->payments as $payment)
+                                                <tr>
+                                                    <td class="px-4 py-2 text-slate-600">{{ $payment->paid_date ? $payment->paid_date->format('Y-m-d') : $payment->created_at->format('Y-m-d') }}</td>
+                                                    <td class="px-4 py-2 text-slate-600">{{ $payment->paymentOption ? $payment->paymentOption->name : 'N/A' }}</td>
+                                                    <td class="px-4 py-2 text-right font-medium text-slate-900">{{ number_format($payment->amount, 2) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="bg-slate-100 border-t-2 border-slate-300">
+                                                <td colspan="2" class="px-4 py-2 text-right font-semibold text-slate-700">Total Paid:</td>
+                                                <td class="px-4 py-2 text-right font-bold text-slate-900">{{ number_format($purchase->payments->sum('amount'), 2) }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="bg-slate-50 rounded-lg border border-slate-200 p-4 text-center text-slate-500 text-sm">
+                                    No payment history recorded yet.
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">
@@ -159,12 +214,39 @@
             var totalAmount = {{ $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price) }};
             var paidInput = document.getElementById('paid_amount');
             var pendingEl = document.getElementById('pending_amount');
-            if (paidInput && pendingEl) {
-                paidInput.addEventListener('input', function() {
-                    var paid = parseFloat(this.value) || 0;
+            var paymentOptionSelect = document.getElementById('payment_option_id');
+            
+            function updatePendingAmount() {
+                if (paidInput && pendingEl) {
+                    var paid = parseFloat(paidInput.value) || 0;
+                    // Ensure paid doesn't exceed total
+                    if (paid > totalAmount) {
+                        paid = totalAmount;
+                        paidInput.value = totalAmount;
+                    }
                     var pending = Math.max(0, totalAmount - paid);
                     pendingEl.value = pending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                });
+                    
+                    // Check payment option balance if selected
+                    if (paymentOptionSelect && paymentOptionSelect.value) {
+                        var selectedOption = paymentOptionSelect.options[paymentOptionSelect.selectedIndex];
+                        var balance = parseFloat(selectedOption.getAttribute('data-balance')) || 0;
+                        if (paid > balance) {
+                            paidInput.setCustomValidity('Insufficient balance in selected payment channel. Available: ' + balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                            paidInput.reportValidity();
+                        } else {
+                            paidInput.setCustomValidity('');
+                        }
+                    }
+                }
+            }
+            
+            if (paidInput) {
+                paidInput.addEventListener('input', updatePendingAmount);
+            }
+            
+            if (paymentOptionSelect) {
+                paymentOptionSelect.addEventListener('change', updatePendingAmount);
             }
         })();
     </script>
