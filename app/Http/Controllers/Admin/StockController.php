@@ -12,6 +12,7 @@ use App\Models\Stock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class StockController extends Controller
 {
@@ -535,11 +536,23 @@ class StockController extends Controller
         $validated['limit_status'] = 'pending';
         $validated['limit_remaining'] = $quantity;
         $validated['sell_price'] = $request->filled('sell_price') ? $request->input('sell_price') : null;
-        $validated['payment_option_id'] = $request->filled('payment_option_id') ? $request->input('payment_option_id') : null;
+        
+        // Only add payment_option_id if the column exists (migration has been run)
+        $paymentOptionId = $request->filled('payment_option_id') ? $request->input('payment_option_id') : null;
+        try {
+            // Check if column exists by trying to get schema
+            $columns = Schema::getColumnListing('purchases');
+            if (in_array('payment_option_id', $columns)) {
+                $validated['payment_option_id'] = $paymentOptionId;
+            }
+        } catch (\Exception $e) {
+            // Column doesn't exist, skip it
+            Log::warning('payment_option_id column not found in purchases table. Migration may need to be run.');
+        }
 
         // Handle payment option balance deduction if payment is made
-        if ($paidAmount > 0 && $validated['payment_option_id']) {
-            $paymentOption = PaymentOption::find($validated['payment_option_id']);
+        if ($paidAmount > 0 && $paymentOptionId) {
+            $paymentOption = PaymentOption::find($paymentOptionId);
             if ($paymentOption) {
                 if ($paymentOption->balance >= $paidAmount) {
                     $paymentOption->decrement('balance', $paidAmount);
@@ -732,14 +745,26 @@ class StockController extends Controller
             }
         }
 
-        $purchase->update([
+        // Prepare update data
+        $updateData = [
             'name' => $validated['name'] ?? $purchase->name,
             'paid_date' => $newPaidDate,
             'paid_amount' => $paidAmount,
             'payment_status' => $paymentStatus,
             'payment_receipt_image' => $paymentReceiptPath,
-            'payment_option_id' => $newPaymentOptionId,
-        ]);
+        ];
+        
+        // Only add payment_option_id if the column exists (migration has been run)
+        try {
+            $columns = Schema::getColumnListing('purchases');
+            if (in_array('payment_option_id', $columns)) {
+                $updateData['payment_option_id'] = $newPaymentOptionId;
+            }
+        } catch (\Exception $e) {
+            Log::warning('payment_option_id column not found in purchases table. Migration may need to be run.');
+        }
+        
+        $purchase->update($updateData);
 
         // Record payment history if payment was made/changed
         if ($paidAmount > 0 && ($paymentDifference != 0 || $oldPaymentOption != $newPaymentOptionId)) {

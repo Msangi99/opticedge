@@ -128,6 +128,25 @@
                                     this.selectedImages.push(imagePath);
                                 }
                             },
+                            selectFirstThree() {
+                                // Select first 3 images that are not already selected
+                                const unselected = this.galleryImages
+                                    .map(img => img.image_path)
+                                    .filter(path => !this.selectedImages.includes(path))
+                                    .slice(0, 3);
+                                this.selectedImages.push(...unselected);
+                            },
+                            selectThreeFrom(imagePath) {
+                                // Select clicked image and 2 more unselected images
+                                if (!this.selectedImages.includes(imagePath)) {
+                                    this.selectedImages.push(imagePath);
+                                }
+                                const unselected = this.galleryImages
+                                    .map(img => img.image_path)
+                                    .filter(path => !this.selectedImages.includes(path))
+                                    .slice(0, 2);
+                                this.selectedImages.push(...unselected);
+                            },
                             isSelected(imagePath) {
                                 return this.selectedImages.includes(imagePath);
                             },
@@ -209,13 +228,21 @@
                                                 <h3 class="text-lg font-semibold text-slate-900">Select Images from Purchase Gallery</h3>
                                                 <p class="text-sm text-slate-500 mt-1">Click images to select. Selected: <span class="font-medium text-[#fa8900]" x-text="getSelectedCount()"></span></p>
                                             </div>
-                                            <button type="button" 
-                                                    @click="closeGallery()"
-                                                    class="text-slate-400 hover:text-slate-600 transition-colors">
-                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
+                                            <div class="flex items-center gap-3">
+                                                <button type="button" 
+                                                        @click="selectFirstThree()"
+                                                        x-show="getSelectedCount() < 3"
+                                                        class="px-3 py-1.5 text-sm bg-[#fa8900] text-white rounded-lg hover:bg-[#e67d00] transition-colors font-medium">
+                                                    Select 3 Images
+                                                </button>
+                                                <button type="button" 
+                                                        @click="closeGallery()"
+                                                        class="text-slate-400 hover:text-slate-600 transition-colors">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                         
                                         <!-- Modal Body - Gallery -->
@@ -224,7 +251,7 @@
                                                 <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                                     @foreach($purchaseImages as $img)
                                                         <div class="relative cursor-pointer group" 
-                                                             @click="toggleImage('{{ $img['image_path'] }}')"
+                                                             @click="getSelectedCount() < 3 ? selectThreeFrom('{{ $img['image_path'] }}') : toggleImage('{{ $img['image_path'] }}')"
                                                              :class="isSelected('{{ $img['image_path'] }}') ? 'ring-2 ring-[#fa8900] ring-offset-2' : ''">
                                                             <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 transition-all"
                                                                  :class="isSelected('{{ $img['image_path'] }}') ? 'border-[#fa8900]' : 'border-slate-200'">
@@ -309,40 +336,6 @@
                             @enderror
                         </div>
 
-                        <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
-                            <h3 class="text-lg font-medium text-slate-900 mb-4">Payment Details</h3>
-                        </div>
-
-                        <!-- Paid Date -->
-                        <div class="col-span-1">
-                            <label for="paid_date" class="block text-sm font-medium text-slate-700 mb-1">Paid Date</label>
-                            <input type="date" name="paid_date" id="paid_date" value="{{ old('paid_date') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-
-                        <!-- Paid Amount -->
-                        <div class="col-span-1">
-                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Paid Amount</label>
-                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount') }}" min="0" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="updatePaymentStatus()">
-                            @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
-
-                        <!-- Payment Status (Auto-calculated) -->
-                        <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                            <input type="text" id="payment_status_display" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="Pending">
-                            <p class="text-xs text-slate-500 mt-1">Auto: Updates based on paid amount.</p>
-                        </div>
-
-                        <!-- Payment Receipt Image -->
-                        <div class="col-span-2">
-                            <label for="payment_receipt_image" class="block text-sm font-medium text-slate-700 mb-1">Payment Receipt Image</label>
-                            <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
-                            <p class="text-xs text-slate-500 mt-1">Upload payment receipt image (optional). Formats: JPG, PNG, GIF, WebP. Max 5MB.</p>
-                            @error('payment_receipt_image')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
                     </div>
 
                     <div class="mt-6 flex justify-end">
@@ -362,33 +355,10 @@
             const total = qty * price;
             const el = document.getElementById('total_amount');
             if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            updatePaymentStatus();
-        }
-        
-        function updatePaymentStatus() {
-            const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
-            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
-            const total = qty * price;
-            const paid = parseFloat(document.getElementById('paid_amount')?.value) || 0;
-            const statusEl = document.getElementById('payment_status_display');
-            
-            if (statusEl) {
-                let status = 'Pending';
-                if (paid >= total && total > 0) {
-                    status = 'Paid';
-                } else if (paid > 0) {
-                    status = 'Partial';
-                }
-                statusEl.value = status;
-            }
         }
         
         document.addEventListener('DOMContentLoaded', function() {
             calculateTotal();
-            const paidInput = document.getElementById('paid_amount');
-            if (paidInput) {
-                paidInput.addEventListener('input', updatePaymentStatus);
-            }
         });
     </script>
 </x-admin-layout>
