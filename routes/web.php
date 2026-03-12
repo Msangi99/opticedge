@@ -122,6 +122,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('purchases/{id}/edit', [App\Http\Controllers\Admin\StockController::class , 'editPurchase'])->name('edit-purchase');
             Route::put('purchases/{id}', [App\Http\Controllers\Admin\StockController::class , 'updatePurchase'])->name('update-purchase');
             Route::delete('purchases/{id}', [App\Http\Controllers\Admin\StockController::class , 'destroyPurchase'])->name('destroy-purchase');
+            Route::post('purchases/update-prices', [App\Http\Controllers\Admin\StockController::class , 'updateAllProductPrices'])->name('update-product-prices');
             
             // Distribution Sales
             Route::get('distribution', [App\Http\Controllers\Admin\StockController::class , 'distribution'])->name('distribution');

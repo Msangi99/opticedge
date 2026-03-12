@@ -9,6 +9,7 @@ use App\Models\DistributionSale;
 use App\Models\PaymentOption;
 use App\Models\Stock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StockController extends Controller
 {
@@ -415,7 +416,7 @@ class StockController extends Controller
         if ($request->has('selected_images') && is_array($request->selected_images)) {
             foreach ($request->selected_images as $selectedPath) {
                 // Validate that the image path exists in storage
-                if (\Storage::disk('public')->exists($selectedPath)) {
+                if (Storage::disk('public')->exists($selectedPath)) {
                     $imagePaths[] = $selectedPath;
                 }
             }
@@ -548,8 +549,8 @@ class StockController extends Controller
             $receiptImage = $request->file('payment_receipt_image');
             if ($receiptImage->isValid()) {
                 // Delete old receipt image if exists
-                if ($purchase->payment_receipt_image && \Storage::disk('public')->exists($purchase->payment_receipt_image)) {
-                    \Storage::disk('public')->delete($purchase->payment_receipt_image);
+                if ($purchase->payment_receipt_image && Storage::disk('public')->exists($purchase->payment_receipt_image)) {
+                    Storage::disk('public')->delete($purchase->payment_receipt_image);
                 }
                 // Store in purchase-specific directory: receipts/purchase-{id}/
                 $receiptDir = 'receipts/purchase-' . $purchase->id;
@@ -773,5 +774,31 @@ class StockController extends Controller
         $pendingSale->delete();
 
         return redirect()->route('admin.stock.pending-sales')->with('success', 'Sale saved successfully. Amount added to payment option balance.');
+    }
+
+    /**
+     * Update all existing products to use sell_price from their latest purchase.
+     * This ensures front page products show the correct sell_price instead of unit_price.
+     */
+    public function updateAllProductPrices()
+    {
+        $products = \App\Models\Product::all();
+        $updatedCount = 0;
+
+        foreach ($products as $product) {
+            $latestPurchase = Purchase::where('product_id', $product->id)
+                ->whereNotNull('sell_price')
+                ->latest('date')
+                ->latest('id')
+                ->first();
+            
+            if ($latestPurchase && $latestPurchase->sell_price) {
+                $product->update(['price' => $latestPurchase->sell_price]);
+                $updatedCount++;
+            }
+        }
+
+        return redirect()->route('admin.stock.purchases')
+            ->with('success', "Updated {$updatedCount} product(s) to use sell_price from their latest purchase.");
     }
 }
