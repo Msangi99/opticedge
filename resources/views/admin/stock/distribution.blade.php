@@ -19,22 +19,22 @@
             <table class="w-full text-left">
                 <thead>
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3 bg-blue-100">Date</th>
-                        <th class="px-6 py-3 bg-green-100">Dealer</th>
-                        <th class="px-6 py-3 bg-yellow-100">Seller</th>
-                        <th class="px-6 py-3 bg-purple-100">Product</th>
-                        <th class="px-6 py-3 bg-pink-100">Qty</th>
-                        <th class="px-6 py-3 bg-indigo-100">Buy Price</th>
-                        <th class="px-6 py-3 bg-red-100">Sell Price</th>
-                        <th class="px-6 py-3 bg-orange-100">Total Buy</th>
-                        <th class="px-6 py-3 bg-teal-100">Total Sell</th>
-                        <th class="px-6 py-3 bg-cyan-100">Paid</th>
-                        <th class="px-6 py-3 bg-amber-100">Pending (Balance)</th>
-                        <th class="px-6 py-3 bg-lime-100">Commission</th>
-                        <th class="px-6 py-3 bg-rose-100">Profit</th>
-                        <th class="px-6 py-3 bg-sky-100">Status</th>
-                        <th class="px-6 py-3 bg-violet-100">Channel (Bank)</th>
-                        <th class="px-6 py-3 bg-fuchsia-100">Action</th>
+                        <th class="px-6 py-3 bg-gray-100">Date</th>
+                        <th class="px-6 py-3 bg-gray-100">Dealer</th>
+                        <th class="px-6 py-3 bg-gray-100">Seller</th>
+                        <th class="px-6 py-3 bg-gray-100">Product</th>
+                        <th class="px-6 py-3 bg-gray-100">Qty</th>
+                        <th class="px-6 py-3 bg-gray-100">Buy Price</th>
+                        <th class="px-6 py-3 bg-gray-100">Sell Price</th>
+                        <th class="px-6 py-3 bg-gray-100">Total Buy</th>
+                        <th class="px-6 py-3 bg-gray-100">Total Sell</th>
+                        <th class="px-6 py-3 bg-gray-100">Paid</th>
+                        <th class="px-6 py-3 bg-gray-100">Pending (Balance)</th>
+                        <th class="px-6 py-3 bg-gray-100">Commission</th>
+                        <th class="px-6 py-3 bg-gray-100">Profit</th>
+                        <th class="px-6 py-3 bg-gray-100">Status</th>
+                        <th class="px-6 py-3 bg-gray-100">Channel (Bank)</th>
+                        <th class="px-6 py-3 bg-gray-100">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">

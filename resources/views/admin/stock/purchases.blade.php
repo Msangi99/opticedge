@@ -26,19 +26,19 @@
             <table class="w-full text-left min-w-[1200px]">
                 <thead>
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3 bg-blue-100">Invoice Number</th>
-                        <th class="px-6 py-3 bg-green-100">Date</th>
-                        <th class="px-6 py-3 bg-yellow-100">Distributor</th>
-                        <th class="px-6 py-3 bg-purple-100">Product</th>
-                        <th class="px-6 py-3 bg-pink-100">Quantity</th>
-                        <th class="px-6 py-3 bg-indigo-100">Unit Price</th>
-                        <th class="px-6 py-3 bg-red-100">Total Value</th>
-                        <th class="px-6 py-3 bg-orange-100">Paid Date</th>
-                        <th class="px-6 py-3 bg-teal-100">Paid Amount</th>
-                        <th class="px-6 py-3 bg-cyan-100">Pending Amount</th>
-                        <th class="px-6 py-3 bg-amber-100">Sell Price</th>
-                        <th class="px-6 py-3 bg-lime-100">Status</th>
-                        <th class="px-6 py-3 bg-rose-100">Action</th>
+                        <th class="px-6 py-3 bg-gray-100">Invoice Number</th>
+                        <th class="px-6 py-3 bg-gray-100">Date</th>
+                        <th class="px-6 py-3 bg-gray-100">Distributor</th>
+                        <th class="px-6 py-3 bg-gray-100">Product</th>
+                        <th class="px-6 py-3 bg-gray-100">Quantity</th>
+                        <th class="px-6 py-3 bg-gray-100">Unit Price</th>
+                        <th class="px-6 py-3 bg-gray-100">Total Value</th>
+                        <th class="px-6 py-3 bg-gray-100">Paid Date</th>
+                        <th class="px-6 py-3 bg-gray-100">Paid Amount</th>
+                        <th class="px-6 py-3 bg-gray-100">Pending Amount</th>
+                        <th class="px-6 py-3 bg-gray-100">Sell Price</th>
+                        <th class="px-6 py-3 bg-gray-100">Status</th>
+                        <th class="px-6 py-3 bg-gray-100">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm">
