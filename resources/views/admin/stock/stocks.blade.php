@@ -58,9 +58,17 @@
                     @empty
                         <tr>
                             <td colspan="5" class="px-6 py-8 text-center text-slate-500">
-                                <p>No stocks found in the database.</p>
-                                <p class="text-xs mt-2 text-slate-400">Note: This page shows Stock records, not Purchases. To view purchases, go to the Purchases page.</p>
-                                <p class="text-xs mt-1 text-slate-400">If you have purchases but no stocks, you may need to create stock records first.</p>
+                                @if(isset($hasPurchases) && $hasPurchases)
+                                    <p class="font-medium text-slate-700 mb-2">No stocks found, but you have {{ $purchasesCount }} purchase(s) in the system.</p>
+                                    <p class="text-sm mt-2 text-slate-600">To view your purchases, go to the <a href="{{ route('admin.stock.purchases') }}" class="text-[#fa8900] hover:underline font-medium">Purchases page</a>.</p>
+                                    @if(isset($distributors) && $distributors->count() > 0)
+                                        <p class="text-xs mt-2 text-slate-500">Your purchases are from: {{ $distributors->implode(', ') }}</p>
+                                    @endif
+                                @else
+                                    <p>No stocks found in the database.</p>
+                                    <p class="text-xs mt-2 text-slate-400">Note: This page shows Stock records, not Purchases. To view purchases, go to the <a href="{{ route('admin.stock.purchases') }}" class="text-[#fa8900] hover:underline">Purchases page</a>.</p>
+                                    <p class="text-xs mt-1 text-slate-400">If you have purchases but no stocks, you may need to create stock records first.</p>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

@@ -47,12 +47,31 @@ class StockController extends Controller
                     'status' => $status,
                 ];
             });
+            
+            // If no stocks exist but purchases exist, show purchases grouped by distributor or product
+            if ($stocksData->isEmpty()) {
+                $purchasesCount = Purchase::count();
+                if ($purchasesCount > 0) {
+                    // Get unique distributors from purchases to suggest creating stocks
+                    $distributors = Purchase::whereNotNull('distributor_name')
+                        ->select('distributor_name')
+                        ->distinct()
+                        ->pluck('distributor_name');
+                    
+                    return view('admin.stock.stocks', [
+                        'stocks' => $stocksData,
+                        'hasPurchases' => true,
+                        'purchasesCount' => $purchasesCount,
+                        'distributors' => $distributors,
+                    ]);
+                }
+            }
         } catch (\Exception $e) {
             Log::error('Error loading stocks: ' . $e->getMessage());
             $stocksData = collect([]);
         }
 
-        return view('admin.stock.stocks', ['stocks' => $stocksData]);
+        return view('admin.stock.stocks', ['stocks' => $stocksData, 'hasPurchases' => false]);
     }
 
     /**
