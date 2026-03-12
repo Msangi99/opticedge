@@ -390,7 +390,7 @@ class StockController extends Controller
         }
 
         // Find or create the product based on category and model name
-        // Use sell_price if available, otherwise use unit_price
+        // Use sell_price if available, otherwise use unit_price for initial product creation
         $productPrice = $validated['sell_price'] ?? $validated['unit_price'];
         $product = \App\Models\Product::firstOrCreate(
             [
@@ -406,10 +406,7 @@ class StockController extends Controller
             ]
         );
         
-        // Update product price if sell_price is provided
-        if (!empty($validated['sell_price']) && $product->price != $validated['sell_price']) {
-            $product->update(['price' => $validated['sell_price']]);
-        }
+        // Note: Product price will be updated after purchase creation to use latest sell_price
 
         // Combine selected images from gallery and uploaded images
         $imagePaths = [];
@@ -483,6 +480,18 @@ class StockController extends Controller
 
         // Keep product.stock_quantity in sync so Category Management and dashboards show correct counts
         $product->increment('stock_quantity', $validated['quantity']);
+
+        // Update product price to use the latest purchase's sell_price (if available)
+        // This ensures front page products show the correct sell_price instead of unit_price
+        $latestPurchase = Purchase::where('product_id', $product->id)
+            ->whereNotNull('sell_price')
+            ->latest('date')
+            ->latest('id')
+            ->first();
+        
+        if ($latestPurchase && $latestPurchase->sell_price) {
+            $product->update(['price' => $latestPurchase->sell_price]);
+        }
 
         return redirect()->route('admin.stock.purchases')->with('success', 'Purchase recorded successfully.');
     }
@@ -560,6 +569,20 @@ class StockController extends Controller
             'payment_status' => $paymentStatus,
             'payment_receipt_image' => $paymentReceiptPath,
         ]);
+
+        // Update product price to use the latest purchase's sell_price (if available)
+        // This ensures front page products show the correct sell_price instead of unit_price
+        if ($purchase->product) {
+            $latestPurchase = Purchase::where('product_id', $purchase->product_id)
+                ->whereNotNull('sell_price')
+                ->latest('date')
+                ->latest('id')
+                ->first();
+            
+            if ($latestPurchase && $latestPurchase->sell_price) {
+                $purchase->product->update(['price' => $latestPurchase->sell_price]);
+            }
+        }
 
         return redirect()->route('admin.stock.purchases')->with('success', 'Purchase updated successfully.');
     }
