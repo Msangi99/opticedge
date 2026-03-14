@@ -111,10 +111,16 @@
 
                         <!-- Paid Amount -->
                         <div class="col-span-1">
-                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Paid Amount</label>
+                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Pay</label>
                             <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', $purchase->paid_amount) }}" min="0" max="{{ $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="updatePendingAmount()">
                             @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                            <p class="text-xs text-slate-500 mt-1">Max: {{ number_format($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price), 2) }}</p>
+                            @php
+                                $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
+                                $pendingNow = max(0, $purchaseTotal - $purchase->paid_amount);
+                            @endphp
+                            <p class="text-xs text-slate-500 mt-1">
+                                Max: {{ number_format($purchaseTotal, 2) }} (use amount remaining to put in the debt)
+                            </p>
                         </div>
 
                         <!-- Payment Channel -->
@@ -134,12 +140,11 @@
                             <p class="text-xs text-slate-500 mt-1">Select channel to deduct payment from. Amount will be deducted from channel balance.</p>
                         </div>
 
-                        <!-- Pending Amount (read-only, decreases when paid amount increases) -->
+                        <!-- Pending Amount (read-only, shows actual pending amount) -->
                         <div class="col-span-1">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Pending Amount</label>
-                            @php $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price); @endphp
-                            <input type="text" id="pending_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="{{ number_format(max(0, $purchaseTotal - $purchase->paid_amount), 2) }}">
-                            <p class="text-xs text-slate-500 mt-1">Auto: Total − Paid. Status updates automatically when you save.</p>
+                            <input type="text" id="pending_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="{{ number_format($pendingNow, 2) }}">
+                            <p class="text-xs text-slate-500 mt-1">Actual pending amount = Total − total paid. Updates automatically as you type.</p>
                         </div>
 
                         <!-- Payment Receipt Image -->
