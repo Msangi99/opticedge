@@ -35,7 +35,9 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3 font-medium">
                                 @if($hasPurchases)
-                                    <span class="text-slate-800">{{ $stock->name }}</span>
+                                    <a href="{{ route('admin.stock.purchase.show', $stock->id) }}" class="text-[#fa8900] hover:underline">
+                                        {{ $stock->name }}
+                                    </a>
                                 @else
                                     <a href="{{ route('admin.stock.stocks.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
                                 @endif
