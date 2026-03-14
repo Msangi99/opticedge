@@ -21,6 +21,8 @@ class StockController extends Controller
      */
     public function stocks()
     {
+        $usingPurchases = false;
+
         try {
             // Get all stocks
             $stocks = Stock::orderBy('name')->get();
@@ -49,22 +51,26 @@ class StockController extends Controller
                 ];
             });
             
-            // If no stocks exist but purchases exist, show purchases grouped by distributor or product
+            // If no stocks exist but purchases exist, build rows from purchases instead
             if ($stocksData->isEmpty()) {
-                $purchasesCount = Purchase::count();
-                if ($purchasesCount > 0) {
-                    // Get unique distributors from purchases to suggest creating stocks
-                    $distributors = Purchase::whereNotNull('distributor_name')
-                        ->select('distributor_name')
-                        ->distinct()
-                        ->pluck('distributor_name');
-                    
-                    return view('admin.stock.stocks', [
-                        'stocks' => $stocksData,
-                        'hasPurchases' => true,
-                        'purchasesCount' => $purchasesCount,
-                        'distributors' => $distributors,
-                    ]);
+                $purchases = Purchase::withCount('productListItems')->orderBy('date', 'desc')->get();
+
+                if ($purchases->isNotEmpty()) {
+                    $usingPurchases = true;
+
+                    $stocksData = $purchases->map(function ($purchase) {
+                        $limit = (int) ($purchase->quantity ?? 0);
+                        $added = (int) ($purchase->product_list_items_count ?? 0);
+                        $status = ($limit > 0 && $added === $limit) ? 'complete' : 'pending';
+
+                        return (object) [
+                            'id' => $purchase->id,
+                            'name' => $purchase->name ?? 'Unnamed Purchase',
+                            'stock_quantity' => $limit,
+                            'added' => $added,
+                            'status' => $status,
+                        ];
+                    });
                 }
             }
         } catch (\Exception $e) {
@@ -72,7 +78,10 @@ class StockController extends Controller
             $stocksData = collect([]);
         }
 
-        return view('admin.stock.stocks', ['stocks' => $stocksData, 'hasPurchases' => false]);
+        return view('admin.stock.stocks', [
+            'stocks' => $stocksData,
+            'hasPurchases' => $usingPurchases,
+        ]);
     }
 
     /**
