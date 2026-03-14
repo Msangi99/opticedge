@@ -112,12 +112,21 @@
                         <!-- Paid Amount -->
                         <div class="col-span-1">
                             <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Pay</label>
-                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', $purchase->paid_amount) }}" min="0" max="{{ $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="updatePendingAmount()">
-                            @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             @php
                                 $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
                                 $pendingNow = max(0, $purchaseTotal - $purchase->paid_amount);
                             @endphp
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="paid_amount"
+                                id="paid_amount"
+                                value="{{ old('paid_amount', 0) }}"
+                                min="0"
+                                max="{{ $pendingNow }}"
+                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                oninput="updatePendingAmount()">
+                            @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             <p class="text-xs text-slate-500 mt-1">
                                 Max: {{ number_format($purchaseTotal, 2) }} (use amount remaining to put in the debt)
                             </p>
@@ -223,27 +232,27 @@
 
     <script>
         (function() {
-            var totalAmount = {{ $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price) }};
+            var pendingBase = {{ max(0, ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price)) - $purchase->paid_amount) }};
             var paidInput = document.getElementById('paid_amount');
             var pendingEl = document.getElementById('pending_amount');
             var paymentOptionSelect = document.getElementById('payment_option_id');
             
             function updatePendingAmount() {
                 if (paidInput && pendingEl) {
-                    var paid = parseFloat(paidInput.value) || 0;
-                    // Ensure paid doesn't exceed total
-                    if (paid > totalAmount) {
-                        paid = totalAmount;
-                        paidInput.value = totalAmount;
+                    var payNow = parseFloat(paidInput.value) || 0;
+                    // Ensure payNow doesn't exceed remaining pending
+                    if (payNow > pendingBase) {
+                        payNow = pendingBase;
+                        paidInput.value = pendingBase;
                     }
-                    var pending = Math.max(0, totalAmount - paid);
+                    var pending = Math.max(0, pendingBase - payNow);
                     pendingEl.value = pending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     
                     // Check payment option balance if selected
                     if (paymentOptionSelect && paymentOptionSelect.value) {
                         var selectedOption = paymentOptionSelect.options[paymentOptionSelect.selectedIndex];
                         var balance = parseFloat(selectedOption.getAttribute('data-balance')) || 0;
-                        if (paid > balance) {
+                        if (payNow > balance) {
                             paidInput.setCustomValidity('Insufficient balance in selected payment channel. Available: ' + balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                             paidInput.reportValidity();
                         } else {

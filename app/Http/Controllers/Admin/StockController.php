@@ -808,7 +808,9 @@ class StockController extends Controller
             }
         }
 
-        return redirect()->route('admin.stock.purchases')->with('success', 'Purchase updated successfully.');
+        return redirect()
+            ->route('admin.stock.edit-purchase', $purchase->id)
+            ->with('success', 'Purchase updated successfully.');
     }
 
     public function destroyPurchase($id)

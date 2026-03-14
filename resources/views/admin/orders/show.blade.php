@@ -11,7 +11,7 @@
             <h2 class="text-2xl font-bold text-slate-800">Order #{{ $order->id }}</h2>
         </div>
 
-        <!-- Status Update Form -->
+        <!-- Status & Channel Update Form -->
         <form action="{{ route('admin.orders.update', $order) }}" method="POST" class="flex items-center gap-2">
             @csrf
             @method('PUT')
@@ -23,9 +23,18 @@
                 <option value="delivered" {{ $order->status == 'delivered' ? 'selected' : '' }}>Delivered</option>
                 <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
             </select>
+            <select name="payment_option_id"
+                class="rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900] text-sm">
+                <option value="">Select Channel</option>
+                @foreach($paymentOptions as $option)
+                    <option value="{{ $option->id }}" {{ $order->payment_option_id == $option->id ? 'selected' : '' }}>
+                        {{ $option->name }}
+                    </option>
+                @endforeach
+            </select>
             <button type="submit"
                 class="bg-[#232f3e] hover:bg-[#37475a] text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                Update Status
+                Update
             </button>
         </form>
     </div>
@@ -141,6 +150,12 @@
                     <div class="flex justify-between py-2">
                         <span class="text-slate-600">Method</span>
                         <span class="font-medium text-slate-900 uppercase">{{ $order->payment_method ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-slate-600">Channel</span>
+                        <span class="font-medium text-slate-900">
+                            {{ $order->paymentOption?->name ?? '—' }}
+                        </span>
                     </div>
                     <div class="flex justify-between py-2">
                         <span class="text-slate-600">Status</span>
