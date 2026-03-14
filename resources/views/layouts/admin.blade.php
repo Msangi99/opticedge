@@ -169,6 +169,8 @@
                 class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Dealers</a>
             <a href="{{ route('admin.agents.index') }}"
                 class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Agents</a>
+            <a href="{{ route('admin.stock.stocks') }}"
+                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Stock</a>
             <a href="{{ route('admin.reports.index') }}"
                 class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Reports</a>
             <a href="{{ route('admin.expenses.index') }}"
