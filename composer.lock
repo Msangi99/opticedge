@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c0907a74a1bb2c73dbf6f17ce6d8e6a8",
+    "content-hash": "d7f3a6aa41e35b07d972e46a7487aa8a",
     "packages": [
         {
             "name": "brick/math",
@@ -1051,6 +1051,64 @@
                 }
             ],
             "time": "2025-08-22T14:27:06+00:00"
+        },
+        {
+            "name": "khanamiryan/qrcode-detector-decoder",
+            "version": "2.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/khanamiryan/php-qrcode-detector-decoder.git",
+                "reference": "17c570bb39f641cc1c4c41a46177ac491393a01d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/khanamiryan/php-qrcode-detector-decoder/zipball/17c570bb39f641cc1c4c41a46177ac491393a01d",
+                "reference": "17c570bb39f641cc1c4c41a46177ac491393a01d",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^7.5 | ^8.0 | ^9.0",
+                "rector/rector": "^1.0.4",
+                "symplify/easy-coding-standard": "^11.0",
+                "vimeo/psalm": "^4.24"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "lib/Common/customFunctions.php"
+                ],
+                "psr-4": {
+                    "Zxing\\": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT",
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Ashot Khanamiryan",
+                    "email": "a.khanamiryan@gmail.com",
+                    "homepage": "https://github.com/khanamiryan",
+                    "role": "Developer"
+                }
+            ],
+            "description": "QR code decoder / reader",
+            "homepage": "https://github.com/khanamiryan/php-qrcode-detector-decoder/",
+            "keywords": [
+                "barcode",
+                "qr",
+                "zxing"
+            ],
+            "support": {
+                "issues": "https://github.com/khanamiryan/php-qrcode-detector-decoder/issues",
+                "source": "https://github.com/khanamiryan/php-qrcode-detector-decoder/tree/2.0.3"
+            },
+            "time": "2025-06-10T08:44:02+00:00"
         },
         {
             "name": "laravel/framework",
@@ -5917,6 +5975,59 @@
             "time": "2026-01-01T22:13:48+00:00"
         },
         {
+            "name": "tarfin-labs/zbar-php",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tarfin-labs/zbar-php.git",
+                "reference": "8f49951993b6e3930921402541d905533ca24607"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tarfin-labs/zbar-php/zipball/8f49951993b6e3930921402541d905533ca24607",
+                "reference": "8f49951993b6e3930921402541d905533ca24607",
+                "shasum": ""
+            },
+            "require": {
+                "ext-imagick": "*",
+                "php": "^8.2|^8.3|^8.4",
+                "symfony/process": "^7.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.0|^12.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TarfinLabs\\ZbarPhp\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Faruk Can",
+                    "email": "faruk.can@tarfin.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "zbar-php is a php package that provides an interface to the zbar bar-code reading library.",
+            "homepage": "https://github.com/tarfin-labs/zbar-php",
+            "keywords": [
+                "bar-code",
+                "qr-code",
+                "tarfin-labs",
+                "zbar-php"
+            ],
+            "support": {
+                "issues": "https://github.com/tarfin-labs/zbar-php/issues",
+                "source": "https://github.com/tarfin-labs/zbar-php/tree/2.0.0"
+            },
+            "time": "2025-08-08T09:14:59+00:00"
+        },
+        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "v2.4.0",
             "source": {
@@ -8759,12 +8870,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
 }

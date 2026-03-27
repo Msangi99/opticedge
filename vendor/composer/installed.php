@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '7c0405d27aa01b798139987a369b5f4b4db9392c',
+        'reference' => '789448b3321466b9bb330f7bee80207bd0ab5fd7',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -370,6 +370,15 @@
                 0 => 'v11.48.0',
             ),
         ),
+        'khanamiryan/qrcode-detector-decoder' => array(
+            'pretty_version' => '2.0.3',
+            'version' => '2.0.3.0',
+            'reference' => '17c570bb39f641cc1c4c41a46177ac491393a01d',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../khanamiryan/qrcode-detector-decoder',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'kodova/hamcrest-php' => array(
             'dev_requirement' => true,
             'replaced' => array(
@@ -397,7 +406,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '7c0405d27aa01b798139987a369b5f4b4db9392c',
+            'reference' => '789448b3321466b9bb330f7bee80207bd0ab5fd7',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1336,6 +1345,15 @@
             'install_path' => __DIR__ . '/../symfony/yaml',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'tarfin-labs/zbar-php' => array(
+            'pretty_version' => '2.0.0',
+            'version' => '2.0.0.0',
+            'reference' => '8f49951993b6e3930921402541d905533ca24607',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../tarfin-labs/zbar-php',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(
             'pretty_version' => '1.3.1',

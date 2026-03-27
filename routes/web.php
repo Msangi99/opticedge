@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\CommandCenterController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\SelcomWebhookController;
 use Livewire\Volt\Volt;
@@ -36,7 +37,16 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-// Run whitelisted artisan command: GET /command/{command} (admin only)
+// Command center (UI) + POST actions — must be registered before GET command/{command}
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('command', [CommandCenterController::class, 'index'])->name('command.center');
+    Route::post('command/execute', [CommandCenterController::class, 'execute'])->name('command.execute');
+    Route::post('command/migrate-path', [CommandCenterController::class, 'migratePath'])->name('command.migrate-path');
+    Route::post('command/extension-track', [CommandCenterController::class, 'trackExtension'])->name('command.extension-track');
+    Route::post('command/extension-untrack', [CommandCenterController::class, 'untrackExtension'])->name('command.extension-untrack');
+});
+
+// Run whitelisted artisan command: GET /command/{command} (admin only, JSON)
 Route::get('command/{command}', App\Http\Controllers\Admin\ArtisanCommandController::class)
     ->middleware(['auth', 'admin'])
     ->where('command', '[a-zA-Z0-9:_-]+')
@@ -90,6 +100,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         // Settings
         Route::get('settings', [App\Http\Controllers\Admin\SettingController::class , 'index'])->name('settings.index');
         Route::post('settings', [App\Http\Controllers\Admin\SettingController::class , 'update'])->name('settings.update');
+
+        // Command center mirror under /admin/command (same UI as /command)
+        Route::get('command', [CommandCenterController::class, 'index'])->name('command.center');
 
         // Run whitelisted artisan command: GET /admin/command/{command}
         Route::get('command/{command}', App\Http\Controllers\Admin\ArtisanCommandController::class)

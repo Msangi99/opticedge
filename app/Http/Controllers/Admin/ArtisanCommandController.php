@@ -42,6 +42,14 @@ class ArtisanCommandController extends Controller
     ];
 
     /**
+     * @return list<string>
+     */
+    public static function allowedCommands(): array
+    {
+        return self::ALLOWED_COMMANDS;
+    }
+
+    /**
      * Run a whitelisted artisan command via GET /admin/command/{command}.
      * Optional query params: force=1 (--force), seed=1 (--seed for migrate:fresh/refresh).
      * Example: /admin/command/migrate?force=1
