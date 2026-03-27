@@ -106,13 +106,13 @@
                             <td class="px-6 py-3">
                                 <span>{{ $purchase->distributor_name ?? '-' }}</span>
                             </td>
-                            <td class="px-6 py-3 font-medium">{{ $purchase->product->name ?? 'N/A' }}</td>
+                            <td class="px-6 py-3 font-medium">{{ $purchase->product?->name ?? 'N/A' }}</td>
                             <td class="px-6 py-3">{{ $purchase->quantity }}</td>
                             <td class="px-6 py-3">{{ number_format($purchase->unit_price, 2) }}</td>
-                            @php $totalVal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price); $pendingVal = max(0, $totalVal - $purchase->paid_amount); @endphp
+                            @php $totalVal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price); $paidVal = (float) ($purchase->paid_amount ?? 0); $pendingVal = max(0, $totalVal - $paidVal); @endphp
                             <td class="px-6 py-3 font-bold">{{ number_format($totalVal, 2) }}</td>
                             <td class="px-6 py-3">{{ $purchase->paid_date ?? '-' }}</td>
-                            <td class="px-6 py-3">{{ number_format($purchase->paid_amount, 2) }}</td>
+                            <td class="px-6 py-3">{{ number_format($paidVal, 2) }}</td>
                             <td class="px-6 py-3 font-medium">{{ number_format($pendingVal, 2) }}</td>
                             <td class="px-6 py-3">{{ $purchase->sell_price !== null ? number_format($purchase->sell_price, 2) : '–' }}</td>
                             <td class="px-6 py-3">

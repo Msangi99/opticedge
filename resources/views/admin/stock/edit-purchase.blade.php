@@ -111,11 +111,13 @@
 
                         <!-- Paid Amount -->
                         <div class="col-span-1">
-                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Pay</label>
+                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Pay (this time)</label>
                             @php
                                 $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
-                                $pendingNow = max(0, $purchaseTotal - $purchase->paid_amount);
+                                $alreadyPaid = (float) ($purchase->paid_amount ?? 0);
+                                $pendingNow = max(0, $purchaseTotal - $alreadyPaid);
                             @endphp
+                            <p class="text-xs text-slate-600 mb-1">Already paid: <span class="font-medium text-slate-900">{{ number_format($alreadyPaid, 2) }}</span></p>
                             <input
                                 type="number"
                                 step="0.01"
@@ -128,7 +130,7 @@
                                 oninput="updatePendingAmount()">
                             @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             <p class="text-xs text-slate-500 mt-1">
-                                Max: {{ number_format($purchaseTotal, 2) }} (use amount remaining to put in the debt)
+                                You can pay up to the remaining balance: {{ number_format($pendingNow, 2) }}.
                             </p>
                         </div>
 
@@ -232,7 +234,7 @@
 
     <script>
         (function() {
-            var pendingBase = {{ max(0, ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price)) - $purchase->paid_amount) }};
+            var pendingBase = {{ $pendingNow }};
             var paidInput = document.getElementById('paid_amount');
             var pendingEl = document.getElementById('pending_amount');
             var paymentOptionSelect = document.getElementById('payment_option_id');

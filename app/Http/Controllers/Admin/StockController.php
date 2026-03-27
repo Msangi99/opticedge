@@ -766,71 +766,78 @@ class StockController extends Controller
             }
         }
 
-        // Auto status from paid amount: pending / partial / paid
+        // Form field "paid_amount" is incremental ("Pay this time"); persist cumulative total.
         $totalAmount = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
-        $paidAmount = (float) ($validated['paid_amount'] ?? 0);
-        
-        // Ensure paid amount doesn't exceed total amount
-        if ($paidAmount > $totalAmount) {
+        $oldPaidAmount = (float) ($purchase->paid_amount ?? 0);
+        $increment = max(0, (float) ($validated['paid_amount'] ?? 0));
+        $remaining = max(0, $totalAmount - $oldPaidAmount);
+        $eps = 0.0001;
+
+        if ($increment > $remaining + $eps) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['paid_amount' => 'Paid amount cannot exceed total purchase value.']);
+                ->withErrors(['paid_amount' => 'Pay amount cannot exceed the remaining balance for this purchase.']);
         }
-        
-        $paymentStatus = $paidAmount >= $totalAmount ? 'paid' : ($paidAmount > 0 ? 'partial' : 'pending');
-        
-        // Handle payment option and balance deduction
+
+        $newPaidAmount = min($totalAmount, $oldPaidAmount + $increment);
+        $paymentDifference = $newPaidAmount - $oldPaidAmount;
+
+        $paymentStatus = $newPaidAmount >= $totalAmount - $eps ? 'paid' : ($newPaidAmount > $eps ? 'partial' : 'pending');
+
         $oldPaymentOption = $purchase->payment_option_id;
-        $oldPaidAmount = $purchase->paid_amount ?? 0;
         $newPaymentOptionId = $validated['payment_option_id'] ?? null;
+        if ($newPaymentOptionId === '' || $newPaymentOptionId === false) {
+            $newPaymentOptionId = null;
+        } else {
+            $newPaymentOptionId = (int) $newPaymentOptionId;
+        }
         $newPaidDate = $validated['paid_date'] ?? null;
-        
-        // Calculate the difference in payment amount
-        $paymentDifference = $paidAmount - $oldPaidAmount;
-        
-        // If payment option changed or paid amount changed, update balances
-        if ($newPaymentOptionId && $paidAmount > 0) {
-            $paymentOption = PaymentOption::find($newPaymentOptionId);
-            if ($paymentOption) {
-                // If there was a previous payment option, refund the old amount
-                if ($oldPaymentOption && $oldPaymentOption != $newPaymentOptionId) {
-                    $oldOption = PaymentOption::find($oldPaymentOption);
-                    if ($oldOption) {
-                        $oldOption->increment('balance', $oldPaidAmount);
-                    }
-                }
-                
-                // Deduct new amount from selected payment option
-                if ($paymentOption->balance >= $paidAmount) {
-                    $paymentOption->decrement('balance', $paidAmount);
-                } else {
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
-                }
-            }
-        } elseif ($oldPaymentOption && (!$newPaymentOptionId || $paidAmount == 0)) {
-            // If payment option removed or amount set to 0, refund to old option
-            $oldOption = PaymentOption::find($oldPaymentOption);
+
+        // Payment channel balances: delta on same channel; refund old + charge full cumulative on switch; refund when channel removed
+        $oldOptId = $oldPaymentOption !== null ? (int) $oldPaymentOption : null;
+        $newOptId = $newPaymentOptionId;
+
+        if ($newOptId === null && $oldOptId !== null && $oldPaidAmount > $eps) {
+            $oldOption = PaymentOption::find($oldOptId);
             if ($oldOption) {
                 $oldOption->increment('balance', $oldPaidAmount);
             }
-        } elseif ($oldPaymentOption && $oldPaymentOption == $newPaymentOptionId && $paymentDifference != 0) {
-            // Same payment option but amount changed - adjust balance
-            $paymentOption = PaymentOption::find($newPaymentOptionId);
-            if ($paymentOption) {
-                if ($paymentDifference > 0) {
-                    // Additional payment - deduct difference
-                    if ($paymentOption->balance >= $paymentDifference) {
-                        $paymentOption->decrement('balance', $paymentDifference);
+        } elseif ($oldOptId !== null && $newOptId !== null && $oldOptId !== $newOptId) {
+            if ($oldPaidAmount > $eps) {
+                $oldOption = PaymentOption::find($oldOptId);
+                if ($oldOption) {
+                    $oldOption->increment('balance', $oldPaidAmount);
+                }
+            }
+            if ($newPaidAmount > $eps) {
+                $paymentOption = PaymentOption::find($newOptId);
+                if ($paymentOption) {
+                    if ($paymentOption->balance + $eps >= $newPaidAmount) {
+                        $paymentOption->decrement('balance', $newPaidAmount);
                     } else {
                         return redirect()->back()
                             ->withInput()
-                            ->withErrors(['paid_amount' => 'Insufficient balance in selected payment channel for additional payment.']);
+                            ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
                     }
-                } else {
-                    // Payment reduced - refund difference
-                    $paymentOption->increment('balance', abs($paymentDifference));
+                }
+            }
+        } elseif ($newOptId !== null) {
+            $paymentOption = PaymentOption::find($newOptId);
+            if ($paymentOption) {
+                $deltaToApply = $paymentDifference;
+                if ($oldOptId === null && $paymentDifference <= $eps && $oldPaidAmount > $eps) {
+                    $deltaToApply = $oldPaidAmount;
+                }
+                if ($deltaToApply > $eps) {
+                    if ($paymentOption->balance + $eps >= $deltaToApply) {
+                        $paymentOption->decrement('balance', $deltaToApply);
+                    } else {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['paid_amount' => 'Insufficient balance in selected payment channel for this payment.']);
+                    }
+                } elseif ($deltaToApply < -$eps) {
+                    $paymentOption->increment('balance', abs($deltaToApply));
                 }
             }
         }
@@ -839,7 +846,7 @@ class StockController extends Controller
         $updateData = [
             'name' => $validated['name'] ?? $purchase->name,
             'paid_date' => $newPaidDate,
-            'paid_amount' => $paidAmount,
+            'paid_amount' => $newPaidAmount,
             'payment_status' => $paymentStatus,
             'payment_receipt_image' => $paymentReceiptPath,
         ];
@@ -856,22 +863,17 @@ class StockController extends Controller
         
         $purchase->update($updateData);
 
-        // Record payment history if payment was made/changed
-        if ($paidAmount > 0 && ($paymentDifference != 0 || $oldPaymentOption != $newPaymentOptionId)) {
-            // If amount increased or payment option changed, create a new payment record
-            if ($paymentDifference > 0) {
-                try {
-                    PurchasePayment::create([
-                        'purchase_id' => $purchase->id,
-                        'payment_option_id' => $newPaymentOptionId,
-                        'amount' => $paymentDifference,
-                        'paid_date' => $newPaidDate ?? now()->toDateString(),
-                    ]);
-                } catch (\Exception $e) {
-                    // Table might not exist yet - migration needs to be run
-                    // Log error but don't fail the purchase update
-                    Log::warning('Failed to create purchase payment record: ' . $e->getMessage());
-                }
+        // Record one history row per incremental payment (amount = delta for this save)
+        if ($paymentDifference > $eps) {
+            try {
+                PurchasePayment::create([
+                    'purchase_id' => $purchase->id,
+                    'payment_option_id' => $newOptId,
+                    'amount' => $paymentDifference,
+                    'paid_date' => $newPaidDate ?? now()->toDateString(),
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create purchase payment record: ' . $e->getMessage());
             }
         }
 
