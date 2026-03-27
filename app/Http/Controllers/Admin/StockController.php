@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\PaymentOption;
 use App\Models\Stock;
+use App\Support\PurchaseInvoiceNumber;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -119,18 +122,40 @@ class StockController extends Controller
 
     public function purchases(Request $request)
     {
-        $query = Purchase::with(['product', 'stock']);
-        
-        // Date range filter
-        if ($request->filled('date_from')) {
-            $query->where('date', '>=', $request->date_from);
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $preset = $request->input('preset');
+
+        if ($request->filled('preset')) {
+            $now = Carbon::now();
+            switch ($preset) {
+                case 'this_week':
+                    $dateFrom = $now->copy()->startOfWeek()->toDateString();
+                    $dateTo = $now->copy()->endOfWeek()->toDateString();
+                    break;
+                case 'last_week':
+                    $dateFrom = $now->copy()->subWeek()->startOfWeek()->toDateString();
+                    $dateTo = $now->copy()->subWeek()->endOfWeek()->toDateString();
+                    break;
+                case 'last_30_days':
+                    $dateFrom = $now->copy()->subDays(30)->toDateString();
+                    $dateTo = $now->toDateString();
+                    break;
+            }
         }
-        if ($request->filled('date_to')) {
-            $query->where('date', '<=', $request->date_to);
+
+        $query = Purchase::with(['product', 'stock', 'branch']);
+
+        if ($dateFrom) {
+            $query->where('date', '>=', $dateFrom);
         }
-        
+        if ($dateTo) {
+            $query->where('date', '<=', $dateTo);
+        }
+
         $purchases = $query->latest('date')->get();
-        return view('admin.stock.purchases', compact('purchases'));
+
+        return view('admin.stock.purchases', compact('purchases', 'dateFrom', 'dateTo', 'preset'));
     }
 
     /**
@@ -236,6 +261,10 @@ class StockController extends Controller
     public function saveAgentSaleChannel(Request $request, $id)
     {
         $sale = AgentSale::findOrFail($id);
+
+        if ($sale->payment_option_id) {
+            return redirect()->route('admin.stock.agent-sales')->with('info', 'Payment channel is already set for this sale.');
+        }
 
         $validated = $request->validate([
             'payment_option_id' => 'required|exists:payment_options,id',
@@ -434,13 +463,16 @@ class StockController extends Controller
             ->values()
             ->all();
 
-        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock', 'purchaseImages'));
+        $branches = Branch::orderBy('name')->get();
+
+        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock', 'purchaseImages', 'branches'));
     }
 
     public function storePurchase(Request $request)
     {
         $validated = $request->validate([
             'stock_id' => 'nullable|exists:stocks,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'name' => 'nullable|string|max:255',
             'date' => 'required|date',
             'distributor_name' => 'nullable|string|max:255',
@@ -468,6 +500,14 @@ class StockController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['images' => 'Please select at least 3 images from gallery or upload from device.']);
+        }
+
+        $nameInput = trim((string) ($validated['name'] ?? ''));
+        if ($nameInput === '') {
+            $dateStr = PurchaseInvoiceNumber::dateString($validated['date']);
+            $validated['name'] = PurchaseInvoiceNumber::unique($validated['distributor_name'] ?? null, $dateStr);
+        } else {
+            $validated['name'] = $nameInput;
         }
 
         // Find or create the product based on category and model name
@@ -524,6 +564,11 @@ class StockController extends Controller
         unset($validated['model']);
         unset($validated['images']);
         unset($validated['stock_id']);
+        unset($validated['selected_images']);
+
+        if (empty($validated['branch_id'] ?? null)) {
+            $validated['branch_id'] = null;
+        }
 
         // Add product_id and optional stock_id
         $validated['product_id'] = $product->id;

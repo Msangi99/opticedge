@@ -99,6 +99,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         // Reports
         Route::get('reports', [App\Http\Controllers\Admin\ReportController::class , 'index'])->name('reports.index');
 
+        // Branches (locations / stores)
+        Route::resource('branches', App\Http\Controllers\Admin\BranchController::class)->except(['show']);
+
         // Expenses
         Route::resource('expenses', App\Http\Controllers\Admin\ExpenseController::class)->except(['show']);
 

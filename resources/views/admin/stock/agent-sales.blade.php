@@ -11,6 +11,9 @@
         @if(session('success'))
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
+        @if(session('info'))
+            <p class="mt-4 rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-800">{{ session('info') }}</p>
+        @endif
 
         <!-- Date Range Filter -->
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
@@ -57,7 +60,7 @@
                             <td class="px-6 py-3">{{ $sale->date }}</td>
                             <td class="px-6 py-3 font-medium">{{ $sale->customer_name ?? 'N/A' }}</td>
                             <td class="px-6 py-3">{{ $sale->seller_name ?? $sale->agent?->name ?? '-' }}</td>
-                            <td class="px-6 py-3">{{ $sale->product ? (($sale->product->category->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}</td>
+                            <td class="px-6 py-3">{{ $sale->product ? (($sale->product->category?->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}</td>
                             <td class="px-6 py-3">{{ $sale->quantity_sold }}</td>
                             <td class="px-6 py-3">{{ number_format($sale->purchase_price ?? 0, 0) }}</td>
                             <td class="px-6 py-3">{{ number_format($sale->selling_price ?? 0, 0) }}</td>

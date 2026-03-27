@@ -8,6 +8,7 @@ class Purchase extends Model
 {
     protected $fillable = [
         'name',
+        'branch_id',
         'stock_id',
         'product_id',
         'quantity',
@@ -38,6 +39,11 @@ class Purchase extends Model
     public function stock()
     {
         return $this->belongsTo(Stock::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function paymentOption()

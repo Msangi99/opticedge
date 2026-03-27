@@ -29,7 +29,8 @@
                         <!-- Invoice Number -->
                         <div class="col-span-2">
                             <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter invoice number">
+                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Leave empty for auto (XXXX-YYYY-MM-DD)">
+                            <p id="invoice_preview" class="text-xs text-slate-500 mt-1" aria-live="polite"></p>
                             @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
@@ -50,6 +51,18 @@
                                 @endforeach
                             </datalist>
                             @error('distributor_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Branch -->
+                        <div class="col-span-2">
+                            <label for="branch_id" class="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+                            <select name="branch_id" id="branch_id" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">— Optional —</option>
+                                @foreach($branches ?? [] as $branch)
+                                    <option value="{{ $branch->id }}" {{ (string) old('branch_id') === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('branch_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Category: from stock (read-only) or editable -->
@@ -129,22 +142,10 @@
                                 }
                             },
                             selectFirstThree() {
-                                // Select first 3 images that are not already selected
                                 const unselected = this.galleryImages
                                     .map(img => img.image_path)
                                     .filter(path => !this.selectedImages.includes(path))
                                     .slice(0, 3);
-                                this.selectedImages.push(...unselected);
-                            },
-                            selectThreeFrom(imagePath) {
-                                // Select clicked image and 2 more unselected images
-                                if (!this.selectedImages.includes(imagePath)) {
-                                    this.selectedImages.push(imagePath);
-                                }
-                                const unselected = this.galleryImages
-                                    .map(img => img.image_path)
-                                    .filter(path => !this.selectedImages.includes(path))
-                                    .slice(0, 2);
                                 this.selectedImages.push(...unselected);
                             },
                             isSelected(imagePath) {
@@ -247,39 +248,36 @@
                                         
                                         <!-- Modal Body - Gallery -->
                                         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-                                            @if(count($purchaseImages ?? []) > 0)
-                                                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                                    @foreach($purchaseImages as $img)
-                                                        <div class="relative cursor-pointer group" 
-                                                             @click="getSelectedCount() < 3 ? selectThreeFrom('{{ $img['image_path'] }}') : toggleImage('{{ $img['image_path'] }}')"
-                                                             :class="isSelected('{{ $img['image_path'] }}') ? 'ring-2 ring-[#fa8900] ring-offset-2' : ''">
-                                                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 transition-all"
-                                                                 :class="isSelected('{{ $img['image_path'] }}') ? 'border-[#fa8900]' : 'border-slate-200'">
-                                                                <img src="{{ $img['image_url'] }}" 
-                                                                     alt="{{ $img['product_name'] }}"
-                                                                     class="w-full h-full object-cover transition-all"
-                                                                     :class="isSelected('{{ $img['image_path'] }}') ? 'opacity-100' : 'opacity-75 group-hover:opacity-100'">
-                                                            </div>
-                                                            <div x-show="isSelected('{{ $img['image_path'] }}')" 
-                                                                 class="absolute top-2 right-2 bg-[#fa8900] text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
-                                                                ✓
-                                                            </div>
-                                                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
-                                                                <p class="text-white text-xs font-medium truncate">{{ $img['product_name'] }}</p>
-                                                                <p class="text-white/80 text-xs truncate">{{ $img['purchase_name'] }}</p>
-                                                            </div>
+                                            <div x-show="galleryImages.length === 0" class="border border-slate-200 rounded-lg p-8 bg-slate-50 text-center">
+                                                <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <p class="text-slate-600 font-medium">No images found in purchase gallery</p>
+                                                <p class="text-slate-500 text-sm mt-1">Please upload images from device instead.</p>
+                                            </div>
+                                            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                                <template x-for="img in galleryImages" :key="img.id">
+                                                    <div class="relative cursor-pointer group"
+                                                         @click="toggleImage(img.image_path)"
+                                                         :class="isSelected(img.image_path) ? 'ring-2 ring-[#fa8900] ring-offset-2' : ''">
+                                                        <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border-2 transition-all"
+                                                             :class="isSelected(img.image_path) ? 'border-[#fa8900]' : 'border-slate-200'">
+                                                            <img :src="img.image_url"
+                                                                 :alt="img.product_name"
+                                                                 class="w-full h-full object-cover transition-all"
+                                                                 :class="isSelected(img.image_path) ? 'opacity-100' : 'opacity-75 group-hover:opacity-100'">
                                                         </div>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                <div class="border border-slate-200 rounded-lg p-8 bg-slate-50 text-center">
-                                                    <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                    </svg>
-                                                    <p class="text-slate-600 font-medium">No images found in purchase gallery</p>
-                                                    <p class="text-slate-500 text-sm mt-1">Please upload images from device instead.</p>
-                                                </div>
-                                            @endif
+                                                        <div x-show="isSelected(img.image_path)"
+                                                             class="absolute top-2 right-2 bg-[#fa8900] text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
+                                                            ✓
+                                                        </div>
+                                                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
+                                                            <p class="text-white text-xs font-medium truncate" x-text="img.product_name"></p>
+                                                            <p class="text-white/80 text-xs truncate" x-text="img.purchase_name"></p>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                         
                                         <!-- Modal Footer -->
@@ -357,8 +355,27 @@
             if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
+        function invoicePreviewText() {
+            const dist = (document.getElementById('distributor_name')?.value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4).padEnd(4, 'X');
+            const d = document.getElementById('date')?.value || '';
+            const el = document.getElementById('invoice_preview');
+            if (!el) return;
+            if (!d) {
+                el.textContent = '';
+                return;
+            }
+            el.textContent = document.getElementById('name')?.value?.trim()
+                ? ''
+                : ('Suggested if invoice left empty: ' + dist + '-' + d);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             calculateTotal();
+            invoicePreviewText();
+            ['distributor_name', 'date', 'name'].forEach(function(id) {
+                document.getElementById(id)?.addEventListener('input', invoicePreviewText);
+                document.getElementById(id)?.addEventListener('change', invoicePreviewText);
+            });
         });
     </script>
 </x-admin-layout>

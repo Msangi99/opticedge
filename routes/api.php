@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\OrderController as ApiOrderController;
 use App\Http\Controllers\Api\UserController as ApiUserController;
 use App\Http\Controllers\Api\DistributionSaleController as ApiDistributionSaleController;
 use App\Http\Controllers\Api\PendingSaleController as ApiPendingSaleController;
+use App\Http\Controllers\Api\BranchController as ApiBranchController;
 use App\Http\Controllers\Api\ReportController as ApiReportController;
 use App\Http\Controllers\Api\SettingController as ApiSettingController;
 
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('stocks', [ApiStockController::class, 'store']);
         Route::get('stocks/under-limit', [ApiStockController::class, 'stocksUnderLimit']);
         Route::get('stocks/{id}/models', [ApiStockController::class, 'modelsForStock']);
+        Route::get('branches', [ApiBranchController::class, 'index']);
         Route::get('purchases', [ApiPurchaseController::class, 'index']);
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);

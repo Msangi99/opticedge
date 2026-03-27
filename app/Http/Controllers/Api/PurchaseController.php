@@ -12,7 +12,7 @@ class PurchaseController extends Controller
      */
     public function index()
     {
-        $purchases = Purchase::with(['product.category', 'stock'])
+        $purchases = Purchase::with(['product.category', 'stock', 'branch'])
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
             ->get()
@@ -23,6 +23,8 @@ class PurchaseController extends Controller
                     'limit' => (int) $p->quantity,
                     'available' => $p->limit_status ?? '–',
                     'status' => $p->payment_status ?? '–',
+                    'branch_id' => $p->branch_id,
+                    'branch_name' => $p->branch?->name,
                 ];
             })
             ->values()
@@ -61,7 +63,7 @@ class PurchaseController extends Controller
      */
     public function forAddProduct()
     {
-        $purchases = Purchase::with(['product.category', 'stock'])
+        $purchases = Purchase::with(['product.category', 'stock', 'branch'])
             ->where('limit_status', 'pending')
             ->where('limit_remaining', '>', 0)
             ->orderBy('date', 'desc')
@@ -76,6 +78,8 @@ class PurchaseController extends Controller
                     'name' => $p->name ?? 'Purchase #' . $p->id,
                     'stock_id' => $p->stock_id,
                     'stock_name' => $p->stock?->name,
+                    'branch_id' => $p->branch_id,
+                    'branch_name' => $p->branch?->name,
                     'category_id' => $product?->category_id,
                     'category_name' => $category?->name ?? '–',
                     'model' => $product?->name ?? '–',

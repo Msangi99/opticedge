@@ -35,19 +35,24 @@
         @endif
 
         <!-- Date Range Filter -->
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-            <form method="GET" action="{{ route('admin.stock.purchases') }}" class="flex gap-4 items-end">
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4 space-y-4">
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.stock.purchases', ['preset' => 'this_week']) }}" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 {{ ($preset ?? '') === 'this_week' ? 'bg-[#fa8900] text-white border-[#fa8900]' : 'text-slate-700' }}">This week</a>
+                <a href="{{ route('admin.stock.purchases', ['preset' => 'last_week']) }}" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 {{ ($preset ?? '') === 'last_week' ? 'bg-[#fa8900] text-white border-[#fa8900]' : 'text-slate-700' }}">Last week</a>
+                <a href="{{ route('admin.stock.purchases', ['preset' => 'last_30_days']) }}" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 {{ ($preset ?? '') === 'last_30_days' ? 'bg-[#fa8900] text-white border-[#fa8900]' : 'text-slate-700' }}">Last 30 days</a>
+            </div>
+            <form method="GET" action="{{ route('admin.stock.purchases') }}" class="flex flex-wrap gap-4 items-end">
                 <div>
                     <label for="date_from" class="block text-sm font-medium text-slate-700 mb-1">From Date</label>
-                    <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="date" name="date_from" id="date_from" value="{{ old('date_from', $dateFrom ?? request('date_from')) }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label for="date_to" class="block text-sm font-medium text-slate-700 mb-1">To Date</label>
-                    <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="date" name="date_to" id="date_to" value="{{ old('date_to', $dateTo ?? request('date_to')) }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">Filter</button>
-                    @if(request('date_from') || request('date_to'))
+                    @if(($dateFrom ?? null) || ($dateTo ?? null) || request('date_from') || request('date_to') || ($preset ?? null))
                         <a href="{{ route('admin.stock.purchases') }}" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors font-medium">Clear</a>
                     @endif
                 </div>
@@ -61,6 +66,7 @@
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3 bg-gray-100">Invoice Number</th>
                         <th class="px-6 py-3 bg-gray-100">Date</th>
+                        <th class="px-6 py-3 bg-gray-100">Branch</th>
                         <th class="px-6 py-3 bg-gray-100">Distributor</th>
                         <th class="px-6 py-3 bg-gray-100">Product</th>
                         <th class="px-6 py-3 bg-gray-100">Quantity</th>
@@ -79,6 +85,7 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3">{{ $purchase->name ?? '–' }}</td>
                             <td class="px-6 py-3">{{ $purchase->date }}</td>
+                            <td class="px-6 py-3">{{ $purchase->branch?->name ?? '–' }}</td>
                             <td class="px-6 py-3">
                                 <span>{{ $purchase->distributor_name ?? '-' }}</span>
                             </td>
@@ -117,7 +124,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
+                            <td colspan="14" class="px-6 py-4 text-center text-slate-500">No purchases found.</td>
                         </tr>
                     @endforelse
                 </tbody>
