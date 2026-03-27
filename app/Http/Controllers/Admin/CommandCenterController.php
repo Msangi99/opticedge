@@ -46,17 +46,23 @@ class CommandCenterController extends Controller
             $migrateStatus = 'Error: '.$e->getMessage();
         }
 
-        $extensions = get_loaded_extensions();
+        // Same PHP process as this web request — extensions actually loaded on this server
+        $extensions = array_values(array_unique(array_map('strtolower', get_loaded_extensions())));
         sort($extensions);
 
         $trackedExtensions = $this->getTrackedExtensions();
+
+        $phpVersion = PHP_VERSION;
+        $phpSapi = PHP_SAPI;
 
         return view('admin.command-center', compact(
             'allowedCommands',
             'migrationFiles',
             'migrateStatus',
             'extensions',
-            'trackedExtensions'
+            'trackedExtensions',
+            'phpVersion',
+            'phpSapi'
         ));
     }
 

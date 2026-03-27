@@ -85,11 +85,13 @@
     {{-- Extensions --}}
     <div class="mt-6 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
         <h3 class="text-lg font-semibold text-slate-800 mb-3">PHP extensions</h3>
-        <p class="text-sm text-slate-600 mb-4">Loaded extensions on this server. “Track” adds a name to a checklist (does not install anything — install via your host or package manager).</p>
+        <p class="text-sm text-slate-600 mb-2">Lists what this server’s PHP runtime has <strong>actually loaded</strong> right now (same process as this page). “Track” is only a checklist — it does not install anything; install via your host or package manager (e.g. <code class="text-slate-800">php-gd</code>).</p>
+        <p class="text-xs text-slate-500 mb-4">Runtime: PHP {{ $phpVersion }} · SAPI <code class="text-slate-700">{{ $phpSapi }}</code></p>
 
         <div class="grid gap-6 md:grid-cols-2">
             <div>
-                <h4 class="text-sm font-semibold text-slate-700 mb-2">Currently loaded</h4>
+                <h4 class="text-sm font-semibold text-slate-700 mb-1">Loaded on this server</h4>
+                <p class="text-xs text-slate-500 mb-2">From <code class="text-slate-700">get_loaded_extensions()</code> — extensions active in this PHP build on the host.</p>
                 <ul class="text-sm text-slate-600 max-h-64 overflow-y-auto custom-scrollbar border border-slate-100 rounded-md p-3 bg-slate-50 space-y-0.5">
                     @foreach ($extensions as $ext)
                         <li><code class="text-slate-800">{{ $ext }}</code></li>
