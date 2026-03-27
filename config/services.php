@@ -31,8 +31,4 @@ return [
         ],
     ],
 
-    'zbar' => [
-        'binary' => env('ZBARIMG_BINARY', 'zbarimg'),
-    ],
-
 ];

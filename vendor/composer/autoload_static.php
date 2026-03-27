@@ -65,7 +65,6 @@ class ComposerStaticInit00cb428c67e5922f796ee75e7a4e5fa9
             'TijsVerkoyen\\CssToInlineStyles\\' => 31,
             'Tests\\' => 6,
             'Termwind\\' => 9,
-            'TarfinLabs\\ZbarPhp\\' => 19,
         ),
         'S' => 
         array (
@@ -221,10 +220,6 @@ class ComposerStaticInit00cb428c67e5922f796ee75e7a4e5fa9
         'Termwind\\' => 
         array (
             0 => __DIR__ . '/..' . '/nunomaduro/termwind/src',
-        ),
-        'TarfinLabs\\ZbarPhp\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src',
         ),
         'Symfony\\Polyfill\\Uuid\\' => 
         array (
@@ -590,6 +585,7 @@ class ComposerStaticInit00cb428c67e5922f796ee75e7a4e5fa9
         'App\\Http\\Controllers\\Admin\\ArtisanCommandController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/ArtisanCommandController.php',
         'App\\Http\\Controllers\\Admin\\BranchController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/BranchController.php',
         'App\\Http\\Controllers\\Admin\\CategoryController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/CategoryController.php',
+        'App\\Http\\Controllers\\Admin\\CommandCenterController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/CommandCenterController.php',
         'App\\Http\\Controllers\\Admin\\CustomerController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/CustomerController.php',
         'App\\Http\\Controllers\\Admin\\DealerController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/DealerController.php',
         'App\\Http\\Controllers\\Admin\\ExpenseController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/ExpenseController.php',
@@ -7282,11 +7278,6 @@ class ComposerStaticInit00cb428c67e5922f796ee75e7a4e5fa9
         'Symfony\\Polyfill\\Php83\\Php83' => __DIR__ . '/..' . '/symfony/polyfill-php83/Php83.php',
         'Symfony\\Polyfill\\Php85\\Php85' => __DIR__ . '/..' . '/symfony/polyfill-php85/Php85.php',
         'Symfony\\Polyfill\\Uuid\\Uuid' => __DIR__ . '/..' . '/symfony/polyfill-uuid/Uuid.php',
-        'TarfinLabs\\ZbarPhp\\BarCode' => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src/BarCode.php',
-        'TarfinLabs\\ZbarPhp\\Exceptions\\InvalidFormat' => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src/Exceptions/InvalidFormat.php',
-        'TarfinLabs\\ZbarPhp\\Exceptions\\UnableToOpen' => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src/Exceptions/UnableToOpen.php',
-        'TarfinLabs\\ZbarPhp\\Exceptions\\ZbarError' => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src/Exceptions/ZbarError.php',
-        'TarfinLabs\\ZbarPhp\\Zbar' => __DIR__ . '/..' . '/tarfin-labs/zbar-php/src/Zbar.php',
         'Termwind\\Actions\\StyleToMethod' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Actions/StyleToMethod.php',
         'Termwind\\Components\\Anchor' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Components/Anchor.php',
         'Termwind\\Components\\BreakLine' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Components/BreakLine.php',

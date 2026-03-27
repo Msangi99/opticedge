@@ -16,7 +16,7 @@ class BarcodeDecodeController extends Controller
 
         if (! BarcodeImageDecoder::decodingAvailable()) {
             return response()->json([
-                'message' => 'Barcode decoding needs PHP GD (for QR via Composer) and/or zbarimg on the server PATH for linear barcodes. Install: composer require khanamiryan/qrcode-detector-decoder (done in this project). For Code128/EAN IMEI-style labels, install zbar-tools or set ZBARIMG_BINARY in .env.',
+                'message' => 'QR decode needs the PHP GD extension. Linear barcodes are read on the device in the app (no server binary required).',
             ], 503);
         }
 
@@ -31,7 +31,7 @@ class BarcodeDecodeController extends Controller
 
         if ($decoded === []) {
             return response()->json([
-                'message' => 'No barcode found in image.',
+                'message' => 'No QR code found in this image. For 1D barcodes (Code128, IMEI labels), use Scan from photo in the app — codes are detected on your phone.',
                 'data' => [],
             ], 422);
         }

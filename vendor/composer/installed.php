@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '789448b3321466b9bb330f7bee80207bd0ab5fd7',
+        'reference' => '2383bc8d810c0092e94f48f22895a08a3f2beac2',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -406,7 +406,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '789448b3321466b9bb330f7bee80207bd0ab5fd7',
+            'reference' => '2383bc8d810c0092e94f48f22895a08a3f2beac2',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1345,15 +1345,6 @@
             'install_path' => __DIR__ . '/../symfony/yaml',
             'aliases' => array(),
             'dev_requirement' => true,
-        ),
-        'tarfin-labs/zbar-php' => array(
-            'pretty_version' => '2.0.0',
-            'version' => '2.0.0.0',
-            'reference' => '8f49951993b6e3930921402541d905533ca24607',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../tarfin-labs/zbar-php',
-            'aliases' => array(),
-            'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(
             'pretty_version' => '1.3.1',
