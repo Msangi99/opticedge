@@ -34,6 +34,23 @@
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
 
+        <x-admin-page-dashboard label="Summary (current filter)" class="mt-8">
+            <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Purchases</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($purchaseDashboard['count']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total purchase value</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($purchaseDashboard['total_value'], 2) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Pending to pay</dt>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($purchaseDashboard['pending_amount'], 2) }} TZS</dd>
+                </div>
+            </dl>
+        </x-admin-page-dashboard>
+
         <!-- Date Range Filter -->
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4 space-y-4">
             <div class="flex flex-wrap gap-2">

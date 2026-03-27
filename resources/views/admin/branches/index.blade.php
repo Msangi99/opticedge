@@ -18,6 +18,19 @@
             <div class="mt-4 p-4 bg-red-50 text-red-800 rounded-lg">{{ session('error') }}</div>
         @endif
 
+        <x-admin-page-dashboard label="Summary" class="mt-8">
+            <dl class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Branches</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($branchDashboard['branches']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Purchases linked</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($branchDashboard['linked_purchases']) }}</dd>
+                </div>
+            </dl>
+        </x-admin-page-dashboard>
+
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
             <table class="w-full text-left">
                 <thead>

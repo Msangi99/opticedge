@@ -12,7 +12,14 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::with('user')->latest()->paginate(20);
-        return view('admin.orders.index', compact('orders'));
+
+        $orderDashboard = [
+            'total_orders' => Order::count(),
+            'total_value' => (float) Order::sum('total_price'),
+            'pending' => Order::where('status', 'pending')->count(),
+        ];
+
+        return view('admin.orders.index', compact('orders', 'orderDashboard'));
     }
 
     public function show(Order $order)

@@ -3,6 +3,24 @@
         <h2 class="text-2xl font-bold text-slate-800">Orders</h2>
     </div>
 
+    <x-admin-page-dashboard label="Summary (all orders)">
+        <dl class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <dt class="text-xs uppercase text-slate-500">Total orders</dt>
+                <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_orders']) }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs uppercase text-slate-500">Total value</dt>
+                <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_value'], 0) }} TZS</dd>
+            </div>
+            <div>
+                <dt class="text-xs uppercase text-slate-500">Pending status</dt>
+                <dd class="text-lg font-semibold text-amber-700">{{ number_format($orderDashboard['pending']) }}</dd>
+            </div>
+        </dl>
+        <p class="mt-3 text-xs text-slate-500">The table below is paginated; figures above are for the full database.</p>
+    </x-admin-page-dashboard>
+
     <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         <table class="w-full text-left border-collapse">
             <thead>

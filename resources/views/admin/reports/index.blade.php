@@ -32,6 +32,68 @@
         </div>
     </div>
 
+    @if($branchesBusiness->isNotEmpty() || $unassignedPurchases > 0)
+        <!-- Purchases by branch -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h3 class="font-bold text-lg text-slate-800">Business by branch (purchases)</h3>
+                <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-wrap items-center gap-2">
+                    <label for="branch_id" class="text-sm text-slate-600">Highlight branch</label>
+                    <select name="branch_id" id="branch_id" onchange="this.form.submit()"
+                        class="rounded-md border-slate-300 shadow-sm text-sm focus:border-[#fa8900] focus:ring-[#fa8900] min-w-[200px]">
+                        <option value="">All branches</option>
+                        @foreach($branchesBusiness as $row)
+                            <option value="{{ $row->id }}" @selected(request('branch_id') == $row->id)>{{ $row->name }}</option>
+                        @endforeach
+                    </select>
+                    @if(request('branch_id'))
+                        <a href="{{ route('admin.reports.index') }}" class="text-sm text-slate-600 hover:text-slate-900 underline">Clear</a>
+                    @endif
+                </form>
+            </div>
+
+            @if($selectedBranchDetail)
+                <div class="mb-6 p-4 rounded-lg bg-orange-50 border border-orange-200">
+                    <p class="text-sm font-semibold text-slate-800">{{ $selectedBranchDetail->branch->name }}</p>
+                    <p class="text-sm text-slate-600 mt-1">
+                        Purchases: <span class="font-medium">{{ $selectedBranchDetail->purchase_count }}</span>
+                        · Total value:
+                        <span class="font-bold text-[#fa8900]">{{ number_format($selectedBranchDetail->purchase_total, 2) }} TZS</span>
+                    </p>
+                </div>
+            @endif
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="py-3 pr-4">Branch</th>
+                            <th class="py-3 pr-4 text-right">Purchases</th>
+                            <th class="py-3 text-right">Purchase value (TZS)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($branchesBusiness as $row)
+                            <tr class="hover:bg-slate-50 @if(request('branch_id') == $row->id) bg-orange-50/50 @endif">
+                                <td class="py-3 pr-4 font-medium text-slate-900">{{ $row->name }}</td>
+                                <td class="py-3 pr-4 text-right text-slate-700">{{ number_format($row->purchase_count) }}</td>
+                                <td class="py-3 text-right font-semibold text-slate-900">{{ number_format($row->purchase_total, 2) }}</td>
+                            </tr>
+                        @endforeach
+                        @if($unassignedPurchases > 0)
+                            <tr class="hover:bg-slate-50 text-slate-600">
+                                <td class="py-3 pr-4 italic">No branch assigned</td>
+                                <td class="py-3 pr-4 text-right">{{ number_format($unassignedPurchases) }}</td>
+                                <td class="py-3 text-right">{{ number_format($unassignedPurchaseTotal, 2) }}</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-4 text-xs text-slate-500">Values use each purchase’s total (or quantity × unit price if total is missing).</p>
+        </div>
+    @endif
+
     <!-- Recent Sales Chart (Placeholder) -->
     <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
         <h3 class="font-bold text-lg text-slate-800 mb-4">Sales Overview (Last 7 Days)</h3>

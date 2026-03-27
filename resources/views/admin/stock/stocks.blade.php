@@ -19,6 +19,31 @@
             </div>
         @endif
 
+        <x-admin-page-dashboard label="Summary" class="mt-8">
+            <dl class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Rows</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($stockDashboard['rows']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total limit qty</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($stockDashboard['total_limit']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total added</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($stockDashboard['total_added']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Complete</dt>
+                    <dd class="text-lg font-semibold text-green-700">{{ number_format($stockDashboard['complete']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Pending</dt>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($stockDashboard['pending']) }}</dd>
+                </div>
+            </dl>
+        </x-admin-page-dashboard>
+
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
             <table class="w-full text-left">
                 <thead>

@@ -12,7 +12,12 @@ class BranchController extends Controller
     {
         $branches = Branch::withCount('purchases')->orderBy('name')->get();
 
-        return view('admin.branches.index', compact('branches'));
+        $branchDashboard = [
+            'branches' => $branches->count(),
+            'linked_purchases' => (int) $branches->sum('purchases_count'),
+        ];
+
+        return view('admin.branches.index', compact('branches', 'branchDashboard'));
     }
 
     public function create()

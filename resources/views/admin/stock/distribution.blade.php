@@ -15,6 +15,27 @@
             <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
         @endif
 
+        <x-admin-page-dashboard label="Summary (current filter)" class="mt-8">
+            <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Records</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($distributionDashboard['count']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total sales</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($distributionDashboard['total_sell'], 0) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total profit</dt>
+                    <dd class="text-lg font-semibold text-green-700">{{ number_format($distributionDashboard['total_profit'], 0) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Pending</dt>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($distributionDashboard['pending']) }}</dd>
+                </div>
+            </dl>
+        </x-admin-page-dashboard>
+
         <!-- Date Range Filter -->
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
             <form method="GET" action="{{ route('admin.stock.distribution') }}" class="flex gap-4 items-end">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Purchase;
 use App\Models\User;
@@ -25,11 +26,30 @@ class ReportController extends Controller
             $salesData[$date] = (float) Order::whereDate('created_at', $date)->sum('total_price');
         }
 
+        $branchesBusiness = Branch::orderBy('name')
+            ->get()
+            ->map(function ($b) {
+                $purchases = Purchase::where('branch_id', $b->id)->get();
+                $purchaseTotal = (float) $purchases->sum(function ($p) {
+                    return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
+                });
+
+                return [
+                    'branch_id' => $b->id,
+                    'name' => $b->name,
+                    'purchase_total' => $purchaseTotal,
+                    'purchase_count' => $purchases->count(),
+                ];
+            })
+            ->values()
+            ->all();
+
         $payload = [
             'total_sales' => $totalSales,
             'total_orders' => $totalOrders,
             'total_customers' => $totalCustomers,
             'sales_by_day' => $salesData,
+            'branches_business' => $branchesBusiness,
         ];
 
         if ($branchId !== null && $branchId !== '') {

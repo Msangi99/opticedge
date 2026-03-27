@@ -81,9 +81,18 @@ class StockController extends Controller
             $stocksData = collect([]);
         }
 
+        $stockDashboard = [
+            'rows' => $stocksData->count(),
+            'total_limit' => (int) $stocksData->sum('stock_quantity'),
+            'total_added' => (int) $stocksData->sum('added'),
+            'complete' => $stocksData->where('status', 'complete')->count(),
+            'pending' => $stocksData->where('status', 'pending')->count(),
+        ];
+
         return view('admin.stock.stocks', [
             'stocks' => $stocksData,
             'hasPurchases' => $usingPurchases,
+            'stockDashboard' => $stockDashboard,
         ]);
     }
 
@@ -155,7 +164,19 @@ class StockController extends Controller
 
         $purchases = $query->latest('date')->get();
 
-        return view('admin.stock.purchases', compact('purchases', 'dateFrom', 'dateTo', 'preset'));
+        $purchaseDashboard = [
+            'count' => $purchases->count(),
+            'total_value' => (float) $purchases->sum(function ($p) {
+                return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
+            }),
+            'pending_amount' => (float) $purchases->sum(function ($p) {
+                $total = (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
+
+                return max(0, $total - (float) ($p->paid_amount ?? 0));
+            }),
+        ];
+
+        return view('admin.stock.purchases', compact('purchases', 'dateFrom', 'dateTo', 'preset', 'purchaseDashboard'));
     }
 
     /**
@@ -199,7 +220,15 @@ class StockController extends Controller
         
         $distributionSales = $query->latest('date')->get();
         $bankPaymentOptions = PaymentOption::visible()->bank()->orderBy('name')->get();
-        return view('admin.stock.distribution', compact('distributionSales', 'bankPaymentOptions'));
+
+        $distributionDashboard = [
+            'count' => $distributionSales->count(),
+            'total_sell' => (float) $distributionSales->sum('total_selling_value'),
+            'total_profit' => (float) $distributionSales->sum('profit'),
+            'pending' => $distributionSales->where('status', 'pending')->count(),
+        ];
+
+        return view('admin.stock.distribution', compact('distributionSales', 'bankPaymentOptions', 'distributionDashboard'));
     }
 
     /**
@@ -255,7 +284,14 @@ class StockController extends Controller
         
         $agentSales = $query->latest('date')->get();
         $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
-        return view('admin.stock.agent-sales', compact('agentSales', 'paymentOptions'));
+
+        $agentSalesDashboard = [
+            'count' => $agentSales->count(),
+            'total_sell' => (float) $agentSales->sum('total_selling_value'),
+            'total_profit' => (float) $agentSales->sum('profit'),
+        ];
+
+        return view('admin.stock.agent-sales', compact('agentSales', 'paymentOptions', 'agentSalesDashboard'));
     }
 
     public function saveAgentSaleChannel(Request $request, $id)
