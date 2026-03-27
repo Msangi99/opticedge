@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ProductListItem;
 use App\Models\Product;
-use App\Models\AgentSale;
+use App\Models\AgentCredit;
+use App\Models\AgentCreditPayment;
 use App\Models\PendingSale;
+use App\Models\PaymentOption;
 use App\Models\Purchase;
 use App\Services\DistributionSaleService;
 use Illuminate\Http\Request;
@@ -119,6 +121,113 @@ class ProductListController extends Controller
                 'imei_number' => $item->imei_number,
             ],
         ], 201);
+    }
+
+    /**
+     * Admin: Add multiple IMEIs to product_list for one purchase.
+     */
+    public function batchStore(Request $request)
+    {
+        $validated = $request->validate([
+            'purchase_id' => 'required|exists:purchases,id',
+            'imei_numbers' => 'required|array|min:1',
+            'imei_numbers.*' => 'required|string|max:255',
+        ]);
+
+        $purchase = Purchase::with('product')->findOrFail($validated['purchase_id']);
+        if ($purchase->limit_status !== 'pending' || $purchase->limit_remaining <= 0) {
+            return response()->json([
+                'message' => 'This purchase has no remaining limit.',
+            ], 422);
+        }
+        if (! $purchase->product_id) {
+            return response()->json([
+                'message' => 'Purchase has no product linked.',
+            ], 422);
+        }
+
+        $raw = array_map('trim', $validated['imei_numbers']);
+        $imeis = array_values(array_unique(array_filter($raw, fn ($s) => $s !== '')));
+
+        if (count($imeis) > $purchase->limit_remaining) {
+            return response()->json([
+                'message' => 'Not enough purchase limit for this many IMEIs. Remaining: '.$purchase->limit_remaining.'.',
+            ], 422);
+        }
+
+        $created = [];
+        $failed = [];
+
+        DB::transaction(function () use ($purchase, $imeis, &$created, &$failed) {
+            $purchase->refresh();
+            $stockId = $purchase->stock_id;
+            $categoryId = $purchase->product->category_id;
+            $model = $purchase->product->name;
+            $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
+
+            $product = Product::firstOrCreate(
+                [
+                    'category_id' => $categoryId,
+                    'name' => $model,
+                ],
+                [
+                    'price' => (float) $productPrice,
+                    'stock_quantity' => 0,
+                    'rating' => 5.0,
+                    'description' => 'From product list',
+                    'images' => $purchase->product?->images ?? [],
+                ]
+            );
+
+            if ($purchase->sell_price && $product->price != $purchase->sell_price) {
+                $product->update(['price' => (float) $purchase->sell_price]);
+            }
+
+            foreach ($imeis as $imei) {
+                if (ProductListItem::where('imei_number', $imei)->exists()) {
+                    $failed[] = ['imei_number' => $imei, 'message' => 'IMEI already in product list.'];
+
+                    continue;
+                }
+
+                $purchase->refresh();
+                if ($purchase->limit_remaining <= 0) {
+                    $failed[] = ['imei_number' => $imei, 'message' => 'Purchase limit exhausted.'];
+
+                    break;
+                }
+
+                $item = ProductListItem::create([
+                    'stock_id' => $stockId,
+                    'purchase_id' => $purchase->id,
+                    'category_id' => $categoryId,
+                    'model' => $model,
+                    'imei_number' => $imei,
+                    'product_id' => $product->id,
+                ]);
+
+                $purchase->decrement('limit_remaining');
+                if ($purchase->fresh()->limit_remaining <= 0) {
+                    $purchase->update(['limit_status' => 'complete']);
+                }
+
+                $created[] = [
+                    'id' => $item->id,
+                    'imei_number' => $item->imei_number,
+                    'model' => $item->model,
+                ];
+            }
+        });
+
+        $status = count($created) > 0 ? 201 : 422;
+
+        return response()->json([
+            'message' => count($created) > 0 ? 'Batch add completed.' : 'No items added.',
+            'data' => [
+                'created' => $created,
+                'failed' => $failed,
+            ],
+        ], $status);
     }
 
     /**
@@ -335,6 +444,141 @@ class ProductListController extends Controller
                 'pending_sale_id' => $sale->id,
                 'customer_name' => $sale->customer_name,
                 'selling_price' => $sale->selling_price,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Agent: Sell device on credit (loan to customer). Creates agent_credits row; optional down payment.
+     */
+    public function sellCredit(Request $request)
+    {
+        $rules = [
+            'product_list_id' => 'required|exists:product_list,id',
+            'customer_name' => 'required|string|max:255',
+            'selling_price' => 'required|numeric|min:0',
+            'down_payment' => 'nullable|numeric|min:0',
+            'installment_count' => 'nullable|integer|min:0',
+            'installment_amount' => 'nullable|numeric|min:0',
+            'first_due_date' => 'nullable|date',
+            'installment_notes' => 'nullable|string|max:2000',
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasTable('payment_options')) {
+            $rules['payment_option_id'] = 'nullable|exists:payment_options,id';
+        } else {
+            $rules['payment_option_id'] = 'nullable';
+        }
+
+        $validated = $request->validate($rules);
+
+        $item = ProductListItem::with(['category', 'product'])->findOrFail($validated['product_list_id']);
+
+        if ($item->isSold()) {
+            return response()->json([
+                'message' => 'This device is not in stock or has already been sold.',
+            ], 422);
+        }
+
+        $product = $item->product;
+        if (!$product) {
+            $product = Product::firstOrCreate(
+                [
+                    'category_id' => $item->category_id,
+                    'name' => $item->model,
+                ],
+                [
+                    'price' => 0,
+                    'stock_quantity' => 0,
+                    'rating' => 5.0,
+                    'description' => 'From product list',
+                    'images' => [],
+                ]
+            );
+            $item->update(['product_id' => $product->id]);
+        }
+
+        $totalCredit = (float) $validated['selling_price'];
+        $down = (float) ($validated['down_payment'] ?? 0);
+        if ($down > $totalCredit + 0.0001) {
+            return response()->json([
+                'message' => 'Down payment cannot exceed total credit amount.',
+            ], 422);
+        }
+
+        $eps = 0.0001;
+        $paymentOptionId = $validated['payment_option_id'] ?? null;
+        if ($paymentOptionId === '' || $paymentOptionId === false) {
+            $paymentOptionId = null;
+        } else {
+            $paymentOptionId = $paymentOptionId !== null ? (int) $paymentOptionId : null;
+        }
+
+        if ($down > $eps && $paymentOptionId) {
+            $opt = PaymentOption::find($paymentOptionId);
+            if (!$opt || $opt->balance + $eps < $down) {
+                return response()->json([
+                    'message' => 'Insufficient balance in selected payment channel for down payment.',
+                ], 422);
+            }
+        }
+
+        $paymentStatus = $down >= $totalCredit - $eps ? 'paid' : ($down > $eps ? 'partial' : 'pending');
+
+        $agent = Auth::user();
+
+        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent) {
+            $credit = AgentCredit::create([
+                'agent_id' => $agent->id,
+                'customer_name' => $validated['customer_name'],
+                'product_list_id' => $item->id,
+                'product_id' => $product->id,
+                'total_amount' => $totalCredit,
+                'paid_amount' => min($totalCredit, $down),
+                'payment_status' => $paymentStatus,
+                'payment_option_id' => $paymentOptionId,
+                'installment_count' => $validated['installment_count'] ?? null,
+                'installment_amount' => isset($validated['installment_amount']) ? (float) $validated['installment_amount'] : null,
+                'first_due_date' => $validated['first_due_date'] ?? null,
+                'installment_notes' => $validated['installment_notes'] ?? null,
+                'date' => now()->toDateString(),
+                'paid_date' => $down > $eps ? now()->toDateString() : null,
+            ]);
+
+            if ($down > $eps && $paymentOptionId) {
+                $opt = PaymentOption::find($paymentOptionId);
+                if ($opt) {
+                    $opt->decrement('balance', min($down, $totalCredit));
+                }
+            }
+
+            if ($down > $eps) {
+                AgentCreditPayment::create([
+                    'agent_credit_id' => $credit->id,
+                    'payment_option_id' => $paymentOptionId,
+                    'amount' => min($down, $totalCredit),
+                    'paid_date' => now()->toDateString(),
+                ]);
+            }
+
+            $item->update([
+                'sold_at' => now(),
+                'agent_credit_id' => $credit->id,
+                'pending_sale_id' => null,
+            ]);
+
+            $product->decrement('stock_quantity');
+
+            return $credit;
+        });
+
+        return response()->json([
+            'message' => 'Credit sale recorded.',
+            'data' => [
+                'agent_credit_id' => $credit->id,
+                'customer_name' => $credit->customer_name,
+                'total_amount' => (float) $credit->total_amount,
+                'paid_amount' => (float) $credit->paid_amount,
+                'payment_status' => $credit->payment_status,
             ],
         ], 201);
     }

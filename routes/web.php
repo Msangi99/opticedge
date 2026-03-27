@@ -148,6 +148,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::patch('agent-sales/{id}/commission', [App\Http\Controllers\Admin\StockController::class, 'updateAgentSaleCommission'])->name('agent-sales-update-commission');
             Route::post('agent-sales/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveAgentSaleChannel'])->name('agent-sales-save-channel');
 
+            Route::get('agent-credits', [App\Http\Controllers\Admin\AgentCreditController::class, 'index'])->name('agent-credits');
+            Route::get('agent-credits/{id}/edit', [App\Http\Controllers\Admin\AgentCreditController::class, 'edit'])->name('edit-agent-credit');
+            Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
+
             Route::get('shop-records', [App\Http\Controllers\Admin\StockController::class , 'shopRecords'])->name('shop-records');
             Route::get('payables', [App\Http\Controllers\Admin\StockController::class , 'payables'])->name('payables');
         }

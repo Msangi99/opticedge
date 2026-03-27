@@ -322,6 +322,8 @@
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Distribution</a>
                                 <a href="{{ route('admin.stock.agent-sales') }}"
                                     class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Sales</a>
+                                <a href="{{ route('admin.stock.agent-credits') }}"
+                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Credit</a>
                             </div>
                         </div>
                     </div>

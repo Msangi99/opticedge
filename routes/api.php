@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\DistributionSaleController as ApiDistributionSaleCo
 use App\Http\Controllers\Api\PendingSaleController as ApiPendingSaleController;
 use App\Http\Controllers\Api\BranchController as ApiBranchController;
 use App\Http\Controllers\Api\ReportController as ApiReportController;
+use App\Http\Controllers\Api\BarcodeDecodeController;
 use App\Http\Controllers\Api\SettingController as ApiSettingController;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -39,6 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
         Route::get('categories', [ApiCategoryController::class, 'index']);
         Route::post('product-list', [ProductListController::class, 'store']);
+        Route::post('product-list/batch', [ProductListController::class, 'batchStore']);
+        Route::post('barcodes/decode-image', [BarcodeDecodeController::class, 'decodeImage']);
         Route::get('expenses', [ApiExpenseController::class, 'index']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'index']);
         Route::get('agent-sales', [ApiAgentSaleController::class, 'index']);
@@ -57,5 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
         Route::post('sell', [ProductListController::class, 'sell']);
+        Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
     });
 });
