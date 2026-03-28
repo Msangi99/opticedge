@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\BranchController as ApiBranchController;
 use App\Http\Controllers\Api\ReportController as ApiReportController;
 use App\Http\Controllers\Api\BarcodeDecodeController;
 use App\Http\Controllers\Api\SettingController as ApiSettingController;
+use App\Http\Controllers\Api\AgentCreditApiController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -62,5 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);
         Route::post('sell', [ProductListController::class, 'sell']);
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
+        Route::get('credits', [AgentCreditApiController::class, 'index']);
+        Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
     });
 });
