@@ -533,7 +533,7 @@ class ProductListController extends Controller
 
         $notes = $validated['description'] ?? $validated['installment_notes'] ?? null;
 
-        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent, $notes) {
+        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent, $notes, $eps) {
             $creditAttrs = [
                 'agent_id' => $agent->id,
                 'customer_name' => $validated['customer_name'],
