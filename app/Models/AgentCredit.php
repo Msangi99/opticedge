@@ -9,6 +9,7 @@ class AgentCredit extends Model
     protected $fillable = [
         'agent_id',
         'customer_name',
+        'customer_phone',
         'product_list_id',
         'product_id',
         'total_amount',

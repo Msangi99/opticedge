@@ -38,6 +38,10 @@ class AgentCreditApiController extends Controller
             return [
                 'id' => $credit->id,
                 'customer_name' => $credit->customer_name,
+                'customer_phone' => Schema::hasColumn('agent_credits', 'customer_phone')
+                    ? $credit->customer_phone
+                    : null,
+                'description' => $credit->installment_notes,
                 'date' => $credit->date instanceof \Carbon\Carbon
                     ? $credit->date->format('Y-m-d')
                     : (string) $credit->date,

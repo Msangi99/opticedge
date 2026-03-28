@@ -456,6 +456,8 @@ class ProductListController extends Controller
         $rules = [
             'product_list_id' => 'required|exists:product_list,id',
             'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'nullable|string|max:64',
+            'description' => 'nullable|string|max:2000',
             'selling_price' => 'required|numeric|min:0',
             'down_payment' => 'nullable|numeric|min:0',
             'installment_count' => 'nullable|integer|min:0',
@@ -529,7 +531,9 @@ class ProductListController extends Controller
 
         $agent = Auth::user();
 
-        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent) {
+        $notes = $validated['description'] ?? $validated['installment_notes'] ?? null;
+
+        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent, $notes) {
             $creditAttrs = [
                 'agent_id' => $agent->id,
                 'customer_name' => $validated['customer_name'],
@@ -542,10 +546,14 @@ class ProductListController extends Controller
                 'installment_count' => $validated['installment_count'] ?? null,
                 'installment_amount' => isset($validated['installment_amount']) ? (float) $validated['installment_amount'] : null,
                 'first_due_date' => $validated['first_due_date'] ?? null,
-                'installment_notes' => $validated['installment_notes'] ?? null,
+                'installment_notes' => $notes,
                 'date' => now()->toDateString(),
                 'paid_date' => $down > $eps ? now()->toDateString() : null,
             ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'customer_phone')) {
+                $phone = isset($validated['customer_phone']) ? trim((string) $validated['customer_phone']) : '';
+                $creditAttrs['customer_phone'] = $phone !== '' ? $phone : null;
+            }
             if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'installment_interval_days')) {
                 $creditAttrs['installment_interval_days'] = isset($validated['installment_interval_days'])
                     ? (int) $validated['installment_interval_days']
