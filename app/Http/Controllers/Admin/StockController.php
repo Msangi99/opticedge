@@ -9,10 +9,14 @@ use App\Models\PurchasePayment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\PaymentOption;
+use App\Models\Product;
+use App\Models\ProductListItem;
 use App\Models\Stock;
+use App\Services\BarcodeImageDecoder;
 use App\Support\PurchaseInvoiceNumber;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -372,16 +376,73 @@ class StockController extends Controller
     }
 
     /**
-     * Save one IMEI: stock_id, model, imei_number (same logic as API product-list store).
+     * Decode QR codes from uploaded photos (server uses GD + ZXing; 1D barcodes work best from the mobile app).
+     */
+    public function decodeBarcodeImages(Request $request)
+    {
+        $request->validate([
+            'images' => 'required|array|min:1|max:30',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+        ]);
+
+        if (! BarcodeImageDecoder::decodingAvailable()) {
+            return response()->json([
+                'message' => 'QR decode needs the PHP GD extension.',
+                'codes' => [],
+            ], 503);
+        }
+
+        $decoder = new BarcodeImageDecoder;
+        $seen = [];
+        $codes = [];
+
+        foreach ($request->file('images', []) as $file) {
+            $path = $file->getRealPath();
+            if (! $path || ! is_readable($path)) {
+                continue;
+            }
+            foreach ($decoder->decodeFile($path) as $row) {
+                $c = trim((string) ($row['code'] ?? ''));
+                if ($c !== '' && ! isset($seen[$c])) {
+                    $seen[$c] = true;
+                    $codes[] = $c;
+                }
+            }
+        }
+
+        return response()->json([
+            'codes' => $codes,
+            'message' => count($codes) ? null : 'No QR code found. Try clearer photos or type IMEIs manually. For linear barcodes, use the OpticApp admin Add Product (photo) flow.',
+        ]);
+    }
+
+    /**
+     * Save one or more IMEIs: stock_id, model, category_id, imei_numbers (newline / comma separated).
      */
     public function storeProductFromForm(Request $request)
     {
         $validated = $request->validate([
             'stock_id' => 'required|exists:stocks,id',
             'model' => 'required|string|max:255',
-            'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
             'category_id' => 'required|exists:categories,id',
+            'imei_numbers' => 'required|string',
         ]);
+
+        $raw = preg_split('/[\r\n,;\t]+/', $validated['imei_numbers'], -1, PREG_SPLIT_NO_EMPTY);
+        $imeis = [];
+        foreach ($raw as $line) {
+            $t = trim($line);
+            if ($t !== '') {
+                $imeis[] = $t;
+            }
+        }
+        $imeis = array_values(array_unique($imeis));
+
+        if ($imeis === []) {
+            return redirect()->route('admin.stock.add-product')
+                ->withInput()
+                ->withErrors(['imei_numbers' => 'Enter at least one IMEI.']);
+        }
 
         $stock = Stock::findOrFail($validated['stock_id']);
         $purchase = Purchase::where('stock_id', $stock->id)
@@ -389,48 +450,83 @@ class StockController extends Controller
             ->where('limit_remaining', '>', 0)
             ->latest('date')->latest('id')->first();
 
-        if (!$purchase) {
+        if (! $purchase) {
             return redirect()->route('admin.stock.add-product')
                 ->withInput()
                 ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
         }
 
-        // Use sell_price if available, otherwise use unit_price
-        $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
-        $product = \App\Models\Product::firstOrCreate(
-            [
-                'category_id' => $validated['category_id'],
-                'name' => $validated['model'],
-            ],
-            [
-                'price' => (float) $productPrice,
-                'stock_quantity' => 0,
-                'rating' => 5.0,
-                'description' => 'From product list',
-                'images' => $purchase->product?->images ?? [],
-            ]
-        );
-        
-        // Update product price if sell_price is available
-        if ($purchase->sell_price && $product->price != $purchase->sell_price) {
-            $product->update(['price' => (float) $purchase->sell_price]);
+        if (count($imeis) > $purchase->limit_remaining) {
+            return redirect()->route('admin.stock.add-product')
+                ->withInput()
+                ->withErrors([
+                    'imei_numbers' => 'Not enough purchase limit for this many IMEIs. Remaining: '.$purchase->limit_remaining.'.',
+                ]);
         }
 
-        \App\Models\ProductListItem::create([
-            'stock_id' => $stock->id,
-            'purchase_id' => $purchase->id,
-            'category_id' => $validated['category_id'],
-            'model' => $validated['model'],
-            'imei_number' => $validated['imei_number'],
-            'product_id' => $product->id,
-        ]);
+        $failed = [];
+        $created = 0;
 
-        $purchase->decrement('limit_remaining');
-        if ($purchase->fresh()->limit_remaining <= 0) {
-            $purchase->update(['limit_status' => 'complete']);
+        DB::transaction(function () use ($purchase, $stock, $validated, $imeis, &$failed, &$created) {
+            $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
+            $product = Product::firstOrCreate(
+                [
+                    'category_id' => $validated['category_id'],
+                    'name' => $validated['model'],
+                ],
+                [
+                    'price' => (float) $productPrice,
+                    'stock_quantity' => 0,
+                    'rating' => 5.0,
+                    'description' => 'From product list',
+                    'images' => $purchase->product?->images ?? [],
+                ]
+            );
+
+            if ($purchase->sell_price && (float) $product->price != (float) $purchase->sell_price) {
+                $product->update(['price' => (float) $purchase->sell_price]);
+            }
+
+            foreach ($imeis as $imei) {
+                if (ProductListItem::where('imei_number', $imei)->exists()) {
+                    $failed[] = $imei.' (already in list)';
+
+                    continue;
+                }
+
+                $purchase->refresh();
+                if ($purchase->limit_remaining <= 0) {
+                    $failed[] = $imei.' (purchase limit exhausted)';
+
+                    break;
+                }
+
+                ProductListItem::create([
+                    'stock_id' => $stock->id,
+                    'purchase_id' => $purchase->id,
+                    'category_id' => $validated['category_id'],
+                    'model' => $validated['model'],
+                    'imei_number' => $imei,
+                    'product_id' => $product->id,
+                ]);
+
+                $purchase->decrement('limit_remaining');
+                if ($purchase->fresh()->limit_remaining <= 0) {
+                    $purchase->update(['limit_status' => 'complete']);
+                }
+                $created++;
+            }
+        });
+
+        $msg = $created > 0
+            ? 'Added '.$created.' product(s).'
+            : 'No products added.';
+        if ($failed !== []) {
+            $msg .= ' Skipped: '.implode('; ', array_slice($failed, 0, 10)).(count($failed) > 10 ? '…' : '');
         }
 
-        return redirect()->route('admin.stock.add-product')->with('success', 'Product (IMEI) added.');
+        return redirect()->route('admin.stock.add-product')
+            ->with($created > 0 ? 'success' : 'error', $msg);
     }
 
     public function createPurchase(Request $request)

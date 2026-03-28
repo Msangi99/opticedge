@@ -69,6 +69,9 @@ class AgentCreditController extends Controller
             'first_due_date' => 'nullable|date',
             'installment_notes' => 'nullable|string|max:2000',
         ];
+        if (Schema::hasColumn('agent_credits', 'installment_interval_days')) {
+            $rules['installment_interval_days'] = 'nullable|integer|min:1|max:3650';
+        }
         $rules['payment_option_id'] = Schema::hasTable('payment_options')
             ? 'nullable|exists:payment_options,id'
             : 'nullable';
@@ -158,6 +161,11 @@ class AgentCreditController extends Controller
             'first_due_date' => $validated['first_due_date'] ?? $credit->first_due_date,
             'installment_notes' => $validated['installment_notes'] ?? $credit->installment_notes,
         ];
+        if (Schema::hasColumn('agent_credits', 'installment_interval_days')) {
+            $updateData['installment_interval_days'] = array_key_exists('installment_interval_days', $validated)
+                ? $validated['installment_interval_days']
+                : $credit->installment_interval_days;
+        }
 
         try {
             $columns = Schema::getColumnListing('agent_credits');

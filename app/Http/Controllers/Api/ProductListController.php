@@ -463,6 +463,9 @@ class ProductListController extends Controller
             'first_due_date' => 'nullable|date',
             'installment_notes' => 'nullable|string|max:2000',
         ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'installment_interval_days')) {
+            $rules['installment_interval_days'] = 'nullable|integer|min:1|max:3650';
+        }
         if (\Illuminate\Support\Facades\Schema::hasTable('payment_options')) {
             $rules['payment_option_id'] = 'nullable|exists:payment_options,id';
         } else {
@@ -527,7 +530,7 @@ class ProductListController extends Controller
         $agent = Auth::user();
 
         $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent) {
-            $credit = AgentCredit::create([
+            $creditAttrs = [
                 'agent_id' => $agent->id,
                 'customer_name' => $validated['customer_name'],
                 'product_list_id' => $item->id,
@@ -542,7 +545,13 @@ class ProductListController extends Controller
                 'installment_notes' => $validated['installment_notes'] ?? null,
                 'date' => now()->toDateString(),
                 'paid_date' => $down > $eps ? now()->toDateString() : null,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'installment_interval_days')) {
+                $creditAttrs['installment_interval_days'] = isset($validated['installment_interval_days'])
+                    ? (int) $validated['installment_interval_days']
+                    : null;
+            }
+            $credit = AgentCredit::create($creditAttrs);
 
             if ($down > $eps && $paymentOptionId) {
                 $opt = PaymentOption::find($paymentOptionId);

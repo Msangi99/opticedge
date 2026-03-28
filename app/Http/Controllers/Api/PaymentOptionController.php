@@ -25,4 +25,21 @@ class PaymentOptionController extends Controller
 
         return response()->json(['data' => $options]);
     }
+
+    /**
+     * Visible channels only (for agents: down payments on credit sales).
+     */
+    public function indexVisible()
+    {
+        $options = PaymentOption::visible()->orderBy('name')->get()->map(function ($opt) {
+            return [
+                'id' => $opt->id,
+                'name' => $opt->name,
+                'type' => $opt->type,
+                'balance' => (float) $opt->balance,
+            ];
+        });
+
+        return response()->json(['data' => $options]);
+    }
 }

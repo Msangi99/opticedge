@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Api\AgentDashboardController::class, 'index']);
         Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
+        Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);
         Route::post('sell', [ProductListController::class, 'sell']);
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
     });

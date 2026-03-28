@@ -130,6 +130,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('stocks/{stock}/receipts', [App\Http\Controllers\Admin\StockController::class, 'viewStockReceipts'])->name('stock-receipts');
             Route::get('add-product', [App\Http\Controllers\Admin\StockController::class, 'addProductForm'])->name('add-product');
             Route::post('add-product', [App\Http\Controllers\Admin\StockController::class, 'storeProductFromForm'])->name('store-add-product');
+            Route::post('decode-barcodes', [App\Http\Controllers\Admin\StockController::class, 'decodeBarcodeImages'])->name('decode-barcodes');
             Route::get('purchase/{id}', [App\Http\Controllers\Admin\StockController::class, 'showPurchase'])->name('purchase.show');
             Route::get('purchases', [App\Http\Controllers\Admin\StockController::class , 'purchases'])->name('purchases');
             Route::get('purchases/receipts', [App\Http\Controllers\Admin\StockController::class , 'viewAllReceipts'])->name('purchases.receipts');

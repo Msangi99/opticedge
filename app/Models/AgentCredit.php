@@ -17,6 +17,7 @@ class AgentCredit extends Model
         'payment_option_id',
         'installment_count',
         'installment_amount',
+        'installment_interval_days',
         'first_due_date',
         'installment_notes',
         'date',
@@ -30,6 +31,7 @@ class AgentCredit extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'installment_amount' => 'decimal:2',
+        'installment_interval_days' => 'integer',
     ];
 
     public function agent()
@@ -54,6 +56,8 @@ class AgentCredit extends Model
 
     public function payments()
     {
-        return $this->hasMany(AgentCreditPayment::class);
+        return $this->hasMany(AgentCreditPayment::class)
+            ->orderByDesc('paid_date')
+            ->orderByDesc('id');
     }
 }
