@@ -47,7 +47,7 @@
             background: #94a3b8;
         }
     </style>
-    @vite(['resources/css/app.css', 'resources/css/admin-clay.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
 

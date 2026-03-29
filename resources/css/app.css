@@ -1,3 +1,6 @@
+/* Admin clay theme — bundled with app.css so one Vite manifest entry (admin-clay-* classes) */
+@import './admin-clay.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
