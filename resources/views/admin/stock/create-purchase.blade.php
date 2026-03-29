@@ -205,7 +205,7 @@
                                     </svg>
                                     <span>Select from Purchase Gallery</span>
                                     <span x-show="getSelectedCount() > 0" 
-                                          class="bg-slate-100 text-[#fa8900] rounded-full px-2 py-0.5 text-xs font-bold shadow-sm"
+                                          class="bg-white text-[#fa8900] rounded-full px-2 py-0.5 text-xs font-bold"
                                           x-text="getSelectedCount()"></span>
                                 </button>
                                 <p class="text-xs text-slate-500 mt-1">Click to browse and select images from existing purchases.</p>
@@ -232,7 +232,7 @@
                                 
                                 <!-- Modal Content -->
                                 <div class="flex min-h-full items-center justify-center p-4">
-                                    <div class="relative admin-clay-panel max-w-6xl w-full max-h-[90vh] overflow-hidden"
+                                    <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
                                          x-transition:enter="ease-out duration-300"
                                          x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                                          x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -305,7 +305,7 @@
                                             <div class="flex gap-3">
                                                 <button type="button" 
                                                         @click="closeGallery()"
-                                                        class="px-4 py-2 text-slate-700 admin-clay-panel border border-slate-200/80 hover:shadow-md transition-shadow font-medium">
+                                                        class="px-4 py-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium">
                                                     Done
                                                 </button>
                                             </div>

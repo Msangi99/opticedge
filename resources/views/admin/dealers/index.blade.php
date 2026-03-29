@@ -35,7 +35,7 @@
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-200/80 bg-slate-50/40">
+                                <tbody class="divide-y divide-gray-200 bg-white">
                                     @foreach($dealers as $dealer)
                                         <tr>
                                             <td

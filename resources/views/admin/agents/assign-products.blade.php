@@ -42,7 +42,7 @@
             <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
         @endif
 
-        <div class="mt-8 max-w-lg admin-clay-panel p-6">
+        <div class="mt-8 max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <form method="POST" action="{{ route('admin.agents.store-assignment') }}" class="space-y-4" id="assign-form">
                 @csrf
                 <div>

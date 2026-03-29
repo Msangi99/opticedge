@@ -12,7 +12,7 @@
                 class="rounded-lg bg-[#fa8900] px-4 py-2 text-sm font-medium text-white hover:bg-[#e87b00]">Assign products</a>
         </div>
 
-        <div class="mt-8 admin-clay-panel overflow-hidden">
+        <div class="mt-8 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
             <h3 class="border-b border-slate-100 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900">Assigned products</h3>
             <table class="w-full text-left">
                 <thead>

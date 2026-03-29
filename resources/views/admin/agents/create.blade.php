@@ -6,7 +6,7 @@
             <p class="mt-2 text-slate-600">Create a new agent. They will get a dashboard and can sell products you assign.</p>
         </div>
 
-        <div class="mt-8 max-w-lg admin-clay-panel p-6">
+        <div class="mt-8 max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <form method="POST" action="{{ route('admin.agents.store') }}" class="space-y-4">
                 @csrf
                 <div>

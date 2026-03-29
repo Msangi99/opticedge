@@ -359,7 +359,7 @@
                 <a href="{{ route('admin.orders.index') }}"
                     class="text-sm text-[#007185] hover:text-[#c7511f] font-medium hover:underline">View All</a>
             </div>
-            <table class="admin-clay-table w-full text-left">
+            <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3">Order ID</th>

@@ -6,7 +6,7 @@
         </div>
 
         <form action="{{ route('admin.categories.update', $category->id) }}" method="POST" enctype="multipart/form-data"
-            class="admin-clay-panel p-8">
+            class="bg-white p-8 rounded-lg shadow-sm border border-slate-200">
             @csrf
             @method('PUT')
             <div class="space-y-6">

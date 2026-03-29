@@ -19,7 +19,7 @@
                             <dt class="text-sm font-medium text-gray-500">Business Name</dt>
                             <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-bold">{{ $user->business_name }}</dd>
                         </div>
-                        <div class="bg-slate-50/80 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                             <dt class="text-sm font-medium text-gray-500">Full name</dt>
                             <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->name }}</dd>
                         </div>
@@ -27,7 +27,7 @@
                             <dt class="text-sm font-medium text-gray-500">Email address</dt>
                             <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2 text-indigo-600 font-medium">{{ $user->email }}</dd>
                         </div>
-                        <div class="bg-slate-50/80 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                             <dt class="text-sm font-medium text-gray-500">Phone number</dt>
                             <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->phone ?? 'N/A' }}</dd>
                         </div>
@@ -39,7 +39,7 @@
                                 </span>
                             </dd>
                         </div>
-                        <div class="bg-slate-50/80 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                             <dt class="text-sm font-medium text-gray-500">Joined Date</dt>
                             <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->created_at->format('F d, Y') }}</dd>
                         </div>
@@ -92,7 +92,7 @@
             </div>
 
             <!-- Actions -->
-             <div class="admin-clay-panel mb-6 p-6 flex items-center gap-4">
+             <div class="bg-white shadow sm:rounded-lg mb-6 border border-gray-200 p-6 flex items-center gap-4">
                  @if($user->status === 'pending')
                     <form action="{{ route('admin.dealers.approve', $user->id) }}" method="POST">
                         @csrf
