@@ -243,6 +243,81 @@
                     inset -2px -2px 8px rgba(255, 255, 255, 0.85);
             }
 
+            /* Pro section headers (chart + tables) */
+            .admin-dash-pro-head {
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+                min-width: 0;
+            }
+
+            .admin-dash-pro-icon {
+                flex-shrink: 0;
+                width: 2.75rem;
+                height: 2.75rem;
+                border-radius: 0.85rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                box-shadow:
+                    3px 5px 14px rgba(163, 177, 198, 0.18),
+                    inset 1px 1px 3px rgba(255, 255, 255, 0.9);
+            }
+
+            .admin-dash-pro-icon--chart {
+                background: linear-gradient(145deg, rgba(250, 137, 0, 0.2), rgba(255, 255, 255, 0.95));
+                border-color: rgba(250, 137, 0, 0.25);
+                color: #c2410c;
+            }
+
+            .admin-dash-pro-icon--orders {
+                background: linear-gradient(145deg, rgba(71, 85, 105, 0.12), rgba(255, 255, 255, 0.95));
+                border-color: rgba(148, 163, 184, 0.35);
+                color: #475569;
+            }
+
+            .admin-dash-pro-icon svg {
+                width: 1.35rem;
+                height: 1.35rem;
+            }
+
+            .admin-dash-pro-eyebrow {
+                font-size: 0.625rem;
+                font-weight: 800;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: #94a3b8;
+                margin-bottom: 0.3rem;
+            }
+
+            .admin-dash-pro-title {
+                font-size: 1.2rem;
+                font-weight: 800;
+                color: #232f3e;
+                letter-spacing: -0.03em;
+                line-height: 1.2;
+                margin: 0;
+            }
+
+            .admin-dash-pro-meta {
+                font-size: 0.8125rem;
+                color: #64748b;
+                margin-top: 0.35rem;
+                font-variant-numeric: tabular-nums;
+                line-height: 1.4;
+            }
+
+            .admin-dash-filter-bar {
+                padding: 0.65rem 0.85rem;
+                border-radius: 0.85rem;
+                background: linear-gradient(165deg, rgba(255, 255, 255, 0.75), rgba(248, 250, 252, 0.65));
+                border: 1px solid rgba(255, 255, 255, 0.95);
+                box-shadow:
+                    inset 2px 2px 8px rgba(148, 163, 184, 0.1),
+                    2px 3px 10px rgba(163, 177, 198, 0.08);
+            }
+
             .admin-dash-table-wrap {
                 border-radius: 1rem;
                 overflow: hidden;
@@ -253,8 +328,31 @@
             }
 
             .admin-dash-table-wrap thead tr {
-                background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.85));
-                box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+                background: transparent;
+            }
+
+            .admin-dash-table-wrap thead th.admin-dash-th {
+                background: linear-gradient(180deg, #e8ecf2 0%, #dce2ea 45%, #cfd6e0 100%);
+                color: #475569;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                padding: 0.95rem 1.15rem;
+                border-bottom: 1px solid #aeb9c9;
+                border-right: 1px solid rgba(255, 255, 255, 0.5);
+                text-align: left;
+                vertical-align: middle;
+                white-space: nowrap;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            }
+
+            .admin-dash-table-wrap thead th.admin-dash-th:last-child {
+                border-right: none;
+            }
+
+            .admin-dash-table-wrap thead th.admin-dash-th--end {
+                text-align: right;
             }
 
             .admin-dash-table-wrap tbody tr {
@@ -638,34 +736,49 @@
         <!-- Top Selling Products Chart -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
             <div
-                class="admin-dash-section-head flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <h3 class="admin-dash-section-title">Top Selling Products (Models)</h3>
-                    <p class="admin-dash-section-desc">Products sold by quantity for the selected range.</p>
+                class="admin-dash-section-head flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div class="admin-dash-pro-head flex-1 min-w-0">
+                    <div class="admin-dash-pro-icon admin-dash-pro-icon--chart" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="admin-dash-pro-eyebrow">Sales analytics</p>
+                        <h3 class="admin-dash-pro-title" id="dash-top-models">Top selling models</h3>
+                        <p class="admin-dash-pro-meta">
+                            {{ $startDate->format('M j, Y') }} → {{ $endDate->format('M j, Y') }}
+                            <span class="text-slate-400">·</span> ranked by units sold
+                        </p>
+                    </div>
                 </div>
                 <form method="GET" action="{{ route('admin.dashboard') }}"
-                    class="flex flex-wrap gap-3 items-end">
+                    class="admin-dash-filter-bar flex flex-wrap gap-3 items-end shrink-0"
+                    aria-label="Filter chart date range">
                     <div>
-                        <label for="start_date" class="block text-[0.65rem] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Start</label>
+                        <label for="start_date" class="block text-[0.6rem] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5">From</label>
                         <input type="date" name="start_date" id="start_date"
                             value="{{ request('start_date', $startDate->format('Y-m-d')) }}"
                             class="admin-dash-filter-input w-full min-w-[10.5rem]">
                     </div>
                     <div>
-                        <label for="end_date" class="block text-[0.65rem] font-bold uppercase tracking-wider text-slate-500 mb-1.5">End</label>
+                        <label for="end_date" class="block text-[0.6rem] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5">To</label>
                         <input type="date" name="end_date" id="end_date"
                             value="{{ request('end_date', $endDate->format('Y-m-d')) }}"
                             class="admin-dash-filter-input w-full min-w-[10.5rem]">
                     </div>
                     <button type="submit" class="admin-dash-btn-primary self-end">
-                        Apply
+                        Apply range
                     </button>
                 </form>
             </div>
             <div class="admin-dash-body">
                 @if(count($topProducts) > 0)
                     <div class="admin-dash-chart-well">
-                        <canvas id="topProductsChart" class="max-h-[400px] w-full"></canvas>
+                        <canvas id="topProductsChart" class="max-h-[400px] w-full" role="img"
+                            aria-labelledby="dash-top-models"></canvas>
                     </div>
                 @else
                     <div class="admin-dash-empty">
@@ -677,10 +790,20 @@
 
         <!-- Recent Orders -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="admin-dash-section-head flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 class="admin-dash-section-title">Recent Orders</h3>
-                    <p class="admin-dash-section-desc">Latest activity across your store.</p>
+            <div class="admin-dash-section-head flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="admin-dash-pro-head flex-1 min-w-0">
+                    <div class="admin-dash-pro-icon admin-dash-pro-icon--orders" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="admin-dash-pro-eyebrow">Operations</p>
+                        <h3 class="admin-dash-pro-title" id="dash-recent-orders">Recent orders</h3>
+                        <p class="admin-dash-pro-meta">Newest first · quick view of the latest storefront activity</p>
+                    </div>
                 </div>
                 <a href="{{ route('admin.orders.index') }}" class="admin-dash-link shrink-0">
                     View all orders
@@ -688,14 +811,14 @@
             </div>
             <div class="admin-dash-body">
                 <div class="admin-dash-table-wrap">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-collapse" aria-labelledby="dash-recent-orders">
                         <thead>
-                            <tr class="text-[0.65rem] uppercase tracking-wider font-bold text-slate-500">
-                                <th class="px-5 py-3.5">Order ID</th>
-                                <th class="px-5 py-3.5">Customer</th>
-                                <th class="px-5 py-3.5">Total</th>
-                                <th class="px-5 py-3.5">Status</th>
-                                <th class="px-5 py-3.5 text-right">Action</th>
+                            <tr>
+                                <th scope="col" class="admin-dash-th">Order ID</th>
+                                <th scope="col" class="admin-dash-th">Customer</th>
+                                <th scope="col" class="admin-dash-th">Total</th>
+                                <th scope="col" class="admin-dash-th">Status</th>
+                                <th scope="col" class="admin-dash-th admin-dash-th--end">Action</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
@@ -760,6 +883,9 @@
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
+                        title: {
+                            display: false
+                        },
                         legend: {
                             display: false
                         },
