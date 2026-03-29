@@ -16,7 +16,7 @@
             </a>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="admin-clay-panel overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100">
                 <h2 class="text-lg font-semibold text-slate-800">Product details</h2>
                 <p class="text-xs text-slate-500 mt-1">Brand defaults to Samsung. Price and stock can be set when editing.</p>

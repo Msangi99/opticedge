@@ -37,7 +37,7 @@
         </x-admin-page-dashboard>
 
         <!-- Date Range Filter -->
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+        <div class="mt-8 admin-clay-panel p-4">
             <form method="GET" action="{{ route('admin.stock.distribution') }}" class="flex gap-4 items-end">
                 <div>
                     <label for="date_from" class="block text-sm font-medium text-slate-700 mb-1">From Date</label>
@@ -56,7 +56,7 @@
             </form>
         </div>
 
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
+        <div class="mt-8 admin-clay-panel overflow-x-auto">
             <table class="w-full text-left">
                 <thead>
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">

@@ -52,7 +52,7 @@
         </x-admin-page-dashboard>
 
         <!-- Date Range Filter -->
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4 space-y-4">
+        <div class="mt-8 admin-clay-panel p-4 space-y-4">
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.stock.purchases', ['preset' => 'this_week']) }}" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 {{ ($preset ?? '') === 'this_week' ? 'bg-[#fa8900] text-white border-[#fa8900]' : 'text-slate-700' }}">This week</a>
                 <a href="{{ route('admin.stock.purchases', ['preset' => 'last_week']) }}" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 hover:bg-slate-50 {{ ($preset ?? '') === 'last_week' ? 'bg-[#fa8900] text-white border-[#fa8900]' : 'text-slate-700' }}">Last week</a>
@@ -76,7 +76,7 @@
             </form>
         </div>
 
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <div class="overflow-x-auto">
             <table class="w-full text-left min-w-[1200px]">
                 <thead>

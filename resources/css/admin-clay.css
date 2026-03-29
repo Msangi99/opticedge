@@ -1,0 +1,154 @@
+/**
+ * Claymorphism theme for OpticEdge admin (raised soft surfaces, dual shadows, pastel canvas).
+ * Loaded only by layouts/admin.blade.php
+ */
+
+:root {
+    --clay-bg-from: #e4eaf4;
+    --clay-bg-via: #dde6f2;
+    --clay-bg-to: #e8edf6;
+    --clay-surface: linear-gradient(145deg, #ffffff 0%, #f4f6fb 100%);
+    --clay-surface-solid: #f6f8fc;
+    --clay-shadow-raised:
+        10px 10px 22px rgba(163, 177, 198, 0.45),
+        -6px -6px 18px rgba(255, 255, 255, 0.95);
+    --clay-shadow-raised-hover:
+        12px 12px 26px rgba(163, 177, 198, 0.5),
+        -8px -8px 20px rgba(255, 255, 255, 1);
+    --clay-shadow-inset: inset 3px 3px 8px rgba(163, 177, 198, 0.25),
+        inset -3px -3px 8px rgba(255, 255, 255, 0.9);
+    --clay-radius: 1.25rem;
+    --clay-brand: #fa8900;
+    --clay-brand-dark: #232f3e;
+}
+
+/* Page canvas */
+.admin-clay-page {
+    background: linear-gradient(160deg, var(--clay-bg-from) 0%, var(--clay-bg-via) 42%, var(--clay-bg-to) 100%);
+    background-attachment: fixed;
+    color: #475569;
+}
+
+/* Primary content cards / tables wrapper */
+.admin-clay-panel {
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    box-shadow: var(--clay-shadow-raised);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+/* Stat cards & clickable tiles */
+.admin-clay-panel-interactive {
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    box-shadow: var(--clay-shadow-raised);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+
+.admin-clay-panel-interactive:hover {
+    box-shadow: var(--clay-shadow-raised-hover);
+    border-color: rgba(250, 137, 0, 0.45);
+    transform: translateY(-2px);
+}
+
+/* Top header strip */
+.admin-clay-header {
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    box-shadow: var(--clay-shadow-raised);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+    color: var(--clay-brand-dark);
+}
+
+.admin-clay-header button,
+.admin-clay-header a {
+    border-radius: 0.75rem !important;
+    transition: box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+.admin-clay-header button:hover,
+.admin-clay-header a:hover {
+    box-shadow: var(--clay-shadow-inset);
+    background: rgba(255, 255, 255, 0.5) !important;
+    border-color: transparent !important;
+}
+
+/* Horizontal sub-navigation */
+.admin-clay-subnav {
+    background: linear-gradient(180deg, #e8edf5 0%, #dfe6f0 100%);
+    box-shadow: inset 0 2px 6px rgba(163, 177, 198, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.admin-clay-subnav a {
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem !important;
+    margin: 0 0.15rem;
+    transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    color: #334155 !important;
+    border: 1px solid transparent !important;
+}
+
+.admin-clay-subnav a:hover {
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 3px 3px 8px rgba(163, 177, 198, 0.35), -2px -2px 6px rgba(255, 255, 255, 0.9);
+    color: var(--clay-brand-dark) !important;
+}
+
+/* Sidebar */
+.admin-clay-sidebar {
+    background: var(--clay-surface);
+    box-shadow: var(--clay-shadow-raised);
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-radius: 0 1.25rem 1.25rem 0;
+}
+
+.admin-clay-nav-item {
+    border-radius: 0.75rem;
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-clay-nav-item:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: var(--clay-shadow-inset);
+}
+
+/* Dropdown menus */
+.admin-clay-dropdown {
+    background: var(--clay-surface-solid) !important;
+    border-radius: 1rem !important;
+    box-shadow: var(--clay-shadow-raised) !important;
+    border: 1px solid rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Table surfaces inside panels */
+.admin-clay-table thead tr {
+    background: linear-gradient(180deg, #f1f5f9 0%, #e8edf4 100%);
+}
+
+.admin-clay-table tbody tr:hover {
+    background: rgba(250, 137, 0, 0.06);
+}
+
+/* Primary CTA (matches brand orange) */
+.admin-clay-btn {
+    border-radius: 0.85rem;
+    box-shadow: 4px 4px 12px rgba(250, 137, 0, 0.35), -2px -2px 8px rgba(255, 255, 255, 0.5);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.admin-clay-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 6px 6px 16px rgba(250, 137, 0, 0.4);
+}
+
+/* Avatar / badge in header */
+.admin-clay-avatar {
+    box-shadow: var(--clay-shadow-inset);
+    border-radius: 9999px;
+}
+
+.admin-clay-badge {
+    border-radius: 0.5rem;
+    box-shadow: 2px 2px 6px rgba(250, 137, 0, 0.3);
+}

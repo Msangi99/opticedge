@@ -17,7 +17,7 @@
             </a>
         </div>
 
-        <div class="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+        <div class="admin-clay-panel overflow-hidden">
             <!-- Form Header with Brand Badge -->
             <div class="bg-slate-50 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-slate-800">Device Details</h2>

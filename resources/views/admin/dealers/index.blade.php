@@ -10,7 +10,7 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <div class="admin-clay-panel overflow-hidden">
         <div class="overflow-x-auto">
             <div class="inline-block min-w-full align-middle">
                 <div class="overflow-hidden md:rounded-lg">
@@ -35,7 +35,7 @@
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-200 bg-white">
+                                <tbody class="divide-y divide-slate-200/80 bg-slate-50/40">
                                     @foreach($dealers as $dealer)
                                         <tr>
                                             <td

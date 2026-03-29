@@ -9,7 +9,7 @@
                 <a href="{{ route('admin.stock.distribution') }}" class="text-slate-600 hover:text-slate-900">Back to List</a>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+            <div class="admin-clay-panel p-6">
                 <form action="{{ route('admin.stock.update-distribution', $sale->id) }}" method="POST">
                     @csrf
                     @method('PUT')

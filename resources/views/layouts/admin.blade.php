@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-50">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full admin-clay-page">
 
 <head>
     <meta charset="utf-8">
@@ -35,31 +35,31 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: rgba(241, 245, 249, 0.6);
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
+            background: #c5d0e0;
+            border-radius: 6px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
     </style>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/admin-clay.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
 
-<body class="font-sans antialiased text-slate-600 bg-slate-50 min-h-full" x-data="{ sidebarOpen: false }">
+<body class="font-sans antialiased text-slate-600 min-h-full admin-clay-page" x-data="{ sidebarOpen: false }">
 
     <!-- Header -->
-    <header class="bg-[#232f3e] text-white sticky top-0 z-50">
+    <header class="admin-clay-header sticky top-0 z-50 text-slate-800">
         <!-- Main Bar -->
         <div class="max-w-[1600px] mx-auto flex items-center gap-2 lg:gap-4 p-2 px-4">
             <!-- Sidebar Toggle Button -->
             <button @click="sidebarOpen = !sidebarOpen"
-                class="flex items-center gap-1 p-2 border border-transparent hover:border-white rounded-sm transition-all duration-200"
+                class="flex items-center gap-1 p-2 border border-transparent rounded-sm"
                 aria-label="Toggle Sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -69,10 +69,10 @@
 
             <!-- Logo -->
             <a href="{{ route('admin.dashboard') }}"
-                class="flex items-center pt-2 px-2 border border-transparent hover:border-white rounded-sm transition-all duration-200">
-                <span class="text-2xl font-bold tracking-tight">opticedg<span
+                class="flex items-center pt-2 px-2 border border-transparent rounded-sm">
+                <span class="text-2xl font-bold tracking-tight text-slate-900">opticedg<span
                         class="text-[#fa8900]">eafrica</span></span>
-                <span class="ml-2 text-xs font-medium bg-[#fa8900] text-[#232f3e] px-2 py-0.5 rounded">ADMIN</span>
+                <span class="admin-clay-badge ml-2 text-xs font-medium bg-[#fa8900] text-[#232f3e] px-2 py-0.5">ADMIN</span>
             </a>
 
             <!-- Spacer -->
@@ -82,7 +82,7 @@
             <div class="hidden md:flex items-center gap-2">
                 <!-- Notifications -->
                 <button
-                    class="p-2 border border-transparent hover:border-white rounded-sm transition-all duration-200 relative">
+                    class="p-2 border border-transparent rounded-sm relative">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -93,7 +93,7 @@
 
                 <!-- View Website -->
                 <a href="/" target="_blank"
-                    class="flex items-center gap-2 p-2 px-3 border border-transparent hover:border-white rounded-sm transition-all duration-200">
+                    class="flex items-center gap-2 p-2 px-3 border border-transparent rounded-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -106,16 +106,16 @@
             <!-- User Profile -->
             <div class="relative" x-data="{ userMenuOpen: false }">
                 <button @click="userMenuOpen = !userMenuOpen"
-                    class="flex items-center gap-2 p-2 border border-transparent hover:border-white rounded-sm transition-all duration-200">
+                    class="flex items-center gap-2 p-2 border border-transparent rounded-sm">
                     <div
-                        class="w-8 h-8 rounded-full bg-[#fa8900] flex items-center justify-center text-sm font-bold text-[#232f3e]">
+                        class="admin-clay-avatar w-8 h-8 rounded-full bg-[#fa8900] flex items-center justify-center text-sm font-bold text-[#232f3e]">
                         {{ substr(Auth::user()->name, 0, 1) }}
                     </div>
                     <div class="hidden md:flex flex-col items-start">
-                        <span class="text-xs text-slate-300">Admin</span>
-                        <span class="text-sm font-medium">{{ Auth::user()->name }}</span>
+                        <span class="text-xs text-slate-500">Admin</span>
+                        <span class="text-sm font-medium text-slate-800">{{ Auth::user()->name }}</span>
                     </div>
-                    <svg class="w-4 h-4 text-slate-300 transition-transform" :class="{ 'rotate-180': userMenuOpen }"
+                    <svg class="w-4 h-4 text-slate-500 transition-transform" :class="{ 'rotate-180': userMenuOpen }"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -129,7 +129,7 @@
                     x-transition:leave="transition ease-in duration-75"
                     x-transition:leave-start="transform opacity-100 scale-100"
                     x-transition:leave-end="transform opacity-0 scale-95"
-                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 z-50">
+                    class="admin-clay-dropdown absolute right-0 mt-2 w-48 py-1 z-50">
                     <a href="{{ route('profile') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                         <div class="flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -160,25 +160,16 @@
 
         <!-- Sub Navigation -->
         <div
-            class="bg-[#19212c] flex items-center gap-1 py-1 px-4 text-sm font-medium overflow-x-auto whitespace-nowrap custom-scrollbar">
-            <a href="{{ route('admin.dashboard') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Dashboard</a>
-            <a href="{{ route('admin.orders.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Orders</a>
-            <a href="{{ route('admin.dealers.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Dealers</a>
-            <a href="{{ route('admin.agents.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Agents</a>
-            <a href="{{ route('admin.stock.stocks') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Stock</a>
-            <a href="{{ route('admin.reports.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Reports</a>
-            <a href="{{ route('admin.expenses.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Expenses</a>
-            <a href="{{ route('admin.settings.index') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Settings</a>
-            <a href="{{ route('command.center') }}"
-                class="p-1 px-3 border border-transparent hover:border-white rounded-sm transition-colors">Commands</a>
+            class="admin-clay-subnav flex items-center gap-1 py-2 px-4 text-sm font-medium overflow-x-auto whitespace-nowrap custom-scrollbar">
+            <a href="{{ route('admin.dashboard') }}">Dashboard</a>
+            <a href="{{ route('admin.orders.index') }}">Orders</a>
+            <a href="{{ route('admin.dealers.index') }}">Dealers</a>
+            <a href="{{ route('admin.agents.index') }}">Agents</a>
+            <a href="{{ route('admin.stock.stocks') }}">Stock</a>
+            <a href="{{ route('admin.reports.index') }}">Reports</a>
+            <a href="{{ route('admin.expenses.index') }}">Expenses</a>
+            <a href="{{ route('admin.settings.index') }}">Settings</a>
+            <a href="{{ route('command.center') }}">Commands</a>
         </div>
     </header>
 
@@ -192,14 +183,14 @@
 
         <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col h-[calc(100vh-112px)] overflow-y-auto transform transition-transform duration-300 ease-in-out custom-scrollbar mt-[112px]">
+            class="admin-clay-sidebar fixed inset-y-0 left-0 z-50 w-64 flex-shrink-0 flex flex-col h-[calc(100vh-112px)] overflow-y-auto transform transition-transform duration-300 ease-in-out custom-scrollbar mt-[112px] border-r-0">
 
             <!-- Close button (Mobile) -->
-            <div class="lg:hidden flex items-center justify-between p-4 border-b border-slate-100">
+            <div class="lg:hidden flex items-center justify-between p-4 border-b border-slate-200/60">
                 <span class="text-lg font-bold tracking-tight text-[#232f3e]">opticedg<span
                         class="text-[#fa8900]">eafrica</span>
                     Menu</span>
-                <button @click="sidebarOpen = false" class="p-1 rounded hover:bg-slate-100">
+                <button @click="sidebarOpen = false" class="p-1 rounded-lg admin-clay-nav-item">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -215,7 +206,7 @@
                     <h3 class="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Dashboard</h3>
                     <div class="space-y-1">
                         <a href="{{ route('admin.dashboard') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -234,7 +225,7 @@
 
                         <!-- Products -->
                         <a href="{{ route('admin.products.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -244,7 +235,7 @@
                             Products
                         </a>
                         <a href="{{ route('admin.categories.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -257,7 +248,7 @@
                         <!-- Customers -->
                         <div x-data="{ open: false }">
                             <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                                class="admin-clay-nav-item w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 group">
                                 <div class="flex items-center gap-3">
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                         class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
@@ -292,7 +283,7 @@
                     <div class="space-y-1">
                         <div x-data="{ open: true }">
                             <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                                class="admin-clay-nav-item w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 group">
                                 <div class="flex items-center gap-3">
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                         class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
@@ -333,7 +324,7 @@
                     <h3 class="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Operations</h3>
                     <div class="space-y-1">
                         <a href="{{ route('admin.payment-options.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -343,7 +334,7 @@
                             Channels
                         </a>
                         <a href="{{ route('admin.expenses.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -353,7 +344,7 @@
                             Expenses
                         </a>
                         <a href="{{ route('admin.reports.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -363,7 +354,7 @@
                             Sales Reports
                         </a>
                         <a href="{{ route('admin.settings.index') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -373,7 +364,7 @@
                             Store Settings
                         </a>
                         <a href="{{ route('command.center') }}"
-                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            class="admin-clay-nav-item flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -387,7 +378,7 @@
             </nav>
 
             <!-- User Profile (Bottom) -->
-            <div class="p-4 border-t border-slate-200 mt-auto" x-data="{ open: false }">
+            <div class="p-4 border-t border-slate-200/70 mt-auto" x-data="{ open: false }">
                 <div class="relative">
                     <button @click="open = !open" class="w-full flex items-center justify-between group">
                         <div class="flex items-center gap-3">
@@ -412,7 +403,7 @@
 
                     <!-- Dropdown -->
                     <div x-show="open" @click.away="open = false" x-cloak
-                        class="absolute bottom-full left-0 w-full mb-2 bg-white rounded-md shadow-lg border border-slate-200 py-1 z-50">
+                        class="admin-clay-dropdown absolute bottom-full left-0 w-full mb-2 py-1 z-50">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit"
@@ -433,7 +424,7 @@
         <!-- Main Content Area -->
         <div class="flex-1 lg:pl-64 flex flex-col min-h-[calc(100vh-112px)] overflow-y-auto">
             <!-- Main Content -->
-            <main class="flex-1 bg-slate-50 p-6">
+            <main class="flex-1 bg-transparent p-6">
                 {{ $slot }}
             </main>
         </div>

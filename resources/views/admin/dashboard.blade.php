@@ -7,7 +7,7 @@
         <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Customers -->
             <a href="{{ route('admin.customers.index') }}"
-                class="group bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-[#fa8900] transition-colors relative overflow-hidden">
+                class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
                 <div class="flex items-center gap-4 relative z-10">
                     <div
                         class="p-3 bg-blue-50 text-blue-600 rounded-full group-hover:bg-[#fa8900] group-hover:text-white transition-colors">
@@ -26,7 +26,7 @@
 
             <!-- Orders -->
             <a href="{{ route('admin.orders.index') }}"
-                class="group bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-[#fa8900] transition-colors relative overflow-hidden">
+                class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
                 <div class="flex items-center gap-4 relative z-10">
                     <div
                         class="p-3 bg-purple-50 text-purple-600 rounded-full group-hover:bg-[#fa8900] group-hover:text-white transition-colors">
@@ -45,7 +45,7 @@
 
             <!-- Products -->
             <a href="{{ route('admin.products.index') }}"
-                class="group bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:border-[#fa8900] transition-colors relative overflow-hidden">
+                class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
                 <div class="flex items-center gap-4 relative z-10">
                     <div
                         class="p-3 bg-green-50 text-green-600 rounded-full group-hover:bg-[#fa8900] group-hover:text-white transition-colors">
@@ -67,7 +67,7 @@
         @if(isset($salesMetrics))
         <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Today Sales -->
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="admin-clay-panel p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-blue-50 text-blue-600 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -98,7 +98,7 @@
             </div>
 
             <!-- WTD Sales -->
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="admin-clay-panel p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-purple-50 text-purple-600 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,7 +129,7 @@
             </div>
 
             <!-- MTD Sales -->
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="admin-clay-panel p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-green-50 text-green-600 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +160,7 @@
             </div>
 
             <!-- YTD Sales -->
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="admin-clay-panel p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-amber-50 text-amber-600 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -194,7 +194,7 @@
 
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200">
                 <h3 class="font-bold text-slate-800">Financial Summary</h3>
                 <p class="text-sm text-slate-500 mt-0.5">Payables, receivables, stock value, and profit overview.</p>
@@ -260,7 +260,7 @@
 
         <!-- Cash in Hand Section -->
         @if(isset($paymentOptions) && $paymentOptions->count() > 0)
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200">
                 <h3 class="font-bold text-slate-800">Cash in Hand</h3>
                 <p class="text-sm text-slate-500 mt-0.5">Payment options and their current balances</p>
@@ -321,7 +321,7 @@
         @endif
 
         <!-- Top Selling Products Chart -->
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-slate-800">Top Selling Products (Models)</h3>
@@ -353,13 +353,13 @@
         </div>
 
         <!-- Recent Orders -->
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="font-bold text-slate-800">Recent Orders</h3>
                 <a href="{{ route('admin.orders.index') }}"
                     class="text-sm text-[#007185] hover:text-[#c7511f] font-medium hover:underline">View All</a>
             </div>
-            <table class="w-full text-left">
+            <table class="admin-clay-table w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3">Order ID</th>

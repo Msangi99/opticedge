@@ -11,7 +11,7 @@
             <p class="mt-1 text-slate-600">Products (IMEI numbers) for this model.</p>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="admin-clay-panel overflow-hidden">
             <table class="w-full text-left text-sm">
                 <thead class="bg-slate-50 border-b border-slate-200 font-medium text-slate-900">
                     <tr>

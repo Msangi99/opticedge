@@ -3,7 +3,7 @@
         <h1 class="text-2xl font-bold text-slate-900">Add Branch</h1>
         <p class="mt-2 text-slate-600">Create a name for a store or location.</p>
 
-        <form action="{{ route('admin.branches.store') }}" method="POST" class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <form action="{{ route('admin.branches.store') }}" method="POST" class="mt-8 admin-clay-panel p-6">
             @csrf
             <div>
                 <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Name</label>

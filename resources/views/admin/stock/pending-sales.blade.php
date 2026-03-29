@@ -12,7 +12,7 @@
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
 
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
+        <div class="mt-8 admin-clay-panel overflow-x-auto">
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">

@@ -12,7 +12,7 @@
 
     <div class="grid gap-6 lg:grid-cols-2">
         {{-- Allowed commands --}}
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div class="admin-clay-panel p-6">
             <h3 class="text-lg font-semibold text-slate-800 mb-3">Allowed Artisan commands</h3>
             <ul class="mb-4 max-h-48 overflow-y-auto custom-scrollbar text-sm text-slate-600 space-y-1 border border-slate-100 rounded-md p-3 bg-slate-50">
                 @foreach ($allowedCommands as $cmd)
@@ -51,7 +51,7 @@
         </div>
 
         {{-- Migrations --}}
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div class="admin-clay-panel p-6">
             <h3 class="text-lg font-semibold text-slate-800 mb-3">Migrations</h3>
             <p class="text-sm text-slate-600 mb-3">Runs <code class="text-slate-800">php artisan migrate --path=database/migrations/&lt;file&gt;</code> for one file.</p>
 
@@ -83,7 +83,7 @@
     </div>
 
     {{-- Extensions --}}
-    <div class="mt-6 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="mt-6 admin-clay-panel p-6">
         <h3 class="text-lg font-semibold text-slate-800 mb-3">PHP extensions</h3>
         <p class="text-sm text-slate-600 mb-2">Lists what this server’s PHP runtime has <strong>actually loaded</strong> right now (same process as this page). “Track” is only a checklist — it does not install anything; install via your host or package manager (e.g. <code class="text-slate-800">php-gd</code>).</p>
         <p class="text-xs text-slate-500 mb-4">Runtime: PHP {{ $phpVersion }} · SAPI <code class="text-slate-700">{{ $phpSapi }}</code></p>

@@ -16,7 +16,7 @@
                 <div class="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-md">{{ session('error') }}</div>
             @endif
 
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 space-y-6">
+            <div class="admin-clay-panel p-6 space-y-6">
                 <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <h2 class="text-sm font-semibold text-slate-900 mb-2">From barcode photos</h2>
                     <p class="text-xs text-slate-600 mb-3">Choose one or more images (camera or gallery). QR codes on labels are read here; dense 1D barcodes work best in the OpticApp admin screen.</p>

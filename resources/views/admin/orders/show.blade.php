@@ -42,7 +42,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Order Items -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="admin-clay-panel overflow-hidden">
                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <h3 class="font-bold text-slate-800">Order Items</h3>
                 </div>
@@ -83,7 +83,7 @@
         <!-- Customer & Additional Info -->
         <div class="space-y-6">
             <!-- Customer Details -->
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="admin-clay-panel overflow-hidden">
                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <h3 class="font-bold text-slate-800">Customer Details</h3>
                 </div>
@@ -106,7 +106,7 @@
             </div>
 
             <!-- Shipping Address -->
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="admin-clay-panel overflow-hidden">
                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <h3 class="font-bold text-slate-800">Shipping Address / Location</h3>
                 </div>
@@ -142,7 +142,7 @@
             </div>
 
             <!-- Payment Info -->
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div class="admin-clay-panel overflow-hidden">
                 <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <h3 class="font-bold text-slate-800">Payment Information</h3>
                 </div>

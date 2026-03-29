@@ -2,7 +2,7 @@
     <div class="py-12 px-8 max-w-xl">
         <h1 class="text-2xl font-bold text-slate-900">Edit Branch</h1>
 
-        <form action="{{ route('admin.branches.update', $branch) }}" method="POST" class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <form action="{{ route('admin.branches.update', $branch) }}" method="POST" class="mt-8 admin-clay-panel p-6">
             @csrf
             @method('PUT')
             <div>

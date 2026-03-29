@@ -21,7 +21,7 @@
         <p class="mt-3 text-xs text-slate-500">The table below is paginated; figures above are for the full database.</p>
     </x-admin-page-dashboard>
 
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <div class="admin-clay-panel overflow-hidden">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">

@@ -2,28 +2,28 @@
     <div class="mb-6 flex justify-between items-center">
         <h2 class="text-2xl font-bold text-slate-800">Business Reports</h2>
         <button
-            class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded shadow-sm text-sm font-medium hover:bg-slate-50">
+            class="admin-clay-panel px-4 py-2 text-slate-700 text-sm font-medium border border-slate-200/80 hover:shadow-md transition-shadow">
             Export Data
         </button>
     </div>
 
     <!-- Overview Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <div class="admin-clay-panel p-6">
             <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Total Sales</h3>
             <p class="text-3xl font-bold text-slate-900">{{ number_format($totalSales, 0) }} TZS</p>
             <div class="mt-2 text-sm text-green-600 font-medium">
                 +12% from last month
             </div>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <div class="admin-clay-panel p-6">
             <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Total Orders</h3>
             <p class="text-3xl font-bold text-slate-900">{{ number_format($totalOrders) }}</p>
             <div class="mt-2 text-sm text-green-600 font-medium">
                 +5% from last month
             </div>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <div class="admin-clay-panel p-6">
             <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Total Customers</h3>
             <p class="text-3xl font-bold text-slate-900">{{ number_format($totalCustomers) }}</p>
             <div class="mt-2 text-sm text-slate-500 font-medium">
@@ -34,7 +34,7 @@
 
     @if($branchesBusiness->isNotEmpty() || $unassignedPurchases > 0)
         <!-- Purchases by branch -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
+        <div class="admin-clay-panel p-6 mb-8">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <h3 class="font-bold text-lg text-slate-800">Business by branch (purchases)</h3>
                 <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-wrap items-center gap-2">
@@ -95,7 +95,7 @@
     @endif
 
     <!-- Recent Sales Chart (Placeholder) -->
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-8">
+    <div class="admin-clay-panel p-6 mb-8">
         <h3 class="font-bold text-lg text-slate-800 mb-4">Sales Overview (Last 7 Days)</h3>
         <div class="h-64 flex items-end justify-between gap-2">
             @foreach($salesData as $date => $amount)

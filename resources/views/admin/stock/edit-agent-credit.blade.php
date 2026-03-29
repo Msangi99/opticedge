@@ -13,7 +13,7 @@
                 <p class="mb-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
             @endif
 
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+            <div class="admin-clay-panel p-6">
                 <form action="{{ route('admin.stock.update-agent-credit', $credit->id) }}" method="POST">
                     @csrf
                     @method('PUT')

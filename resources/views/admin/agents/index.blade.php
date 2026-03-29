@@ -19,7 +19,7 @@
             <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
         @endif
 
-        <div class="mt-8 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">

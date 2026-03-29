@@ -3,7 +3,7 @@
         <h2 class="text-2xl font-bold text-slate-800">Payment Settings</h2>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-2xl">
+    <div class="admin-clay-panel p-6 max-w-2xl">
         <h3 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Selcom Configuration</h3>
 
         <form action="{{ route('admin.settings.update') }}" method="POST">

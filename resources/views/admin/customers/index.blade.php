@@ -3,15 +3,15 @@
         <h2 class="text-2xl font-bold text-slate-800">Customers & Users</h2>
         <div class="flex gap-2">
             <a href="{{ route('admin.customers.index') }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ !request('role') ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">All</a>
+                class="px-4 py-2 rounded-xl text-sm font-medium {{ !request('role') ? 'bg-[#fa8900] text-white shadow-md' : 'admin-clay-panel text-slate-600 border border-slate-200/80' }}">All</a>
             <a href="{{ route('admin.customers.index', ['role' => 'dealer']) }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ request('role') == 'dealer' ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">Dealers</a>
+                class="px-4 py-2 rounded-xl text-sm font-medium {{ request('role') == 'dealer' ? 'bg-[#fa8900] text-white shadow-md' : 'admin-clay-panel text-slate-600 border border-slate-200/80' }}">Dealers</a>
             <a href="{{ route('admin.customers.index', ['role' => 'customer']) }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ request('role') == 'customer' ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">Customers</a>
+                class="px-4 py-2 rounded-xl text-sm font-medium {{ request('role') == 'customer' ? 'bg-[#fa8900] text-white shadow-md' : 'admin-clay-panel text-slate-600 border border-slate-200/80' }}">Customers</a>
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <div class="admin-clay-panel overflow-hidden">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">

@@ -7,7 +7,7 @@
             </div>
         </div>
 
-        <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden">
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">

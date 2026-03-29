@@ -6,7 +6,7 @@
         </div>
 
         <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data"
-            class="bg-white p-8 rounded-lg shadow-sm border border-slate-200">
+            class="admin-clay-panel p-8">
             @csrf
             <div class="space-y-6">
                 <div>
