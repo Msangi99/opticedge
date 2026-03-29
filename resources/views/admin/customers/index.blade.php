@@ -1,74 +1,100 @@
 <x-admin-layout>
-    <div class="mb-6 flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-slate-800">Customers & Users</h2>
-        <div class="flex gap-2">
-            <a href="{{ route('admin.customers.index') }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ !request('role') ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">All</a>
-            <a href="{{ route('admin.customers.index', ['role' => 'dealer']) }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ request('role') == 'dealer' ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">Dealers</a>
-            <a href="{{ route('admin.customers.index', ['role' => 'customer']) }}"
-                class="px-4 py-2 rounded text-sm font-medium {{ request('role') == 'customer' ? 'bg-[#fa8900] text-white' : 'bg-white text-slate-600 border border-slate-300' }}">Customers</a>
-        </div>
-    </div>
+    @include('admin.partials.catalog-styles')
 
-    <div class="admin-clay-panel overflow-hidden">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-                    <th class="p-4">Name</th>
-                    <th class="p-4">Email</th>
-                    <th class="p-4">Role</th>
-                    <th class="p-4">Status</th>
-                    <th class="p-4">Joined At</th>
-                    <th class="p-4 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-sm">
-                @forelse($customers as $user)
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="p-4 font-medium text-slate-900 flex items-center gap-3">
-                                    <div
-                                        class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
-                                        {{ substr($user->name, 0, 1) }}
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
+            <div>
+                <p class="admin-prod-eyebrow">Users</p>
+                <h1 class="admin-prod-title">Customers & accounts</h1>
+                <p class="admin-prod-subtitle">Storefront customers, dealers, and other roles in one list.</p>
+            </div>
+            <div class="admin-prod-filter-row shrink-0" role="tablist" aria-label="Filter by role">
+                <a href="{{ route('admin.customers.index') }}"
+                    class="admin-prod-filter-tab {{ !request('role') ? 'admin-prod-filter-tab--active' : '' }}"
+                    @if(!request('role')) aria-current="page" @endif>
+                    All
+                </a>
+                <a href="{{ route('admin.customers.index', ['role' => 'dealer']) }}"
+                    class="admin-prod-filter-tab {{ request('role') == 'dealer' ? 'admin-prod-filter-tab--active' : '' }}"
+                    @if(request('role') == 'dealer') aria-current="page" @endif>
+                    Dealers
+                </a>
+                <a href="{{ route('admin.customers.index', ['role' => 'customer']) }}"
+                    class="admin-prod-filter-tab {{ request('role') == 'customer' ? 'admin-prod-filter-tab--active' : '' }}"
+                    @if(request('role') == 'customer') aria-current="page" @endif>
+                    Customers
+                </a>
+            </div>
+        </div>
+
+        <div class="admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Email</th>
+                            <th scope="col" class="admin-prod-th">Role</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">Joined</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($customers as $user)
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <span class="admin-prod-avatar" aria-hidden="true">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                                        <span class="font-semibold text-[#232f3e]">{{ $user->name }}</span>
                                     </div>
-                                    {{ $user->name }}
                                 </td>
-                                <td class="p-4 text-slate-600">{{ $user->email }}</td>
-                                <td class="p-4">
-                                    <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase
-                                            {{ $user->role === 'admin' ? 'bg-red-100 text-red-800' :
-                    ($user->role === 'dealer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800') }}">
-                                        {{ $user->role }}
-                                    </span>
+                                <td class="text-slate-600">{{ $user->email }}</td>
+                                <td>
+                                    @php
+                                        $role = $user->role ?? 'customer';
+                                        $roleClass =
+                                            $role === 'admin'
+                                                ? 'admin-prod-role-pill--admin'
+                                                : ($role === 'dealer'
+                                                    ? 'admin-prod-role-pill--dealer'
+                                                    : ($role === 'agent'
+                                                        ? 'admin-prod-role-pill--agent'
+                                                        : 'admin-prod-role-pill--customer'));
+                                    @endphp
+                                    <span class="admin-prod-role-pill {{ $roleClass }}">{{ $role }}</span>
                                 </td>
-                                <td class="p-4">
+                                <td>
+                                    @php
+                                        $isActive = ($user->status ?? 'active') === 'active';
+                                    @endphp
                                     <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                            {{ $user->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                        class="admin-prod-user-status {{ $isActive ? 'admin-prod-user-status--active' : 'admin-prod-user-status--inactive' }}">
                                         {{ ucfirst($user->status ?? 'active') }}
                                     </span>
                                 </td>
-                                <td class="p-4 text-slate-500">
-                                    {{ $user->created_at->format('M d, Y') }}
+                                <td class="font-variant-numeric text-slate-600 text-sm">
+                                    {{ $user->created_at->format('M j, Y') }}
                                 </td>
-                                <td class="p-4 text-right">
-                                    <a href="#" class="text-slate-400 hover:text-slate-600">Edit</a>
+                                <td class="admin-prod-cell-actions">
+                                    <span class="admin-prod-muted" title="User editing is not available from this screen">—</span>
                                 </td>
                             </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="p-8 text-center text-slate-500">
-                            No users found.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-        @if($customers->hasPages())
-            <div class="p-4 border-t border-slate-200">
-                {{ $customers->links() }}
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-slate-500 py-10">
+                                    No users found.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @endif
+            @if($customers->hasPages())
+                <div class="admin-prod-pagination">
+                    {{ $customers->links() }}
+                </div>
+            @endif
+        </div>
     </div>
 </x-admin-layout>
