@@ -114,18 +114,15 @@ class AgentCreditApiController extends Controller
             ], 422);
         }
 
-        if ($opt->balance + $eps < $increment) {
-            return response()->json([
-                'message' => 'Insufficient balance in selected payment channel.',
-            ], 422);
-        }
-
         $newPaid = min($totalAmount, $oldPaid + $increment);
         $paymentStatus = $newPaid >= $totalAmount - $eps ? 'paid' : ($newPaid > $eps ? 'partial' : 'pending');
         $paidDate = $validated['paid_date'] ?? now()->toDateString();
 
-        DB::transaction(function () use ($credit, $opt, $increment, $newPaid, $paymentStatus, $paidDate, $paymentOptionId) {
-            $opt->decrement('balance', $increment);
+        DB::transaction(function () use ($credit, $opt, $increment, $newPaid, $paymentStatus, $paidDate, $paymentOptionId, $eps) {
+            // Same as admin agent sale channel: repayment is credited to the selected channel.
+            if ($increment > $eps) {
+                $opt->increment('balance', $increment);
+            }
 
             $update = [
                 'paid_amount' => $newPaid,
