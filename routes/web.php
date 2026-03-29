@@ -166,6 +166,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('agent-credits', [App\Http\Controllers\Admin\AgentCreditController::class, 'index'])->name('agent-credits');
             Route::get('agent-credits/{id}/edit', [App\Http\Controllers\Admin\AgentCreditController::class, 'edit'])->name('edit-agent-credit');
             Route::patch('agent-credits/{id}/payment-channel', [App\Http\Controllers\Admin\AgentCreditController::class, 'updatePaymentChannel'])->name('agent-credit-payment-channel');
+            Route::post('agent-credits/{id}/pay-remaining', [App\Http\Controllers\Admin\AgentCreditController::class, 'payRemaining'])->name('agent-credit-pay-remaining');
             Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
 
             Route::get('shop-records', [App\Http\Controllers\Admin\StockController::class , 'shopRecords'])->name('shop-records');

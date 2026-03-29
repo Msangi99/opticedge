@@ -10,6 +10,9 @@
         @if(session('success'))
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
+        @if(session('info'))
+            <p class="mt-4 rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-700">{{ session('info') }}</p>
+        @endif
         @if($errors->any())
             <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ $errors->first() }}</p>
         @endif
@@ -86,24 +89,28 @@
                             <td class="px-6 py-3 align-middle">
                                 @if($paymentOptions->isEmpty())
                                     <span class="text-slate-500">{{ $credit->paymentOption?->name ?? '—' }}</span>
-                                @else
-                                    <form method="POST" action="{{ route('admin.stock.agent-credit-payment-channel', $credit->id) }}" class="inline-block min-w-[180px]">
+                                @elseif($pend > 0.0001)
+                                    <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}" class="flex flex-wrap items-center gap-2">
                                         @csrf
-                                        @method('PATCH')
                                         <select
                                             name="payment_option_id"
-                                            class="w-full max-w-[220px] rounded-md border-slate-300 text-sm shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]"
-                                            onchange="this.form.submit()"
+                                            required
+                                            class="min-w-[150px] max-w-[200px] rounded-md border-slate-300 text-sm shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]"
                                             title="Bank / payment channel"
                                         >
-                                            <option value="">— None —</option>
+                                            <option value="">Choose channel…</option>
                                             @foreach($paymentOptions as $option)
                                                 <option value="{{ $option->id }}" @selected((int) ($credit->payment_option_id ?? 0) === (int) $option->id)>
                                                     {{ $option->name }} ({{ number_format((float) $option->balance, 2) }})
                                                 </option>
                                             @endforeach
                                         </select>
+                                        <button type="submit" class="shrink-0 rounded-md bg-[#fa8900] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#fa8900]/90">
+                                            Pay
+                                        </button>
                                     </form>
+                                @else
+                                    <span class="text-slate-600">{{ $credit->paymentOption?->name ?? '—' }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-3 font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
@@ -116,8 +123,6 @@
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap">
                                 <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="text-slate-700 hover:text-slate-900 font-medium hover:underline">Edit</a>
-                                <span class="mx-2 text-slate-300">·</span>
-                                <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}#repayment" class="text-[#fa8900] hover:underline font-medium">Pay</a>
                             </td>
                         </tr>
                     @empty

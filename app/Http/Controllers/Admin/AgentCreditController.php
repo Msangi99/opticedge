@@ -7,6 +7,7 @@ use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
 use App\Models\PaymentOption;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -156,6 +157,71 @@ class AgentCreditController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Payment channel updated.');
+    }
+
+    /**
+     * From agent credits list: pay remaining balance in one step (channel + Pay).
+     * Credits the selected payment channel and marks the credit paid — same idea as agent sale channel + amount.
+     */
+    public function payRemaining(Request $request, int $id)
+    {
+        $credit = AgentCredit::findOrFail($id);
+
+        if (! Schema::hasTable('payment_options')) {
+            return redirect()
+                ->route('admin.stock.agent-credits')
+                ->withErrors(['error' => 'Payment channels are not configured.']);
+        }
+
+        $validated = $request->validate([
+            'payment_option_id' => 'required|exists:payment_options,id',
+        ]);
+
+        $totalAmount = (float) $credit->total_amount;
+        $oldPaid = (float) ($credit->paid_amount ?? 0);
+        $eps = 0.0001;
+        $remaining = max(0, $totalAmount - $oldPaid);
+
+        if ($remaining <= $eps) {
+            return redirect()
+                ->route('admin.stock.agent-credits')
+                ->with('info', 'This credit is already fully paid.');
+        }
+
+        $paymentOptionId = (int) $validated['payment_option_id'];
+        $opt = PaymentOption::visible()->whereKey($paymentOptionId)->first();
+        if (! $opt) {
+            return redirect()
+                ->back()
+                ->withErrors(['payment_option_id' => 'Invalid or hidden payment channel.']);
+        }
+
+        $paidDate = now()->toDateString();
+
+        DB::transaction(function () use ($credit, $opt, $remaining, $paymentOptionId, $totalAmount, $paidDate) {
+            $opt->increment('balance', $remaining);
+
+            $update = [
+                'paid_amount' => $totalAmount,
+                'payment_status' => 'paid',
+                'paid_date' => $paidDate,
+            ];
+            if (Schema::hasColumn('agent_credits', 'payment_option_id')) {
+                $update['payment_option_id'] = $paymentOptionId;
+            }
+            $credit->update($update);
+
+            AgentCreditPayment::create([
+                'agent_credit_id' => $credit->id,
+                'payment_option_id' => $paymentOptionId,
+                'amount' => $remaining,
+                'paid_date' => $paidDate,
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.stock.agent-credits')
+            ->with('success', 'Payment recorded. Amount added to channel; status set to paid.');
     }
 
     public function update(Request $request, int $id)
