@@ -1,72 +1,96 @@
 <x-admin-layout>
-    <div class="admin-dashboard px-2">
+    <div class="admin-dashboard">
         <header class="dash-page-head">
-            <p class="dash-eyebrow">Overview</p>
-            <h1 class="title is-3 mb-0">Dashboard</h1>
-            <p class="subtitle mb-0">Track performance, cash, and orders in one place.</p>
+            <div class="dash-page-head__content">
+                <p class="dash-eyebrow">Overview</p>
+                <h1 class="title is-3">Dashboard</h1>
+                <p class="subtitle is-6">Track performance, cash, and orders in one place.</p>
+            </div>
         </header>
 
-        <p class="dash-section-label">At a glance</p>
-        <div class="columns is-multiline">
-            <div class="column is-12-mobile is-4-tablet">
-                <a href="{{ route('admin.customers.index') }}" class="dash-stat-card dash-stat-card--customers">
-                    <div class="dash-stat-card__row">
-                        <span class="dash-stat-card__icon has-background-info-light has-text-info">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="is-size-7 has-text-grey mb-1">Total Customers</p>
-                            <p class="title is-4 mb-0">{{ number_format($totalCustomers) }}</p>
-                        </div>
+        <div class="card dash-wrap-card">
+            <header class="card-header dash-card-section-header">
+                <p class="card-header-title">At a glance</p>
+            </header>
+            <div class="card-content">
+                <div class="columns is-multiline is-variable is-5">
+                    <div class="column is-12-mobile is-4-tablet">
+                        <a href="{{ route('admin.customers.index') }}" class="card dash-stat-card dash-stat-card--customers">
+                            <div class="card-content">
+                                <article class="media">
+                                    <figure class="media-left">
+                                        <span class="dash-stat-card__icon has-background-info-light has-text-info">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        </span>
+                                    </figure>
+                                    <div class="media-content">
+                                        <p class="is-size-7 has-text-grey mb-1">Total Customers</p>
+                                        <p class="title is-4 mb-0">{{ number_format($totalCustomers) }}</p>
+                                    </div>
+                                </article>
+                                <span class="dash-stat-card__hint">Open →</span>
+                            </div>
+                        </a>
                     </div>
-                    <span class="dash-stat-card__hint">Open →</span>
-                </a>
-            </div>
-            <div class="column is-12-mobile is-4-tablet">
-                <a href="{{ route('admin.orders.index') }}" class="dash-stat-card dash-stat-card--orders">
-                    <div class="dash-stat-card__row">
-                        <span class="dash-stat-card__icon has-background-link-light has-text-link">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="is-size-7 has-text-grey mb-1">Total Orders</p>
-                            <p class="title is-4 mb-0">{{ number_format($totalOrders) }}</p>
-                        </div>
+                    <div class="column is-12-mobile is-4-tablet">
+                        <a href="{{ route('admin.orders.index') }}" class="card dash-stat-card dash-stat-card--orders">
+                            <div class="card-content">
+                                <article class="media">
+                                    <figure class="media-left">
+                                        <span class="dash-stat-card__icon has-background-link-light has-text-link">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                            </svg>
+                                        </span>
+                                    </figure>
+                                    <div class="media-content">
+                                        <p class="is-size-7 has-text-grey mb-1">Total Orders</p>
+                                        <p class="title is-4 mb-0">{{ number_format($totalOrders) }}</p>
+                                    </div>
+                                </article>
+                                <span class="dash-stat-card__hint">Open →</span>
+                            </div>
+                        </a>
                     </div>
-                    <span class="dash-stat-card__hint">Open →</span>
-                </a>
-            </div>
-            <div class="column is-12-mobile is-4-tablet">
-                <a href="{{ route('admin.products.index') }}" class="dash-stat-card dash-stat-card--products">
-                    <div class="dash-stat-card__row">
-                        <span class="dash-stat-card__icon has-background-success-light has-text-success">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="is-size-7 has-text-grey mb-1">Total Products</p>
-                            <p class="title is-4 mb-0">{{ number_format($totalProducts) }}</p>
-                        </div>
+                    <div class="column is-12-mobile is-4-tablet">
+                        <a href="{{ route('admin.products.index') }}" class="card dash-stat-card dash-stat-card--products">
+                            <div class="card-content">
+                                <article class="media">
+                                    <figure class="media-left">
+                                        <span class="dash-stat-card__icon has-background-success-light has-text-success">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        </span>
+                                    </figure>
+                                    <div class="media-content">
+                                        <p class="is-size-7 has-text-grey mb-1">Total Products</p>
+                                        <p class="title is-4 mb-0">{{ number_format($totalProducts) }}</p>
+                                    </div>
+                                </article>
+                                <span class="dash-stat-card__hint">Open →</span>
+                            </div>
+                        </a>
                     </div>
-                    <span class="dash-stat-card__hint">Open →</span>
-                </a>
+                </div>
             </div>
         </div>
 
         @if(isset($salesMetrics))
-            <p class="dash-section-label">Sales performance</p>
-            <div class="columns is-multiline">
+            <div class="card dash-wrap-card">
+                <header class="card-header dash-card-section-header">
+                    <p class="card-header-title">Sales performance</p>
+                </header>
+                <div class="card-content">
+                    <div class="columns is-multiline is-variable is-4">
                 <div class="column is-12-mobile is-6-tablet is-3-desktop">
                     <div class="dash-metric-card dash-metric-card--sky">
                         <div class="dash-metric-card__icon has-background-info-light has-text-info">
@@ -208,6 +232,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
         @endif
 
         @if(isset($financialMetrics))
@@ -216,8 +242,8 @@
                     <h2 class="title is-5 mb-1">Financial Summary</h2>
                     <p class="is-size-7 has-text-grey mb-0">Payables, receivables, stock value, and profit overview.</p>
                 </div>
-                <div class="dash-panel__body">
-                    <div class="columns is-multiline is-variable is-2">
+                <div class="dash-panel__body dash-panel__body--muted">
+                    <div class="columns is-multiline is-variable is-4">
                         <div class="column is-12-mobile is-6-tablet is-3-desktop">
                             <div class="dash-fin-card dash-fin-card--amber">
                                 <p class="heading">Payables</p>
@@ -248,7 +274,7 @@
                         </div>
                     </div>
                     <div class="dash-divider">
-                        <div class="columns is-multiline is-variable is-2">
+                        <div class="columns is-multiline is-variable is-4">
                             <div class="column is-12-mobile is-6-tablet is-3-desktop">
                                 <div class="dash-fin-card dash-fin-card--slate">
                                     <p class="heading">Total Value</p>
@@ -257,9 +283,9 @@
                                 </div>
                             </div>
                             <div class="column is-12-mobile is-6-tablet is-3-desktop">
-                                <div class="dash-fin-card dash-fin-card--green">
+                                <div class="dash-fin-card {{ $financialMetrics['gross_profit'] >= 0 ? 'dash-fin-card--green' : 'dash-fin-card--red' }}">
                                     <p class="heading">Gross Profit</p>
-                                    <p class="title is-5 has-text-success">{{ number_format($financialMetrics['gross_profit'], 0) }} TZS</p>
+                                    <p class="title is-5 {{ $financialMetrics['gross_profit'] >= 0 ? 'has-text-success' : 'has-text-danger' }}">{{ number_format($financialMetrics['gross_profit'], 0) }} TZS</p>
                                     <p class="is-size-7 has-text-grey mt-2 mb-0">Distribution + Agent Sales profit</p>
                                 </div>
                             </div>
@@ -303,8 +329,8 @@
                     <h2 class="title is-5 mb-1">Cash in Hand</h2>
                     <p class="is-size-7 has-text-grey mb-0">Payment options and their current balances</p>
                 </div>
-                <div class="dash-panel__body">
-                    <div class="columns is-multiline is-variable is-2">
+                <div class="dash-panel__body dash-panel__body--muted">
+                    <div class="columns is-multiline is-variable is-4">
                         @foreach($paymentOptions as $option)
                             @php
                                 $currentBalance = $option->balance ?? 0;
