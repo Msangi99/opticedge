@@ -1,7 +1,305 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p class="mt-2 text-slate-600">Overview of your store performance.</p>
+    @push('styles')
+        <style>
+            .admin-dash-section-head {
+                padding: 1.1rem 1.5rem;
+                background: linear-gradient(165deg, rgba(255, 255, 255, 0.65), rgba(241, 245, 249, 0.45));
+                border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+                box-shadow: inset 0 -2px 8px rgba(148, 163, 184, 0.06);
+            }
+
+            .admin-dash-section-title {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: #232f3e;
+                letter-spacing: -0.02em;
+            }
+
+            .admin-dash-section-desc {
+                font-size: 0.8125rem;
+                color: rgb(100 116 139);
+                margin-top: 0.2rem;
+                line-height: 1.45;
+            }
+
+            .admin-dash-body {
+                padding: 1.5rem;
+                background: linear-gradient(180deg, rgba(248, 250, 252, 0.4), rgba(255, 255, 255, 0.15));
+            }
+
+            .admin-dash-metric {
+                position: relative;
+                padding: 1rem 1.15rem 1rem 1.25rem;
+                border-radius: 1rem;
+                background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.82));
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                box-shadow:
+                    5px 7px 16px rgba(163, 177, 198, 0.18),
+                    -3px -3px 12px rgba(255, 255, 255, 0.95),
+                    inset 2px 2px 5px rgba(255, 255, 255, 0.85),
+                    inset -1px -1px 4px rgba(148, 163, 184, 0.05);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .admin-dash-metric:hover {
+                transform: translateY(-2px);
+                box-shadow:
+                    8px 10px 22px rgba(163, 177, 198, 0.22),
+                    -4px -4px 14px rgba(255, 255, 255, 1),
+                    inset 2px 2px 6px rgba(255, 255, 255, 0.9);
+            }
+
+            .admin-dash-metric::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0.65rem;
+                bottom: 0.65rem;
+                width: 3px;
+                border-radius: 0 4px 4px 0;
+                background: var(--dash-accent, #94a3b8);
+                box-shadow: 2px 0 10px rgba(15, 23, 42, 0.08);
+            }
+
+            .admin-dash-metric-label {
+                font-size: 0.8125rem;
+                font-weight: 600;
+                color: rgb(71 85 105);
+            }
+
+            .admin-dash-metric-value {
+                font-size: 1.35rem;
+                font-weight: 700;
+                color: rgb(15 23 42);
+                margin-top: 0.35rem;
+                letter-spacing: -0.02em;
+            }
+
+            .admin-dash-metric-hint {
+                font-size: 0.6875rem;
+                color: rgb(100 116 139);
+                margin-top: 0.4rem;
+                line-height: 1.4;
+            }
+
+            .admin-dash-metric--amber {
+                --dash-accent: #f59e0b;
+            }
+
+            .admin-dash-metric--blue {
+                --dash-accent: #3b82f6;
+            }
+
+            .admin-dash-metric--emerald {
+                --dash-accent: #10b981;
+            }
+
+            .admin-dash-metric--violet {
+                --dash-accent: #8b5cf6;
+            }
+
+            .admin-dash-metric--slate {
+                --dash-accent: #64748b;
+            }
+
+            .admin-dash-metric--green {
+                --dash-accent: #22c55e;
+            }
+
+            .admin-dash-metric--red {
+                --dash-accent: #ef4444;
+            }
+
+            .admin-dash-metric--indigo {
+                --dash-accent: #6366f1;
+            }
+
+            .admin-dash-metric--teal {
+                --dash-accent: #14b8a6;
+            }
+
+            .admin-dash-divider {
+                margin-top: 1.25rem;
+                padding-top: 1.25rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.75);
+                box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08);
+            }
+
+            .admin-dash-cash-card {
+                padding: 1.1rem 1.2rem;
+                border-radius: 1.1rem;
+                background: linear-gradient(150deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88));
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                box-shadow:
+                    6px 8px 18px rgba(163, 177, 198, 0.16),
+                    -3px -4px 12px rgba(255, 255, 255, 0.92),
+                    inset 1px 1px 4px rgba(255, 255, 255, 0.85);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .admin-dash-cash-card:hover {
+                transform: translateY(-2px);
+                box-shadow:
+                    8px 12px 24px rgba(163, 177, 198, 0.2),
+                    -4px -4px 14px rgba(255, 255, 255, 1),
+                    inset 1px 1px 4px rgba(255, 255, 255, 0.9);
+            }
+
+            .admin-dash-cash-card--mobile {
+                --cash-tint: #3b82f6;
+            }
+
+            .admin-dash-cash-card--bank {
+                --cash-tint: #10b981;
+            }
+
+            .admin-dash-cash-card--other {
+                --cash-tint: #f59e0b;
+            }
+
+            .admin-dash-cash-card::before {
+                content: '';
+                display: block;
+                height: 3px;
+                border-radius: 2px;
+                margin: -0.35rem -0.5rem 0.85rem -0.5rem;
+                background: linear-gradient(90deg, var(--cash-tint, #94a3b8), rgba(255, 255, 255, 0.65));
+                opacity: 0.9;
+            }
+
+            .admin-dash-pill {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.2rem 0.55rem;
+                border-radius: 9999px;
+                font-size: 0.65rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                background: rgba(255, 255, 255, 0.85);
+                border: 1px solid rgba(255, 255, 255, 0.95);
+                box-shadow: 2px 2px 6px rgba(163, 177, 198, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+                color: var(--cash-tint, #475569);
+            }
+
+            .admin-dash-cash-footer {
+                margin-top: 1.25rem;
+                padding: 1rem 1.25rem;
+                border-radius: 1rem;
+                background: linear-gradient(135deg, rgba(250, 137, 0, 0.12), rgba(255, 255, 255, 0.75));
+                border: 1px solid rgba(250, 137, 0, 0.22);
+                box-shadow:
+                    inset 2px 2px 6px rgba(255, 255, 255, 0.75),
+                    4px 6px 14px rgba(250, 137, 0, 0.08);
+            }
+
+            .admin-dash-filter-input {
+                border-radius: 0.75rem;
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                background: linear-gradient(165deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.95));
+                box-shadow:
+                    inset 3px 3px 8px rgba(163, 177, 198, 0.12),
+                    inset -2px -2px 6px rgba(255, 255, 255, 0.9),
+                    2px 2px 8px rgba(163, 177, 198, 0.08);
+                padding: 0.45rem 0.65rem;
+                font-size: 0.8125rem;
+                color: rgb(15 23 42);
+            }
+
+            .admin-dash-filter-input:focus {
+                outline: 2px solid rgba(250, 137, 0, 0.35);
+                outline-offset: 1px;
+            }
+
+            .admin-dash-btn-primary {
+                border-radius: 0.75rem;
+                padding: 0.5rem 1.1rem;
+                font-size: 0.8125rem;
+                font-weight: 600;
+                color: white;
+                background: linear-gradient(145deg, #fa8900, #e07800);
+                border: 1px solid rgba(255, 255, 255, 0.35);
+                box-shadow:
+                    4px 5px 14px rgba(250, 137, 0, 0.35),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.35);
+                transition: transform 0.15s ease, box-shadow 0.15s ease;
+            }
+
+            .admin-dash-btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow:
+                    6px 8px 18px rgba(250, 137, 0, 0.4),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+            }
+
+            .admin-dash-chart-well {
+                margin-top: 0.5rem;
+                padding: 1.25rem;
+                border-radius: 1.25rem;
+                background: linear-gradient(165deg, rgba(255, 255, 255, 0.55), rgba(241, 245, 249, 0.35));
+                border: 1px solid rgba(255, 255, 255, 0.65);
+                box-shadow:
+                    inset 3px 4px 12px rgba(163, 177, 198, 0.1),
+                    inset -2px -2px 8px rgba(255, 255, 255, 0.85);
+            }
+
+            .admin-dash-table-wrap {
+                border-radius: 1rem;
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.75);
+                box-shadow:
+                    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                    3px 4px 14px rgba(163, 177, 198, 0.1);
+            }
+
+            .admin-dash-table-wrap thead tr {
+                background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.85));
+                box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.12);
+            }
+
+            .admin-dash-table-wrap tbody tr {
+                transition: background 0.15s ease;
+            }
+
+            .admin-dash-table-wrap tbody tr:hover {
+                background: rgba(255, 255, 255, 0.72);
+            }
+
+            .admin-dash-link {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.35rem 0.75rem;
+                border-radius: 0.65rem;
+                font-size: 0.8125rem;
+                font-weight: 600;
+                color: #232f3e;
+                background: rgba(255, 255, 255, 0.75);
+                border: 1px solid rgba(255, 255, 255, 0.95);
+                box-shadow: 2px 3px 8px rgba(163, 177, 198, 0.12);
+                transition: color 0.15s, box-shadow 0.15s, transform 0.15s;
+            }
+
+            .admin-dash-link:hover {
+                color: #fa8900;
+                transform: translateY(-1px);
+                box-shadow: 3px 5px 12px rgba(250, 137, 0, 0.15);
+            }
+
+            .admin-dash-empty {
+                padding: 2.5rem 1rem;
+                text-align: center;
+                color: rgb(100 116 139);
+                font-size: 0.875rem;
+                border-radius: 1rem;
+                background: rgba(255, 255, 255, 0.4);
+                border: 1px dashed rgba(148, 163, 184, 0.35);
+            }
+        </style>
+    @endpush
+
+    <div class="py-8 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto">
+        <h1 class="text-2xl font-bold text-[#232f3e] tracking-tight">Dashboard</h1>
+        <p class="mt-2 text-slate-600 text-sm sm:text-base">Overview of your store performance.</p>
 
         <!-- Stats Grid -->
         <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -195,63 +493,66 @@
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
         <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h3 class="font-bold text-slate-800">Financial Summary</h3>
-                <p class="text-sm text-slate-500 mt-0.5">Payables, receivables, stock value, and profit overview.</p>
+            <div class="admin-dash-section-head">
+                <h3 class="admin-dash-section-title">Financial Summary</h3>
+                <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
             </div>
-            <div class="p-6">
+            <div class="admin-dash-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="p-4 rounded-lg bg-amber-50 border border-amber-100">
-                        <p class="text-sm font-medium text-slate-600">Payables</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['payables'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Total pending (not paid) from purchases</p>
+                    <div class="admin-dash-metric admin-dash-metric--amber">
+                        <p class="admin-dash-metric-label">Payables</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['payables'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Total pending (not paid) from purchases</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-blue-50 border border-blue-100">
-                        <p class="text-sm font-medium text-slate-600">Receivables</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['receivables'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Pending from Distribution Sales</p>
+                    <div class="admin-dash-metric admin-dash-metric--blue">
+                        <p class="admin-dash-metric-label">Receivables</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['receivables'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Pending from Distribution Sales</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
-                        <p class="text-sm font-medium text-slate-600">Stock in Hand Value</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['stock_in_hand_value'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Total value of our stock</p>
+                    <div class="admin-dash-metric admin-dash-metric--emerald">
+                        <p class="admin-dash-metric-label">Stock in Hand Value</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['stock_in_hand_value'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Total value of our stock</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-violet-50 border border-violet-100">
-                        <p class="text-sm font-medium text-slate-600">Cash in Hand</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format(isset($paymentOptions) ? $paymentOptions->sum('balance') : $financialMetrics['cash_in_hand'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Total amount in all payment options</p>
+                    <div class="admin-dash-metric admin-dash-metric--violet">
+                        <p class="admin-dash-metric-label">Cash in Hand</p>
+                        <p class="admin-dash-metric-value">{{ number_format(isset($paymentOptions) ? $paymentOptions->sum('balance') : $financialMetrics['cash_in_hand'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Total amount in all payment options</p>
                     </div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                        <p class="text-sm font-medium text-slate-600">Total Value</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_value'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Receivables + Stock in Hand + Cash in Hand</p>
+                <div class="admin-dash-divider grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="admin-dash-metric admin-dash-metric--slate">
+                        <p class="admin-dash-metric-label">Total Value</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['total_value'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Receivables + Stock in Hand + Cash in Hand</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-green-50 border border-green-100">
-                        <p class="text-sm font-medium text-slate-600">Gross Profit</p>
-                        <p class="text-xl font-bold text-green-800 mt-1">{{ number_format($financialMetrics['gross_profit'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Distribution Sales + Agent Sales profit</p>
+                    <div class="admin-dash-metric admin-dash-metric--green">
+                        <p class="admin-dash-metric-label">Gross Profit</p>
+                        <p class="admin-dash-metric-value text-emerald-800">{{ number_format($financialMetrics['gross_profit'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Distribution Sales + Agent Sales profit</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-red-50 border border-red-100">
-                        <p class="text-sm font-medium text-slate-600">Total Expenses</p>
-                        <p class="text-xl font-bold text-red-800 mt-1">{{ number_format($financialMetrics['total_expenses'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">From Expenses section</p>
+                    <div class="admin-dash-metric admin-dash-metric--red">
+                        <p class="admin-dash-metric-label">Total Expenses</p>
+                        <p class="admin-dash-metric-value text-red-800">{{ number_format($financialMetrics['total_expenses'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">From Expenses section</p>
                     </div>
-                    <div class="p-4 rounded-lg {{ $financialMetrics['net_profit'] >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100' }} border">
-                        <p class="text-sm font-medium text-slate-600">Net Profit</p>
-                        <p class="text-xl font-bold mt-1 {{ $financialMetrics['net_profit'] >= 0 ? 'text-green-800' : 'text-red-800' }}">{{ number_format($financialMetrics['net_profit'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Gross profit − Total expenses</p>
+                    <div
+                        class="admin-dash-metric {{ $financialMetrics['net_profit'] >= 0 ? 'admin-dash-metric--green' : 'admin-dash-metric--red' }}">
+                        <p class="admin-dash-metric-label">Net Profit</p>
+                        <p
+                            class="admin-dash-metric-value {{ $financialMetrics['net_profit'] >= 0 ? 'text-emerald-800' : 'text-red-800' }}">
+                            {{ number_format($financialMetrics['net_profit'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Gross profit − Total expenses</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
-                        <p class="text-sm font-medium text-slate-600">Total Purchase Buy Price</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_purchase_buy_price'], 0) }} TZS</p>
-                        <p class="text-xs text-slate-500 mt-1">Total buy price of all purchases</p>
+                    <div class="admin-dash-metric admin-dash-metric--indigo">
+                        <p class="admin-dash-metric-label">Total Purchase Buy Price</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['total_purchase_buy_price'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-hint">Total buy price of all purchases</p>
                     </div>
-                    <div class="p-4 rounded-lg bg-teal-50 border border-teal-100">
-                        <p class="text-sm font-medium text-slate-600">Total Products in Purchases</p>
-                        <p class="text-xl font-bold text-slate-900 mt-1">{{ number_format($financialMetrics['total_products_in_purchases'], 0) }}</p>
-                        <p class="text-xs text-slate-500 mt-1">Total products in all purchases</p>
+                    <div class="admin-dash-metric admin-dash-metric--teal">
+                        <p class="admin-dash-metric-label">Total Products in Purchases</p>
+                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['total_products_in_purchases'], 0) }}</p>
+                        <p class="admin-dash-metric-hint">Total products in all purchases</p>
                     </div>
                 </div>
             </div>
@@ -261,11 +562,11 @@
         <!-- Cash in Hand Section -->
         @if(isset($paymentOptions) && $paymentOptions->count() > 0)
         <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h3 class="font-bold text-slate-800">Cash in Hand</h3>
-                <p class="text-sm text-slate-500 mt-0.5">Payment options and their current balances</p>
+            <div class="admin-dash-section-head">
+                <h3 class="admin-dash-section-title">Cash in Hand</h3>
+                <p class="admin-dash-section-desc">Payment options and their current balances.</p>
             </div>
-            <div class="p-6">
+            <div class="admin-dash-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach($paymentOptions as $option)
                         @php
@@ -275,32 +576,46 @@
                             $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
                             $isIncrease = $difference > 0;
                             $isDecrease = $difference < 0;
+                            $cashCardClass =
+                                $option->type === 'mobile'
+                                    ? 'admin-dash-cash-card--mobile'
+                                    : ($option->type === 'bank'
+                                        ? 'admin-dash-cash-card--bank'
+                                        : 'admin-dash-cash-card--other');
                         @endphp
-                        <div class="p-4 rounded-lg border {{ $option->type === 'mobile' ? 'bg-blue-50 border-blue-100' : ($option->type === 'bank' ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100') }}">
-                            <div class="flex items-center justify-between mb-2">
-                                <p class="text-sm font-medium text-slate-600">{{ $option->name }}</p>
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : ($option->type === 'bank' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') }}">
-                                    {{ ucfirst($option->type) }}
-                                </span>
+                        <div class="admin-dash-cash-card {{ $cashCardClass }}">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-sm font-semibold text-slate-700 leading-snug">{{ $option->name }}</p>
+                                <span class="admin-dash-pill shrink-0">{{ ucfirst($option->type) }}</span>
                             </div>
-                            <p class="text-2xl font-bold text-slate-900">{{ number_format($currentBalance, 0) }} TZS</p>
-                            <div class="mt-2 pt-2 border-t border-slate-200 space-y-1">
-                                <div class="flex items-center justify-between">
-                                    <p class="text-xs font-medium text-slate-600">Opening Balance:</p>
-                                    <p class="text-xs font-semibold text-slate-800">{{ number_format($openingBalance, 0) }} TZS</p>
+                            <p class="text-2xl font-bold text-[#232f3e] mt-2 tracking-tight">{{ number_format($currentBalance, 0) }}
+                                <span class="text-sm font-semibold text-slate-500">TZS</span></p>
+                            <div
+                                class="mt-3 pt-3 space-y-1.5 border-t border-white/80 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)]">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-xs font-medium text-slate-500">Opening balance</p>
+                                    <p class="text-xs font-bold text-slate-800">{{ number_format($openingBalance, 0) }} TZS</p>
                                 </div>
                                 @if($difference != 0)
-                                    <div class="flex items-center gap-1">
+                                    <div class="flex items-center gap-1 flex-wrap">
                                         @if($isIncrease)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 shrink-0"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                             </svg>
-                                            <span class="text-xs font-semibold text-green-600">Imepanda {{ number_format(abs($difference), 0) }} TZS ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                            <span class="text-xs font-semibold text-emerald-700">Imepanda
+                                                {{ number_format(abs($difference), 0) }} TZS
+                                                ({{ number_format(abs($percentageChange), 1) }}%)</span>
                                         @elseif($isDecrease)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-red-600 shrink-0"
+                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                                             </svg>
-                                            <span class="text-xs font-semibold text-red-600">Imeshuka {{ number_format(abs($difference), 0) }} TZS ({{ number_format(abs($percentageChange), 1) }}%)</span>
+                                            <span class="text-xs font-semibold text-red-700">Imeshuka
+                                                {{ number_format(abs($difference), 0) }} TZS
+                                                ({{ number_format(abs($percentageChange), 1) }}%)</span>
                                         @endif
                                     </div>
                                 @else
@@ -310,11 +625,11 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="mt-4 pt-4 border-t border-slate-200">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-medium text-slate-600">Total Cash in Hand</p>
-                        <p class="text-xl font-bold text-slate-900">{{ number_format($paymentOptions->sum('balance'), 0) }} TZS</p>
-                    </div>
+                <div class="admin-dash-cash-footer mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <p class="text-sm font-semibold text-slate-700">Total Cash in Hand</p>
+                    <p class="text-xl sm:text-2xl font-bold text-[#232f3e] tracking-tight">
+                        {{ number_format($paymentOptions->sum('balance'), 0) }} <span class="text-sm font-semibold text-slate-500">TZS</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -322,30 +637,38 @@
 
         <!-- Top Selling Products Chart -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <div
+                class="admin-dash-section-head flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h3 class="font-bold text-slate-800">Top Selling Products (Models)</h3>
-                    <p class="text-sm text-slate-500 mt-0.5">Products sold by quantity</p>
+                    <h3 class="admin-dash-section-title">Top Selling Products (Models)</h3>
+                    <p class="admin-dash-section-desc">Products sold by quantity for the selected range.</p>
                 </div>
-                <form method="GET" action="{{ route('admin.dashboard') }}" class="flex gap-3 items-end">
+                <form method="GET" action="{{ route('admin.dashboard') }}"
+                    class="flex flex-wrap gap-3 items-end">
                     <div>
-                        <label for="start_date" class="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
-                        <input type="date" name="start_date" id="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}" class="rounded-md border-slate-300 shadow-sm text-sm">
+                        <label for="start_date" class="block text-[0.65rem] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Start</label>
+                        <input type="date" name="start_date" id="start_date"
+                            value="{{ request('start_date', $startDate->format('Y-m-d')) }}"
+                            class="admin-dash-filter-input w-full min-w-[10.5rem]">
                     </div>
                     <div>
-                        <label for="end_date" class="block text-xs font-medium text-slate-600 mb-1">End Date</label>
-                        <input type="date" name="end_date" id="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}" class="rounded-md border-slate-300 shadow-sm text-sm">
+                        <label for="end_date" class="block text-[0.65rem] font-bold uppercase tracking-wider text-slate-500 mb-1.5">End</label>
+                        <input type="date" name="end_date" id="end_date"
+                            value="{{ request('end_date', $endDate->format('Y-m-d')) }}"
+                            class="admin-dash-filter-input w-full min-w-[10.5rem]">
                     </div>
-                    <button type="submit" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors text-sm font-medium">
-                        Filter
+                    <button type="submit" class="admin-dash-btn-primary self-end">
+                        Apply
                     </button>
                 </form>
             </div>
-            <div class="p-6">
+            <div class="admin-dash-body">
                 @if(count($topProducts) > 0)
-                    <canvas id="topProductsChart" style="max-height: 400px;"></canvas>
+                    <div class="admin-dash-chart-well">
+                        <canvas id="topProductsChart" class="max-h-[400px] w-full"></canvas>
+                    </div>
                 @else
-                    <div class="text-center py-8 text-slate-500">
+                    <div class="admin-dash-empty">
                         <p>No sales data found for the selected date range.</p>
                     </div>
                 @endif
@@ -354,47 +677,55 @@
 
         <!-- Recent Orders -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="font-bold text-slate-800">Recent Orders</h3>
-                <a href="{{ route('admin.orders.index') }}"
-                    class="text-sm text-[#007185] hover:text-[#c7511f] font-medium hover:underline">View All</a>
+            <div class="admin-dash-section-head flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="admin-dash-section-title">Recent Orders</h3>
+                    <p class="admin-dash-section-desc">Latest activity across your store.</p>
+                </div>
+                <a href="{{ route('admin.orders.index') }}" class="admin-dash-link shrink-0">
+                    View all orders
+                </a>
             </div>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Order ID</th>
-                        <th class="px-6 py-3">Customer</th>
-                        <th class="px-6 py-3">Total</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($recentOrders as $order)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3 font-medium">#{{ $order->id }}</td>
-                            <td class="px-6 py-3">{{ $order->user->name ?? 'Guest' }}</td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($order->total_price, 0) }} TZS</td>
-                            <td class="px-6 py-3">
-                                <span
-                                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $order->status == 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $order->status }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-3 text-right">
-                                <a href="{{ route('admin.orders.show', $order) }}"
-                                    class="text-slate-400 hover:text-[#fa8900]">
-                                    Details
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-slate-500">No recent orders.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <div class="admin-dash-body">
+                <div class="admin-dash-table-wrap">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-[0.65rem] uppercase tracking-wider font-bold text-slate-500">
+                                <th class="px-5 py-3.5">Order ID</th>
+                                <th class="px-5 py-3.5">Customer</th>
+                                <th class="px-5 py-3.5">Total</th>
+                                <th class="px-5 py-3.5">Status</th>
+                                <th class="px-5 py-3.5 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                            @forelse($recentOrders as $order)
+                                <tr>
+                                    <td class="px-5 py-3.5 font-semibold text-[#232f3e]">#{{ $order->id }}</td>
+                                    <td class="px-5 py-3.5 text-slate-700">{{ $order->user->name ?? 'Guest' }}</td>
+                                    <td class="px-5 py-3.5 font-bold text-slate-900">{{ number_format($order->total_price, 0) }} TZS</td>
+                                    <td class="px-5 py-3.5">
+                                        <span
+                                            class="inline-flex px-2.5 py-1 rounded-lg text-[0.65rem] font-bold uppercase tracking-wide border {{ $order->status == 'completed' ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]' : 'bg-amber-50 text-amber-900 border-amber-200/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]' }}">
+                                            {{ $order->status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-right">
+                                        <a href="{{ route('admin.orders.show', $order) }}"
+                                            class="admin-dash-link text-xs py-1.5 px-3">
+                                            Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-5 py-12 text-center text-slate-500 text-sm">No recent orders.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -405,6 +736,12 @@
         const ctx = document.getElementById('topProductsChart');
         if (ctx) {
             const chartData = @json($topProducts);
+            const n = chartData.length;
+            const orangeBars = chartData.map((_, i) => {
+                const t = n <= 1 ? 0.5 : i / (n - 1);
+                const a = 0.42 + t * 0.48;
+                return 'rgba(250, 137, 0, ' + a.toFixed(2) + ')';
+            });
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -412,9 +749,11 @@
                     datasets: [{
                         label: 'Quantity Sold',
                         data: chartData.map(item => item.total_quantity),
-                        backgroundColor: '#fa8900',
-                        borderColor: '#e67d00',
-                        borderWidth: 1
+                        backgroundColor: orangeBars,
+                        borderColor: 'rgba(255, 255, 255, 0.65)',
+                        borderWidth: 1,
+                        borderRadius: 10,
+                        borderSkipped: false
                     }]
                 },
                 options: {
@@ -425,6 +764,11 @@
                             display: false
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(35, 47, 62, 0.92)',
+                            titleFont: { size: 12, weight: '600' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            cornerRadius: 10,
                             callbacks: {
                                 label: function(context) {
                                     return 'Quantity: ' + context.parsed.y;
@@ -436,13 +780,25 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                stepSize: 1
+                                stepSize: 1,
+                                color: '#64748b',
+                                font: { size: 11, weight: '500' }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.15)',
+                                drawBorder: false
                             }
                         },
                         x: {
                             ticks: {
                                 maxRotation: 45,
-                                minRotation: 45
+                                minRotation: 45,
+                                color: '#64748b',
+                                font: { size: 10, weight: '500' }
+                            },
+                            grid: {
+                                display: false,
+                                drawBorder: false
                             }
                         }
                     }
