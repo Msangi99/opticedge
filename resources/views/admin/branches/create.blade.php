@@ -1,20 +1,31 @@
 <x-admin-layout>
-    <div class="py-12 px-8 max-w-xl">
-        <h1 class="text-2xl font-bold text-slate-900">Add Branch</h1>
-        <p class="mt-2 text-slate-600">Create a name for a store or location.</p>
+    @include('admin.partials.catalog-styles')
 
-        <form action="{{ route('admin.branches.store') }}" method="POST" class="mt-8 admin-clay-panel p-6">
-            @csrf
-            <div>
-                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                <input type="text" name="name" id="name" value="{{ old('name') }}" required
-                    class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+    <div class="admin-prod-page admin-prod-page--narrow">
+        <div class="mb-8">
+            <p class="admin-prod-eyebrow">Organization</p>
+            <h1 class="admin-prod-title">Add branch</h1>
+            <p class="admin-prod-subtitle">Name a store or location.</p>
+        </div>
+
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Branch name</h2>
             </div>
-            <div class="mt-6 flex gap-3">
-                <button type="submit" class="bg-[#fa8900] text-white px-6 py-2 rounded-lg hover:bg-[#e67d00] font-medium">Save</button>
-                <a href="{{ route('admin.branches.index') }}" class="text-slate-600 hover:text-slate-900 py-2">Cancel</a>
-            </div>
-        </form>
+            <form action="{{ route('admin.branches.store') }}" method="POST" class="admin-prod-form-body space-y-6">
+                @csrf
+                <div>
+                    <label for="name" class="admin-prod-label">Name</label>
+                    <input type="text" name="name" id="name" value="{{ old('name') }}" required class="admin-prod-input">
+                    @error('name')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
+                    <a href="{{ route('admin.branches.index') }}" class="admin-prod-btn-ghost">Cancel</a>
+                    <button type="submit" class="admin-prod-btn-primary px-8">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 </x-admin-layout>

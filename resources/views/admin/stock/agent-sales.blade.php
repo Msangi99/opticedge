@@ -1,21 +1,25 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Agent Sales</h1>
-                <p class="mt-2 text-slate-600">Sales made by agents. Buy price from purchases; sell price from agent. Admin can edit commission.</p>
+                <p class="admin-prod-eyebrow">Agents</p>
+                <h1 class="admin-prod-title">Agent sales</h1>
+                <p class="admin-prod-subtitle">Sales by agents; edit commission as needed.</p>
             </div>
-            <a href="{{ route('admin.stock.create-agent-sale') }}" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record manual sale</a>
+            <a href="{{ route('admin.stock.create-agent-sale') }}"
+                class="shrink-0 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record manual sale</a>
         </div>
 
         @if(session('success'))
-            <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
         @if(session('info'))
-            <p class="mt-4 rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-800">{{ session('info') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--warning mb-4" role="status">{{ session('info') }}</div>
         @endif
 
-        <x-admin-page-dashboard label="Summary (current filter)" class="mt-8">
+        <x-admin-page-dashboard label="Summary (current filter)" class="mt-2">
             <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Sales</dt>
@@ -32,91 +36,100 @@
             </dl>
         </x-admin-page-dashboard>
 
-        <!-- Date Range Filter -->
-        <div class="mt-8 admin-clay-panel p-4">
-            <form method="GET" action="{{ route('admin.stock.agent-sales') }}" class="flex gap-4 items-end">
-                <div>
-                    <label for="date_from" class="block text-sm font-medium text-slate-700 mb-1">From Date</label>
-                    <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label for="date_to" class="block text-sm font-medium text-slate-700 mb-1">To Date</label>
-                    <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}" class="rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div class="flex gap-2">
-                    <button type="submit" class="bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">Filter</button>
-                    @if(request('date_from') || request('date_to'))
-                        <a href="{{ route('admin.stock.agent-sales') }}" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors font-medium">Clear</a>
-                    @endif
-                </div>
-            </form>
+        <div class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Date filter</h2>
+            </div>
+            <div class="admin-prod-form-body">
+                <form method="GET" action="{{ route('admin.stock.agent-sales') }}" class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label for="date_from" class="admin-prod-label">From date</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}" class="admin-prod-input w-auto min-w-[10rem]">
+                    </div>
+                    <div>
+                        <label for="date_to" class="admin-prod-label">To date</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}" class="admin-prod-input w-auto min-w-[10rem]">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="admin-prod-btn-primary">Filter</button>
+                        @if(request('date_from') || request('date_to'))
+                            <a href="{{ route('admin.stock.agent-sales') }}" class="admin-prod-btn-ghost">Clear</a>
+                        @endif
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <div class="mt-8 admin-clay-panel overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3 bg-gray-100">Date</th>
-                        <th class="px-6 py-3 bg-gray-100">Customer</th>
-                        <th class="px-6 py-3 bg-gray-100">Seller</th>
-                        <th class="px-6 py-3 bg-gray-100">Product</th>
-                        <th class="px-6 py-3 bg-gray-100">Qty</th>
-                        <th class="px-6 py-3 bg-gray-100">Buy Price</th>
-                        <th class="px-6 py-3 bg-gray-100">Sell Price</th>
-                        <th class="px-6 py-3 bg-gray-100">Total Buy</th>
-                        <th class="px-6 py-3 bg-gray-100">Total Sell</th>
-                        <th class="px-6 py-3 bg-gray-100">Profit</th>
-                        <th class="px-6 py-3 bg-gray-100">Comm.</th>
-                        <th class="px-6 py-3 bg-gray-100">Channel</th>
-                        <th class="px-6 py-3 bg-gray-100">Edit Comm.</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($agentSales as $sale)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3">{{ $sale->date }}</td>
-                            <td class="px-6 py-3 font-medium">{{ $sale->customer_name ?? 'N/A' }}</td>
-                            <td class="px-6 py-3">{{ $sale->seller_name ?? $sale->agent?->name ?? '-' }}</td>
-                            <td class="px-6 py-3">{{ $sale->product ? (($sale->product->category?->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}</td>
-                            <td class="px-6 py-3">{{ $sale->quantity_sold }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->purchase_price ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->selling_price ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->total_purchase_value ?? 0, 0) }}</td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
-                            <td class="px-6 py-3 text-green-600">{{ number_format($sale->profit ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->commission_paid ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">
-                                @if($sale->payment_option_id)
-                                    <span class="text-slate-600">{{ $sale->paymentOption?->name ?? '—' }}</span>
-                                @else
-                                    <form action="{{ route('admin.stock.agent-sales-save-channel', $sale->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        <select name="payment_option_id" required onchange="this.form.submit()"
-                                            class="text-sm rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
-                                            <option value="">Choose channel...</option>
-                                            @foreach($paymentOptions as $option)
-                                                <option value="{{ $option->id }}">{{ $option->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </form>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3">
-                                <form action="{{ route('admin.stock.agent-sales-update-commission', $sale->id) }}" method="POST" class="inline flex items-center gap-1">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="number" name="commission_paid" value="{{ $sale->commission_paid ?? 0 }}" step="0.01" min="0" class="w-24 rounded border-slate-300 text-sm py-0.5">
-                                    <button type="submit" class="text-xs text-[#fa8900] hover:underline">Save</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
+        <div class="mt-6 admin-clay-panel overflow-x-auto">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
+                <table class="min-w-[1200px]">
+                    <thead>
                         <tr>
-                            <td colspan="13" class="px-6 py-4 text-center text-slate-500">No agent sales found.</td>
+                            <th scope="col" class="admin-prod-th">Date</th>
+                            <th scope="col" class="admin-prod-th">Customer</th>
+                            <th scope="col" class="admin-prod-th">Seller</th>
+                            <th scope="col" class="admin-prod-th">Product</th>
+                            <th scope="col" class="admin-prod-th">Qty</th>
+                            <th scope="col" class="admin-prod-th">Buy</th>
+                            <th scope="col" class="admin-prod-th">Sell</th>
+                            <th scope="col" class="admin-prod-th">Total buy</th>
+                            <th scope="col" class="admin-prod-th">Total sell</th>
+                            <th scope="col" class="admin-prod-th">Profit</th>
+                            <th scope="col" class="admin-prod-th">Comm.</th>
+                            <th scope="col" class="admin-prod-th">Channel</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Edit comm.</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($agentSales as $sale)
+                            <tr>
+                                <td class="text-slate-600">{{ $sale->date }}</td>
+                                <td class="font-semibold text-[#232f3e]">{{ $sale->customer_name ?? 'N/A' }}</td>
+                                <td class="text-slate-600">{{ $sale->seller_name ?? $sale->agent?->name ?? '-' }}</td>
+                                <td class="text-slate-600 text-sm">
+                                    {{ $sale->product ? (($sale->product->category?->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}</td>
+                                <td class="font-variant-numeric">{{ $sale->quantity_sold }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->purchase_price ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->selling_price ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->total_purchase_value ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-green-700">{{ number_format($sale->profit ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->commission_paid ?? 0, 0) }}</td>
+                                <td>
+                                    @if($sale->payment_option_id)
+                                        <span class="text-slate-600 text-sm">{{ $sale->paymentOption?->name ?? '—' }}</span>
+                                    @else
+                                        <form action="{{ route('admin.stock.agent-sales-save-channel', $sale->id) }}" method="POST">
+                                            @csrf
+                                            <select name="payment_option_id" required onchange="this.form.submit()"
+                                                class="admin-prod-select text-sm min-w-[8rem] py-1.5">
+                                                <option value="">Channel…</option>
+                                                @foreach($paymentOptions as $option)
+                                                    <option value="{{ $option->id }}">{{ $option->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </form>
+                                    @endif
+                                </td>
+                                <td class="admin-prod-cell-actions">
+                                    <form action="{{ route('admin.stock.agent-sales-update-commission', $sale->id) }}" method="POST"
+                                        class="inline-flex items-center gap-1 flex-wrap justify-end">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="number" name="commission_paid" value="{{ $sale->commission_paid ?? 0 }}" step="0.01" min="0"
+                                            class="admin-prod-input w-24 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link text-xs">Save</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="13" class="text-center text-slate-500 py-10">No agent sales found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

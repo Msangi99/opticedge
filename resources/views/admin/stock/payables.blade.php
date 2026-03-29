@@ -1,35 +1,40 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar !mb-0">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Payables</h1>
-                <p class="mt-2 text-slate-600">Track payable items and amounts.</p>
+                <p class="admin-prod-eyebrow">Finance</p>
+                <h1 class="admin-prod-title">Payables</h1>
+                <p class="admin-prod-subtitle">Payable items and amounts.</p>
             </div>
         </div>
 
-        <div class="mt-8 admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Date</th>
-                        <th class="px-6 py-3">Item Name</th>
-                        <th class="px-6 py-3">Amount</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($payables as $payable)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3">{{ $payable->date }}</td>
-                            <td class="px-6 py-3 font-medium">{{ $payable->item_name }}</td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($payable->amount, 2) }}</td>
-                        </tr>
-                    @empty
+        <div class="mt-6 admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="3" class="px-6 py-4 text-center text-slate-500">No payables found.</td>
+                            <th scope="col" class="admin-prod-th">Date</th>
+                            <th scope="col" class="admin-prod-th">Item name</th>
+                            <th scope="col" class="admin-prod-th">Amount</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($payables as $payable)
+                            <tr>
+                                <td class="text-slate-600">{{ $payable->date }}</td>
+                                <td class="font-medium text-[#232f3e]">{{ $payable->item_name }}</td>
+                                <td class="font-bold font-variant-numeric text-slate-800">{{ number_format($payable->amount, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="text-center text-slate-500 py-10">No payables found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

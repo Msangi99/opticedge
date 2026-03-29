@@ -1,4 +1,5 @@
 <x-admin-layout>
+    @include('admin.partials.catalog-styles')
     @push('styles')
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <style>
@@ -15,18 +16,22 @@
             }
         </style>
     @endpush
-    <div class="py-12 px-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Add New Purchase</h1>
-                    <p class="mt-2 text-slate-600">Record a new stock purchase.</p>
-                </div>
-                <a href="{{ route('admin.stock.purchases') }}" class="text-slate-600 hover:text-slate-900">Back to List</a>
+    <div class="admin-prod-page admin-prod-form-wide">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div>
+                <p class="admin-prod-eyebrow">Inventory</p>
+                <h1 class="admin-prod-title">Add purchase</h1>
+                <p class="admin-prod-subtitle">Record a new stock purchase.</p>
             </div>
+            <a href="{{ route('admin.stock.purchases') }}" class="admin-prod-back shrink-0">Back to list</a>
+        </div>
 
-            <div class="admin-clay-panel p-6">
-                <form action="{{ route('admin.stock.store-purchase') }}" method="POST" enctype="multipart/form-data">
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden admin-prod-select2-wrap">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Purchase details</h2>
+                <p class="admin-prod-form-hint">Invoice, branch, pricing, and images.</p>
+            </div>
+            <form action="{{ route('admin.stock.store-purchase') }}" method="POST" enctype="multipart/form-data" class="admin-prod-form-body">
                     @csrf
                     @if($fromStock)
                         <input type="hidden" name="stock_id" value="{{ $fromStock->id }}">
@@ -36,23 +41,23 @@
                         @if($fromStock)
                             <!-- Stock name (from stock – read-only) -->
                             <div class="col-span-2">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 font-medium">{{ $fromStock->name }}</div>
+                                <label class="admin-prod-label">Stock</label>
+                                <div class="admin-prod-readonly-box font-medium">{{ $fromStock->name }}</div>
                                 <p class="text-xs text-slate-500 mt-1">Category and model from products in this stock (as added in the app). Quantity = stock limit.</p>
                             </div>
                         @endif
 
                         <!-- Date -->
                         <div class="col-span-1">
-                            <label for="date" class="block text-sm font-medium text-slate-700 mb-1">Date of Purchase</label>
-                            <input type="date" name="date" id="date" value="{{ old('date', date('Y-m-d')) }}" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label for="date" class="admin-prod-label">Date of Purchase</label>
+                            <input type="date" name="date" id="date" value="{{ old('date', date('Y-m-d')) }}" required class="admin-prod-input">
                             @error('date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Distributor -->
                         <div class="col-span-1">
-                            <label for="distributor_name" class="block text-sm font-medium text-slate-700 mb-1">Distributor Name</label>
-                            <input list="distributors" name="distributor_name" id="distributor_name" value="{{ old('distributor_name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Select or type new...">
+                            <label for="distributor_name" class="admin-prod-label">Distributor Name</label>
+                            <input list="distributors" name="distributor_name" id="distributor_name" value="{{ old('distributor_name') }}" class="admin-prod-input" placeholder="Select or type new...">
                             <datalist id="distributors">
                                 @foreach($distributors as $distributor)
                                     <option value="{{ $distributor }}">
@@ -63,16 +68,16 @@
 
                         <!-- Invoice Number -->
                         <div class="col-span-2">
-                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Leave empty for auto (DistributorName-YYYY-MM-DD-HH-MM)">
+                            <label for="name" class="admin-prod-label">Invoice Number</label>
+                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="admin-prod-input" placeholder="Leave empty for auto (DistributorName-YYYY-MM-DD-HH-MM)">
                             <p id="invoice_preview" class="text-xs text-slate-500 mt-1" aria-live="polite"></p>
                             @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Branch -->
                         <div class="col-span-2">
-                            <label for="branch_id" class="block text-sm font-medium text-slate-700 mb-1">Branch</label>
-                            <select name="branch_id" id="branch_id" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label for="branch_id" class="admin-prod-label">Branch</label>
+                            <select name="branch_id" id="branch_id" class="admin-prod-select">
                                 <option value="">— Optional —</option>
                                 @foreach($branches ?? [] as $branch)
                                     <option value="{{ $branch->id }}" {{ (string) old('branch_id') === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
@@ -84,21 +89,21 @@
                         <!-- Category + model: from stock (read-only), or product picker (Select2) -->
                         @if($fromStock)
                             <div class="col-span-1">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_category_name ?? '–' }}</div>
+                                <label class="admin-prod-label">Category</label>
+                                <div class="admin-prod-readonly-box">{{ $fromStock->purchase_category_name ?? '–' }}</div>
                                 <input type="hidden" name="category_id" value="{{ $fromStock->purchase_category_id }}">
                                 @error('category_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div class="col-span-1">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Model (product name)</label>
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_model }}</div>
+                                <label class="admin-prod-label">Model (product name)</label>
+                                <div class="admin-prod-readonly-box">{{ $fromStock->purchase_model }}</div>
                                 <input type="hidden" name="model" value="{{ $fromStock->purchase_model }}">
                                 @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         @else
                             <div class="col-span-2">
-                                <label for="product_id" class="block text-sm font-medium text-slate-700 mb-1">Model (product name)</label>
-                                <select name="product_id" id="product_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label for="product_id" class="admin-prod-label">Model (product name)</label>
+                                <select name="product_id" id="product_id" required class="admin-prod-select">
                                     <option value="">Search or select…</option>
                                     @foreach($productsForSelect as $p)
                                         <option value="{{ $p->id }}" {{ (string) old('product_id') === (string) $p->id ? 'selected' : '' }}>
@@ -113,34 +118,34 @@
 
                         <!-- Quantity: from stock limit (read-only) or editable -->
                         <div class="col-span-1">
-                            <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                            <label for="quantity" class="admin-prod-label">Quantity</label>
                             @if($fromStock)
-                                <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_quantity }}</div>
+                                <div class="admin-prod-readonly-box">{{ $fromStock->purchase_quantity }}</div>
                                 <input type="hidden" name="quantity" id="quantity" value="{{ $fromStock->purchase_quantity }}">
                             @else
-                                <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="calculateTotal()">
+                                <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" required min="1" class="admin-prod-input" oninput="calculateTotal()">
                             @endif
                             @error('quantity') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Unit Price -->
                         <div class="col-span-1">
-                            <label for="unit_price" class="block text-sm font-medium text-slate-700 mb-1">Unit Price</label>
-                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price') }}" required min="0" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" oninput="calculateTotal()">
+                            <label for="unit_price" class="admin-prod-label">Unit Price</label>
+                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price') }}" required min="0" class="admin-prod-input" oninput="calculateTotal()">
                             @error('unit_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Sell Price -->
                         <div class="col-span-1">
-                            <label for="sell_price" class="block text-sm font-medium text-slate-700 mb-1">Sell Price</label>
-                            <input type="number" step="0.01" name="sell_price" id="sell_price" value="{{ old('sell_price') }}" min="0" placeholder="Optional" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label for="sell_price" class="admin-prod-label">Sell Price</label>
+                            <input type="number" step="0.01" name="sell_price" id="sell_price" value="{{ old('sell_price') }}" min="0" placeholder="Optional" class="admin-prod-input">
                             @error('sell_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Total Value (Read Only) -->
                         <div class="col-span-2">
-                            <label for="total_amount" class="block text-sm font-medium text-slate-700 mb-1">Total Purchase Value</label>
-                            <input type="text" id="total_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-bold text-gray-700">
+                            <label for="total_amount" class="admin-prod-label">Total Purchase Value</label>
+                            <input type="text" id="total_amount" readonly class="admin-prod-input font-bold cursor-not-allowed">
                         </div>
 
                         <!-- Product Images (for home page & product details) -->
@@ -190,7 +195,7 @@
                                 this.uploadedFiles = fileInput ? Array.from(fileInput.files) : [];
                             }
                         }" x-init="$watch('showUpload', value => { if(value) { setTimeout(() => updateFileList(), 100); } })">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="admin-prod-label">
                                 Product Images (min 3)
                                 <span class="text-xs font-normal text-slate-500 ml-2" x-text="'Total: ' + getTotalCount() + ' selected'"></span>
                             </label>
@@ -329,7 +334,7 @@
                             <div x-show="showUpload" class="mb-4">
                                 <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
                                     @change="updateFileList()"
-                                    class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                                    class="admin-prod-file">
                                 <p class="text-xs text-slate-500 mt-1">Upload new images from your device. Formats: JPG, PNG, GIF, WebP. Max 5MB each.</p>
                                 <div x-show="uploadedFiles.length > 0" class="mt-2 text-xs text-slate-600">
                                     <span x-text="'Uploaded: ' + uploadedFiles.length + ' file(s)'"></span>
@@ -353,13 +358,10 @@
 
                     </div>
 
-                    <div class="mt-6 flex justify-end">
-                        <button type="submit" class="bg-[#fa8900] text-white px-6 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">
-                            Save Purchase
-                        </button>
+                    <div class="admin-prod-form-footer !mt-6">
+                        <button type="submit" class="admin-prod-btn-primary px-8">Save purchase</button>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
 

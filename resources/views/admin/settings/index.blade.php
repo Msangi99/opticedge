@@ -1,49 +1,49 @@
 <x-admin-layout>
-    <div class="mb-6 flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-slate-800">Payment Settings</h2>
-    </div>
+    @include('admin.partials.catalog-styles')
 
-    <div class="admin-clay-panel p-6 max-w-2xl">
-        <h3 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Selcom Configuration</h3>
+    <div class="admin-prod-page admin-prod-page--narrow">
+        <div class="mb-8">
+            <p class="admin-prod-eyebrow">Store</p>
+            <h1 class="admin-prod-title">Store settings</h1>
+            <p class="admin-prod-subtitle">Selcom checkout credentials and environment.</p>
+        </div>
 
-        <form action="{{ route('admin.settings.update') }}" method="POST">
-            @csrf
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Selcom configuration</h2>
+                <p class="admin-prod-form-hint">Used for storefront checkout. Keep secrets out of version control in production.</p>
+            </div>
+            <form action="{{ route('admin.settings.update') }}" method="POST" class="admin-prod-form-body space-y-6">
+                @csrf
 
-            <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Vendor ID</label>
-                    <input type="text" name="selcom_vendor_id" value="{{ $settings['selcom_vendor_id'] ?? '' }}"
-                        class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900] sm:text-sm">
+                    <label for="selcom_vendor_id" class="admin-prod-label">Vendor ID</label>
+                    <input type="text" name="selcom_vendor_id" id="selcom_vendor_id" value="{{ $settings['selcom_vendor_id'] ?? '' }}" class="admin-prod-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
-                    <input type="text" name="selcom_api_key" value="{{ $settings['selcom_api_key'] ?? '' }}"
-                        class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900] sm:text-sm">
+                    <label for="selcom_api_key" class="admin-prod-label">API key</label>
+                    <input type="text" name="selcom_api_key" id="selcom_api_key" value="{{ $settings['selcom_api_key'] ?? '' }}" class="admin-prod-input" autocomplete="off">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">API Secret</label>
-                    <input type="password" name="selcom_api_secret" value="{{ $settings['selcom_api_secret'] ?? '' }}"
-                        class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900] sm:text-sm">
+                    <label for="selcom_api_secret" class="admin-prod-label">API secret</label>
+                    <input type="password" name="selcom_api_secret" id="selcom_api_secret" value="{{ $settings['selcom_api_secret'] ?? '' }}" class="admin-prod-input" autocomplete="new-password">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Environment</label>
-                    <select name="selcom_is_live" class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900] sm:text-sm">
-                        <option value="0" {{ ($settings['selcom_is_live'] ?? '0') == '0' ? 'selected' : '' }}>Test (apigwtest.selcommobile.com)</option>
-                        <option value="1" {{ ($settings['selcom_is_live'] ?? '0') == '1' ? 'selected' : '' }}>Live (apigw.selcommobile.com)</option>
+                    <label for="selcom_is_live" class="admin-prod-label">Environment</label>
+                    <select name="selcom_is_live" id="selcom_is_live" class="admin-prod-select">
+                        <option value="0" @selected(($settings['selcom_is_live'] ?? '0') == '0')>Test (apigwtest.selcommobile.com)</option>
+                        <option value="1" @selected(($settings['selcom_is_live'] ?? '0') == '1')>Live (apigw.selcommobile.com)</option>
                     </select>
-                    <p class="mt-1 text-xs text-slate-500">Use <strong>Live</strong> for production with real payments. Use <strong>Test</strong> for sandbox.</p>
+                    <p class="text-xs text-slate-500 mt-2">Use <strong>Live</strong> for real payments; <strong>Test</strong> for sandbox.</p>
                 </div>
-            </div>
 
-            <div class="mt-6">
-                <button type="submit"
-                    class="bg-[#fa8900] hover:bg-[#e87f00] text-white font-bold py-2 px-4 rounded shadow-sm transition-colors">
-                    Save Changes
-                </button>
-            </div>
-        </form>
+                <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
+                    <button type="submit" class="admin-prod-btn-primary px-8">Save changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 </x-admin-layout>

@@ -1,61 +1,61 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center mb-6">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <a href="{{ route('admin.stock.stocks') }}" class="admin-prod-back mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to stocks
+        </a>
+
+        <div class="admin-prod-toolbar !mb-6">
             <div>
-                <a href="{{ route('admin.stock.stocks') }}" class="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to Stocks
-                </a>
-                <h1 class="text-2xl font-bold text-slate-900">{{ $purchase->name ?? 'Purchase #' . $purchase->id }}</h1>
-                <p class="mt-1 text-slate-600">Model, category and IMEI for this purchase. Click a row to expand full details per IMEI (assignment, credit, customer, agent).</p>
+                <p class="admin-prod-eyebrow">Purchase</p>
+                <h1 class="admin-prod-title">{{ $purchase->name ?? 'Purchase #' . $purchase->id }}</h1>
+                <p class="admin-prod-subtitle">Model, category and IMEI. Click a row to expand details.</p>
             </div>
         </div>
 
         <div class="admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-2 py-3 w-10" aria-label="Expand"></th>
-                        <th class="px-6 py-3">#</th>
-                        <th class="px-6 py-3">Model</th>
-                        <th class="px-6 py-3">Category</th>
-                        <th class="px-6 py-3">IMEI</th>
-                    </tr>
-                </thead>
-                @forelse($items as $index => $item)
-                    <tbody x-data="{ open: false }" class="border-b border-slate-100 last:border-0">
-                        <tr
-                            class="hover:bg-slate-50 cursor-pointer"
-                            @click="open = !open"
-                            role="button"
-                            tabindex="0"
-                            @keydown.enter.prevent="open = !open"
-                            @keydown.space.prevent="open = !open"
-                        >
-                            <td class="px-2 py-3 text-slate-400 select-none w-10">
-                                <span x-text="open ? '▼' : '▶'" class="inline-block w-5 text-center text-xs"></span>
-                            </td>
-                            <td class="px-6 py-3 text-slate-400">{{ $index + 1 }}</td>
-                            <td class="px-6 py-3 font-medium">{{ $item->model ?? '–' }}</td>
-                            <td class="px-6 py-3">{{ $item->category?->name ?? '–' }}</td>
-                            <td class="px-6 py-3 font-mono">{{ $item->imei_number ?? '–' }}</td>
-                        </tr>
-                        <tr x-show="open" x-cloak class="!border-b border-slate-200">
-                            <td colspan="5" class="p-0">
-                                @include('admin.stock.partials.imei-full-info', ['item' => $item])
-                            </td>
-                        </tr>
-                    </tbody>
-                @empty
-                    <tbody>
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No items (model / category / IMEI) for this purchase yet.</td>
+                            <th scope="col" class="admin-prod-th admin-prod-th--index" aria-label="Expand"></th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--index">#</th>
+                            <th scope="col" class="admin-prod-th">Model</th>
+                            <th scope="col" class="admin-prod-th">Category</th>
+                            <th scope="col" class="admin-prod-th">IMEI</th>
                         </tr>
-                    </tbody>
-                @endforelse
-            </table>
+                    </thead>
+                    @forelse($items as $index => $item)
+                        <tbody x-data="{ open: false }" class="border-b border-slate-100/80 last:border-0">
+                            <tr class="cursor-pointer hover:bg-white/50" @click="open = !open" role="button" tabindex="0"
+                                @keydown.enter.prevent="open = !open" @keydown.space.prevent="open = !open">
+                                <td class="text-slate-400 select-none w-10">
+                                    <span x-text="open ? '▼' : '▶'" class="inline-block w-5 text-center text-xs"></span>
+                                </td>
+                                <td class="text-slate-500 text-sm">{{ $index + 1 }}</td>
+                                <td class="font-medium text-[#232f3e]">{{ $item->model ?? '–' }}</td>
+                                <td>{{ $item->category?->name ?? '–' }}</td>
+                                <td class="font-mono text-sm">{{ $item->imei_number ?? '–' }}</td>
+                            </tr>
+                            <tr x-show="open" x-cloak class="!border-b border-slate-200/80">
+                                <td colspan="5" class="p-0">
+                                    @include('admin.stock.partials.imei-full-info', ['item' => $item])
+                                </td>
+                            </tr>
+                        </tbody>
+                    @empty
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center text-slate-500 py-10">No items for this purchase yet.</td>
+                            </tr>
+                        </tbody>
+                    @endforelse
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

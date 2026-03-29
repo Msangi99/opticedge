@@ -1,65 +1,64 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center mb-6">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar !mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">All Payment Receipts</h1>
-                <p class="mt-2 text-slate-600">View payment receipts for all purchases.</p>
+                <p class="admin-prod-eyebrow">Purchases</p>
+                <h1 class="admin-prod-title">All payment receipts</h1>
+                <p class="admin-prod-subtitle">Receipt images across all purchases.</p>
             </div>
-            <a href="{{ route('admin.stock.purchases') }}" class="text-slate-600 hover:text-slate-900">Back to Purchases</a>
+            <a href="{{ route('admin.stock.purchases') }}" class="admin-prod-back shrink-0">Back to purchases</a>
         </div>
 
         @if($purchases->count() > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($purchases as $purchase)
-                    <div class="admin-clay-panel overflow-hidden hover:shadow-md transition-shadow">
-                        <div class="p-4 border-b border-slate-100">
-                            <h3 class="font-semibold text-slate-900">{{ $purchase->name ?? 'Purchase #' . $purchase->id }}</h3>
+                    <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+                        <div class="admin-prod-form-head !py-3">
+                            <h3 class="admin-prod-form-title !text-base">{{ $purchase->name ?? 'Purchase #' . $purchase->id }}</h3>
                             <div class="mt-2 text-sm text-slate-600 space-y-1">
-                                <p><span class="font-medium">Date:</span> {{ $purchase->date }}</p>
-                                <p><span class="font-medium">Product:</span> {{ $purchase->product->name ?? 'N/A' }}</p>
-                                <p><span class="font-medium">Distributor:</span> {{ $purchase->distributor_name ?? 'N/A' }}</p>
-                                <p><span class="font-medium">Amount:</span> {{ number_format($purchase->paid_amount, 2) }}</p>
+                                <p><span class="font-semibold text-slate-700">Date:</span> {{ $purchase->date }}</p>
+                                <p><span class="font-semibold text-slate-700">Product:</span>
+                                    {{ $purchase->product->name ?? 'N/A' }}</p>
+                                <p><span class="font-semibold text-slate-700">Distributor:</span>
+                                    {{ $purchase->distributor_name ?? 'N/A' }}</p>
+                                <p><span class="font-semibold text-slate-700">Amount:</span>
+                                    {{ number_format($purchase->paid_amount, 2) }}</p>
                                 <p>
-                                    <span class="font-medium">Status:</span>
-                                    <span class="px-2 py-1 rounded text-xs font-medium 
-                                        {{ $purchase->payment_status === 'paid' ? 'bg-green-100 text-green-800' : 
-                                           ($purchase->payment_status === 'partial' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">
+                                    <span class="font-semibold text-slate-700">Status:</span>
+                                    <span
+                                        class="admin-prod-dealer-status {{ $purchase->payment_status === 'paid' ? 'admin-prod-dealer-status--active' : ($purchase->payment_status === 'partial' ? 'admin-prod-dealer-status--pending' : 'admin-prod-dealer-status--suspended') }}">
                                         {{ ucfirst($purchase->payment_status) }}
                                     </span>
                                 </p>
                             </div>
                         </div>
-                        <div class="p-4">
-                            <a href="{{ asset('storage/' . $purchase->payment_receipt_image) }}" target="_blank" class="block">
-                                <img src="{{ asset('storage/' . $purchase->payment_receipt_image) }}" 
-                                     alt="Receipt for {{ $purchase->name }}"
-                                     class="w-full h-48 object-contain bg-slate-50 rounded border border-slate-200 hover:border-[#fa8900] transition-colors">
+                        <div class="admin-prod-form-body !pt-4">
+                            <a href="{{ asset('storage/' . $purchase->payment_receipt_image) }}" target="_blank"
+                                rel="noopener noreferrer" class="block">
+                                <img src="{{ asset('storage/' . $purchase->payment_receipt_image) }}"
+                                    alt="Receipt for {{ $purchase->name }}"
+                                    class="w-full h-48 object-contain bg-slate-50/80 rounded-lg border border-slate-200/80 hover:border-[#fa8900]/50 transition-colors">
                             </a>
                             <div class="mt-3 flex gap-2">
-                                <a href="{{ asset('storage/' . $purchase->payment_receipt_image) }}" 
-                                   target="_blank"
-                                   class="flex-1 text-center px-3 py-2 bg-[#fa8900] text-white rounded-lg hover:bg-[#e67d00] transition-colors text-sm font-medium">
-                                    View Full Size
+                                <a href="{{ asset('storage/' . $purchase->payment_receipt_image) }}" target="_blank"
+                                    rel="noopener noreferrer" class="admin-prod-btn-primary flex-1 text-center text-sm py-2">
+                                    View full size
                                 </a>
-                                <a href="{{ route('admin.stock.edit-purchase', $purchase->id) }}" 
-                                   class="flex-1 text-center px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-                                    Edit Purchase
-                                </a>
+                                <a href="{{ route('admin.stock.edit-purchase', $purchase->id) }}"
+                                    class="admin-prod-btn-ghost flex-1 text-center text-sm py-2">Edit purchase</a>
                             </div>
                         </div>
                     </div>
                 @endforeach
             </div>
         @else
-            <div class="admin-clay-panel p-12 text-center">
-                <svg class="w-16 h-16 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <h3 class="text-lg font-medium text-slate-900 mb-2">No Receipts Found</h3>
-                <p class="text-slate-600 mb-4">No payment receipts have been uploaded yet.</p>
-                <a href="{{ route('admin.stock.create-purchase') }}" class="inline-block bg-[#fa8900] text-white px-4 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">
-                    Create Purchase with Receipt
-                </a>
+            <div class="admin-clay-panel admin-prod-form-shell p-12 text-center">
+                <h3 class="text-lg font-bold text-[#232f3e] mb-2">No receipts found</h3>
+                <p class="text-slate-600 mb-4">No payment receipts uploaded yet.</p>
+                <a href="{{ route('admin.stock.create-purchase') }}" class="admin-prod-btn-primary inline-flex">Create purchase
+                    with receipt</a>
             </div>
         @endif
     </div>

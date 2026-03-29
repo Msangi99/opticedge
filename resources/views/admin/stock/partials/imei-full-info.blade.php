@@ -6,7 +6,7 @@
     $imei = $item->imei_number ?? '—';
     $sold = $item->sold_at !== null;
 @endphp
-<div class="px-6 py-4 text-sm text-slate-700 space-y-3 border-l-4 border-[#fa8900]/40 bg-slate-50/80">
+<div class="admin-clay-inset px-6 py-4 text-sm text-slate-700 space-y-3 border-l-4 border-[#fa8900]/50 mx-2 my-2 rounded-r-xl">
     <div class="flex flex-wrap items-baseline gap-2">
         <span class="font-mono font-semibold text-slate-900">{{ $imei }}</span>
         @if($sold)

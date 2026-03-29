@@ -1,87 +1,81 @@
 <x-admin-layout>
-    <div class="mb-6 flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-slate-800">Orders</h2>
-    </div>
+    @include('admin.partials.catalog-styles')
 
-    <x-admin-page-dashboard label="Summary (all orders)">
-        <dl class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar !mb-4">
             <div>
-                <dt class="text-xs uppercase text-slate-500">Total orders</dt>
-                <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_orders']) }}</dd>
+                <p class="admin-prod-eyebrow">Storefront</p>
+                <h1 class="admin-prod-title">Orders</h1>
+                <p class="admin-prod-subtitle">Customer orders and fulfillment status.</p>
             </div>
-            <div>
-                <dt class="text-xs uppercase text-slate-500">Total value</dt>
-                <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_value'], 0) }} TZS</dd>
-            </div>
-            <div>
-                <dt class="text-xs uppercase text-slate-500">Pending status</dt>
-                <dd class="text-lg font-semibold text-amber-700">{{ number_format($orderDashboard['pending']) }}</dd>
-            </div>
-        </dl>
-        <p class="mt-3 text-xs text-slate-500">The table below is paginated; figures above are for the full database.</p>
-    </x-admin-page-dashboard>
+        </div>
 
-    <div class="admin-clay-panel overflow-hidden">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-                    <th class="p-4">Order ID</th>
-                    <th class="p-4">Customer</th>
-                    <th class="p-4">Location</th>
-                    <th class="p-4">Total</th>
-                    <th class="p-4">Status</th>
-                    <th class="p-4">Date</th>
-                    <th class="p-4 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-sm">
-                @forelse($orders as $order)
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="p-4 font-medium text-slate-900">#{{ $order->id }}</td>
-                                <td class="p-4">
-                                    <div class="font-medium text-slate-900">{{ $order->user->name ?? 'Guest' }}</div>
+        <x-admin-page-dashboard label="Summary (all orders)" class="mb-6">
+            <dl class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total orders</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_orders']) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total value</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($orderDashboard['total_value'], 0) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Pending status</dt>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($orderDashboard['pending']) }}</dd>
+                </div>
+            </dl>
+            <p class="mt-3 text-xs text-slate-500">The table is paginated; figures above cover the full database.</p>
+        </x-admin-page-dashboard>
+
+        <div class="admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="admin-prod-th">Order ID</th>
+                            <th scope="col" class="admin-prod-th">Customer</th>
+                            <th scope="col" class="admin-prod-th">Location</th>
+                            <th scope="col" class="admin-prod-th">Total</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">Date</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($orders as $order)
+                            <tr>
+                                <td class="font-semibold text-[#232f3e]">#{{ $order->id }}</td>
+                                <td>
+                                    <div class="font-medium text-slate-800">{{ $order->user->name ?? 'Guest' }}</div>
                                     <div class="text-xs text-slate-500">{{ $order->user->email ?? '-' }}</div>
                                 </td>
-                                <td class="p-4 text-slate-600">
+                                <td class="text-slate-600 text-sm">
                                     {{ $order->address->city ?? 'N/A' }}, {{ $order->address->country ?? '' }}
                                 </td>
-                                <td class="p-4 font-bold text-slate-900">
-                                    {{ number_format($order->total_price, 0) }} TZS
-                                </td>
-                                <td class="p-4">
+                                <td class="font-bold font-variant-numeric">{{ number_format($order->total_price, 0) }} TZS</td>
+                                <td>
                                     <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                         {{ $order->status === 'delivered' ? 'bg-green-100 text-green-800' :
-                    ($order->status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        ($order->status === 'processed' ? 'bg-blue-100 text-blue-800' :
-                            ($order->status === 'on the way' ? 'bg-indigo-100 text-indigo-800' :
-                                ($order->status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')))) }}">
+                                        class="admin-prod-user-status {{ $order->status === 'delivered' ? 'admin-prod-user-status--active' : ($order->status === 'cancelled' ? 'admin-prod-dealer-status--suspended' : 'admin-prod-dealer-status--pending') }}">
                                         {{ ucfirst($order->status) }}
                                     </span>
                                 </td>
-                                <td class="p-4 text-slate-500">
-                                    {{ $order->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="p-4 text-right">
-                                    <a href="{{ route('admin.orders.show', $order) }}"
-                                        class="text-[#007185] hover:text-[#c7511f] font-medium hover:underline">
-                                        View Details
-                                    </a>
+                                <td class="text-slate-600 text-sm font-variant-numeric">{{ $order->created_at->format('M j, Y') }}</td>
+                                <td class="admin-prod-cell-actions">
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="admin-prod-link">View</a>
                                 </td>
                             </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="p-8 text-center text-slate-500">
-                            No orders found.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-        @if($orders->hasPages())
-            <div class="p-4 border-t border-slate-200">
-                {{ $orders->links() }}
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center text-slate-500 py-10">No orders found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @endif
+            @if($orders->hasPages())
+                <div class="admin-prod-pagination">{{ $orders->links() }}</div>
+            @endif
+        </div>
     </div>
 </x-admin-layout>

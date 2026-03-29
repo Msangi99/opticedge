@@ -1,24 +1,24 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Branches</h1>
-                <p class="mt-2 text-slate-600">Store or office locations for purchases and reporting.</p>
+                <p class="admin-prod-eyebrow">Organization</p>
+                <h1 class="admin-prod-title">Branches</h1>
+                <p class="admin-prod-subtitle">Store or office locations for purchases and reporting.</p>
             </div>
-            <a href="{{ route('admin.branches.create') }}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-[#fa8900] text-white font-medium rounded-md hover:bg-[#e67d00] transition-colors">
-                Add Branch
-            </a>
+            <a href="{{ route('admin.branches.create') }}" class="admin-prod-btn-primary shrink-0">Add branch</a>
         </div>
 
         @if(session('success'))
-            <div class="mt-4 p-4 bg-green-50 text-green-800 rounded-lg">{{ session('success') }}</div>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="mt-4 p-4 bg-red-50 text-red-800 rounded-lg">{{ session('error') }}</div>
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
 
-        <x-admin-page-dashboard label="Summary" class="mt-8">
+        <x-admin-page-dashboard label="Summary" class="mt-2">
             <dl class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Branches</dt>
@@ -31,36 +31,41 @@
             </dl>
         </x-admin-page-dashboard>
 
-        <div class="mt-8 admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Name</th>
-                        <th class="px-6 py-3">Purchases</th>
-                        <th class="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($branches as $branch)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3 font-medium">{{ $branch->name }}</td>
-                            <td class="px-6 py-3">{{ $branch->purchases_count }}</td>
-                            <td class="px-6 py-3 text-right flex gap-2 justify-end">
-                                <a href="{{ route('admin.branches.edit', $branch) }}" class="text-[#fa8900] hover:underline">Edit</a>
-                                <form action="{{ route('admin.branches.destroy', $branch) }}" method="POST" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Delete this branch?');">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
+        <div class="mt-6 admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="3" class="px-6 py-8 text-center text-slate-500">No branches yet.</td>
+                            <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Purchases</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($branches as $branch)
+                            <tr>
+                                <td class="font-semibold text-[#232f3e]">{{ $branch->name }}</td>
+                                <td class="font-variant-numeric text-slate-600">{{ $branch->purchases_count }}</td>
+                                <td class="admin-prod-cell-actions">
+                                    <div class="admin-prod-actions flex-wrap gap-x-3 gap-y-1">
+                                        <a href="{{ route('admin.branches.edit', $branch) }}" class="admin-prod-link">Edit</a>
+                                        <form action="{{ route('admin.branches.destroy', $branch) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger"
+                                                onclick="return confirm('Delete this branch?');">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="text-center text-slate-500 py-10">No branches yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

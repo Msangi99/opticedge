@@ -1,93 +1,97 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center mb-6">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <a href="{{ route('admin.stock.stocks') }}" class="admin-prod-back mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to stocks
+        </a>
+
+        <div class="admin-prod-toolbar !mb-4">
             <div>
-                <a href="{{ route('admin.stock.stocks') }}" class="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to Stocks
-                </a>
-                <h1 class="text-2xl font-bold text-slate-900">{{ $stock->name }}</h1>
-                <p class="mt-1 text-slate-600">Devices in this stock (model and IMEI). Click a row to expand full details per IMEI (assignment, credit, sales). Limit: {{ number_format($stock->stock_limit) }}.</p>
+                <p class="admin-prod-eyebrow">Stock</p>
+                <h1 class="admin-prod-title">{{ $stock->name }}</h1>
+                <p class="admin-prod-subtitle">Devices (model &amp; IMEI). Click a row to expand. Limit:
+                    {{ number_format($stock->stock_limit) }}.</p>
             </div>
-            <div class="flex gap-3">
-                <a href="{{ route('admin.stock.stock-receipts', $stock->id) }}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 text-sm font-medium flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            <div class="flex flex-wrap gap-2 shrink-0">
+                <a href="{{ route('admin.stock.stock-receipts', $stock->id) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
-                    View Receipts
+                    View receipts
                 </a>
                 @if($atLimit)
-                    <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="px-4 py-2 bg-[#fa8900] text-white rounded-lg hover:bg-[#fa8900]/90 text-sm font-medium">
-                        Add via Purchases
-                    </a>
+                    <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}"
+                        class="admin-prod-btn-primary">Add via purchases</a>
                 @endif
             </div>
         </div>
 
         @if($atLimit)
-            <div class="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">
-                Stock at limit. Add more inventory via <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}" class="font-medium underline">Purchases</a>.
+            <div class="admin-prod-alert admin-prod-alert--warning mb-4" role="status">
+                Stock at limit. Add inventory via
+                <a href="{{ route('admin.stock.create-purchase', ['from_stock' => $stock->id]) }}"
+                    class="admin-prod-link font-semibold">Purchases</a>.
             </div>
         @endif
 
         <div class="admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-2 py-3 w-10" aria-label="Expand"></th>
-                        <th class="px-6 py-3">#</th>
-                        <th class="px-6 py-3">Model</th>
-                        <th class="px-6 py-3">IMEI</th>
-                        <th class="px-6 py-3">Product / Category</th>
-                        <th class="px-6 py-3">Status</th>
-                    </tr>
-                </thead>
-                @forelse($stock->productListItems as $index => $item)
-                    <tbody x-data="{ open: false }" class="border-b border-slate-100 last:border-0">
-                        <tr
-                            class="hover:bg-slate-50 cursor-pointer"
-                            @click="open = !open"
-                            role="button"
-                            tabindex="0"
-                            @keydown.enter.prevent="open = !open"
-                            @keydown.space.prevent="open = !open"
-                        >
-                            <td class="px-2 py-3 text-slate-400 select-none w-10" title="Click row for full IMEI details">
-                                <span x-text="open ? '▼' : '▶'" class="inline-block w-5 text-center text-xs"></span>
-                            </td>
-                            <td class="px-6 py-3 text-slate-400">{{ $index + 1 }}</td>
-                            <td class="px-6 py-3 font-medium">{{ $item->model ?? '–' }}</td>
-                            <td class="px-6 py-3 font-mono">{{ $item->imei_number ?? '–' }}</td>
-                            <td class="px-6 py-3">
-                                {{ $item->product?->name ?? '–' }}
-                                @if($item->category)
-                                    <span class="text-slate-400"> / {{ $item->category->name }}</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3">
-                                @if($item->sold_at)
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-700">Sold</span>
-                                @else
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Available</span>
-                                @endif
-                            </td>
-                        </tr>
-                        <tr x-show="open" x-cloak class="!border-b border-slate-200">
-                            <td colspan="6" class="p-0">
-                                @include('admin.stock.partials.imei-full-info', ['item' => $item])
-                            </td>
-                        </tr>
-                    </tbody>
-                @empty
-                    <tbody>
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-slate-500">No devices in this stock yet. Add products from the admin app.</td>
+                            <th scope="col" class="admin-prod-th admin-prod-th--index" aria-label="Expand"></th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--index">#</th>
+                            <th scope="col" class="admin-prod-th">Model</th>
+                            <th scope="col" class="admin-prod-th">IMEI</th>
+                            <th scope="col" class="admin-prod-th">Product / category</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
                         </tr>
-                    </tbody>
-                @endforelse
-            </table>
+                    </thead>
+                    @forelse($stock->productListItems as $index => $item)
+                        <tbody x-data="{ open: false }" class="border-b border-slate-100/80 last:border-0">
+                            <tr class="cursor-pointer hover:bg-white/50" @click="open = !open" role="button" tabindex="0"
+                                @keydown.enter.prevent="open = !open" @keydown.space.prevent="open = !open">
+                                <td class="text-slate-400 select-none w-10" title="Click row for full IMEI details">
+                                    <span x-text="open ? '▼' : '▶'" class="inline-block w-5 text-center text-xs"></span>
+                                </td>
+                                <td class="text-slate-500 text-sm">{{ $index + 1 }}</td>
+                                <td class="font-medium text-[#232f3e]">{{ $item->model ?? '–' }}</td>
+                                <td class="font-mono text-sm">{{ $item->imei_number ?? '–' }}</td>
+                                <td>
+                                    {{ $item->product?->name ?? '–' }}
+                                    @if($item->category)
+                                        <span class="text-slate-400"> / {{ $item->category->name }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($item->sold_at)
+                                        <span class="admin-prod-status admin-prod-status--sold">Sold</span>
+                                    @else
+                                        <span class="admin-prod-status admin-prod-status--ok">Available</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr x-show="open" x-cloak class="!border-b border-slate-200/80">
+                                <td colspan="6" class="p-0">
+                                    @include('admin.stock.partials.imei-full-info', ['item' => $item])
+                                </td>
+                            </tr>
+                        </tbody>
+                    @empty
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center text-slate-500 py-10">No devices in this stock yet.</td>
+                            </tr>
+                        </tbody>
+                    @endforelse
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

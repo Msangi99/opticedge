@@ -1,57 +1,51 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="max-w-2xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page admin-prod-page--narrow">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div>
+                <p class="admin-prod-eyebrow">Payments</p>
+                <h1 class="admin-prod-title">Edit channel</h1>
+                <p class="admin-prod-subtitle">{{ $paymentOption->name }}</p>
+            </div>
+            <a href="{{ route('admin.payment-options.index') }}" class="admin-prod-back shrink-0">Back to list</a>
+        </div>
+
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Channel details</h2>
+            </div>
+            <form action="{{ route('admin.payment-options.update', $paymentOption) }}" method="POST" class="admin-prod-form-body space-y-6">
+                @csrf
+                @method('PUT')
+
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Edit Channel</h1>
-                    <p class="mt-2 text-slate-600">Update channel details.</p>
+                    <label for="type" class="admin-prod-label">Type</label>
+                    <select name="type" id="type" required class="admin-prod-select">
+                        <option value="">Select type…</option>
+                        <option value="mobile" @selected(old('type', $paymentOption->type) === 'mobile')>Mobile</option>
+                        <option value="bank" @selected(old('type', $paymentOption->type) === 'bank')>Bank</option>
+                        <option value="cash" @selected(old('type', $paymentOption->type) === 'cash')>Cash</option>
+                    </select>
+                    @error('type')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
                 </div>
-                <a href="{{ route('admin.payment-options.index') }}" class="text-slate-600 hover:text-slate-900">Back to List</a>
-            </div>
 
-            <div class="admin-clay-panel p-6">
-                <form action="{{ route('admin.payment-options.update', $paymentOption) }}" method="POST">
-                    @csrf
-                    @method('PUT')
+                <div>
+                    <label for="name" class="admin-prod-label">Name</label>
+                    <input type="text" name="name" id="name" value="{{ old('name', $paymentOption->name) }}" required
+                        placeholder="e.g. M-Pesa, CRDB…" class="admin-prod-input">
+                    @error('name')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label for="type" class="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                            <select name="type" id="type" required
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
-                                <option value="">Select Type...</option>
-                                <option value="mobile" {{ old('type', $paymentOption->type) === 'mobile' ? 'selected' : '' }}>Mobile</option>
-                                <option value="bank" {{ old('type', $paymentOption->type) === 'bank' ? 'selected' : '' }}>Bank</option>
-                                <option value="cash" {{ old('type', $paymentOption->type) === 'cash' ? 'selected' : '' }}>Cash</option>
-                            </select>
-                            @error('type')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                            <input type="text" name="name" id="name" value="{{ old('name', $paymentOption->name) }}" required
-                                placeholder="e.g. M-Pesa, Tigo Pesa, CRDB Bank..."
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
-                            @error('name')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex gap-3">
-                        <button type="submit"
-                            class="px-4 py-2 bg-[#fa8900] text-white font-medium rounded-md hover:bg-[#e67d00] transition-colors">
-                            Update Channel
-                        </button>
-                        <a href="{{ route('admin.payment-options.index') }}"
-                            class="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-md hover:bg-slate-200 transition-colors">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
-            </div>
+                <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
+                    <a href="{{ route('admin.payment-options.index') }}" class="admin-prod-btn-ghost">Cancel</a>
+                    <button type="submit" class="admin-prod-btn-primary px-8">Update channel</button>
+                </div>
+            </form>
         </div>
     </div>
 </x-admin-layout>

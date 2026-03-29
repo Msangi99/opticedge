@@ -1,43 +1,48 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Edit Purchase</h1>
-                    <p class="mt-2 text-slate-600">Update purchase details.</p>
-                </div>
-                <a href="{{ route('admin.stock.purchases') }}" class="text-slate-600 hover:text-slate-900">Back to List</a>
-            </div>
+    @include('admin.partials.catalog-styles')
 
-            <div class="admin-clay-panel p-6">
-                <form action="{{ route('admin.stock.update-purchase', $purchase->id) }}" method="POST" enctype="multipart/form-data">
+    <div class="admin-prod-page admin-prod-form-wide">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div>
+                <p class="admin-prod-eyebrow">Inventory</p>
+                <h1 class="admin-prod-title">Edit purchase</h1>
+                <p class="admin-prod-subtitle">Update purchase and payment details.</p>
+            </div>
+            <a href="{{ route('admin.stock.purchases') }}" class="admin-prod-back shrink-0">Back to list</a>
+        </div>
+
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Purchase</h2>
+            </div>
+            <form action="{{ route('admin.stock.update-purchase', $purchase->id) }}" method="POST" enctype="multipart/form-data" class="admin-prod-form-body">
                     @csrf
                     @method('PUT')
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Invoice Number -->
                         <div class="col-span-2">
-                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name', $purchase->name) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Enter invoice number">
+                            <label for="name" class="admin-prod-label">Invoice Number</label>
+                            <input type="text" name="name" id="name" value="{{ old('name', $purchase->name) }}" class="admin-prod-input" placeholder="Enter invoice number">
                             @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Date -->
                         <div class="col-span-1">
-                            <label for="date" class="block text-sm font-medium text-slate-700 mb-1">Date of Purchase</label>
-                            <input type="date" name="date" id="date" value="{{ old('date', $purchase->date) }}" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="date" class="admin-prod-label">Date of Purchase</label>
+                            <input type="date" name="date" id="date" value="{{ old('date', $purchase->date) }}" disabled class="admin-prod-input cursor-not-allowed">
                         </div>
 
                         <!-- Distributor -->
                         <div class="col-span-1">
-                            <label for="distributor_name" class="block text-sm font-medium text-slate-700 mb-1">Distributor Name</label>
-                            <input list="distributors" name="distributor_name" id="distributor_name" value="{{ old('distributor_name', $purchase->distributor_name) }}" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="distributor_name" class="admin-prod-label">Distributor Name</label>
+                            <input list="distributors" name="distributor_name" id="distributor_name" value="{{ old('distributor_name', $purchase->distributor_name) }}" disabled class="admin-prod-input cursor-not-allowed">
                         </div>
 
                         <!-- Category -->
                         <div class="col-span-1">
-                            <label for="category_id" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                            <select name="category_id" id="category_id" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="category_id" class="admin-prod-label">Category</label>
+                            <select name="category_id" id="category_id" disabled class="admin-prod-select cursor-not-allowed">
                                 <option value="">Select Category</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ old('category_id', $purchase->product->category_id ?? '') == $category->id ? 'selected' : '' }}>
@@ -49,26 +54,26 @@
 
                         <!-- Model -->
                         <div class="col-span-1">
-                            <label for="model" class="block text-sm font-medium text-slate-700 mb-1">Model (Product Name)</label>
-                            <input type="text" name="model" id="model" value="{{ old('model', $purchase->product->name ?? '') }}" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="model" class="admin-prod-label">Model (Product Name)</label>
+                            <input type="text" name="model" id="model" value="{{ old('model', $purchase->product->name ?? '') }}" disabled class="admin-prod-input cursor-not-allowed">
                         </div>
 
                         <!-- Quantity -->
                         <div class="col-span-1">
-                            <label for="quantity" class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
-                            <input type="number" name="quantity" id="quantity" value="{{ old('quantity', $purchase->quantity) }}" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="quantity" class="admin-prod-label">Quantity</label>
+                            <input type="number" name="quantity" id="quantity" value="{{ old('quantity', $purchase->quantity) }}" disabled class="admin-prod-input cursor-not-allowed">
                         </div>
 
                         <!-- Unit Price -->
                         <div class="col-span-1">
-                            <label for="unit_price" class="block text-sm font-medium text-slate-700 mb-1">Unit Price</label>
-                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price', $purchase->unit_price) }}" disabled class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 cursor-not-allowed">
+                            <label for="unit_price" class="admin-prod-label">Unit Price</label>
+                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price', $purchase->unit_price) }}" disabled class="admin-prod-input cursor-not-allowed">
                         </div>
 
                         <!-- Total Value (Read Only) -->
                         <div class="col-span-2">
-                            <label for="total_amount" class="block text-sm font-medium text-slate-700 mb-1">Total Purchase Value</label>
-                            <input type="text" id="total_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-bold text-gray-700" value="{{ number_format($purchase->quantity * $purchase->unit_price, 2) }}">
+                            <label for="total_amount" class="admin-prod-label">Total Purchase Value</label>
+                            <input type="text" id="total_amount" readonly class="admin-prod-input font-bold cursor-not-allowed" value="{{ number_format($purchase->quantity * $purchase->unit_price, 2) }}">
                         </div>
 
                         @php
@@ -80,7 +85,7 @@
                         @endphp
                         <!-- Product Images -->
                         <div class="col-span-2">
-                            <label for="images" class="block text-sm font-medium text-slate-700 mb-1">Product Images</label>
+                            <label for="images" class="admin-prod-label">Product Images</label>
                             @if(count($productImages) > 0)
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($productImages as $img)
@@ -89,7 +94,7 @@
                                 </div>
                             @endif
                             <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                                class="admin-prod-file">
                             <p class="text-xs text-slate-500 mt-1">Upload new images to replace current ones. At least 3 required when uploading. Formats: JPG, PNG, GIF, WebP.</p>
                             @error('images')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -105,13 +110,13 @@
 
                         <!-- Paid Date -->
                         <div class="col-span-1">
-                            <label for="paid_date" class="block text-sm font-medium text-slate-700 mb-1">Paid Date</label>
-                            <input type="date" name="paid_date" id="paid_date" value="{{ old('paid_date', $purchase->paid_date) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label for="paid_date" class="admin-prod-label">Paid Date</label>
+                            <input type="date" name="paid_date" id="paid_date" value="{{ old('paid_date', $purchase->paid_date) }}" class="admin-prod-input">
                         </div>
 
                         <!-- Paid Amount -->
                         <div class="col-span-1">
-                            <label for="paid_amount" class="block text-sm font-medium text-slate-700 mb-1">Pay (this time)</label>
+                            <label for="paid_amount" class="admin-prod-label">Pay (this time)</label>
                             @php
                                 $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
                                 $alreadyPaid = (float) ($purchase->paid_amount ?? 0);
@@ -126,7 +131,7 @@
                                 value="{{ old('paid_amount', 0) }}"
                                 min="0"
                                 max="{{ $pendingNow }}"
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="admin-prod-input"
                                 oninput="updatePendingAmount()">
                             @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             <p class="text-xs text-slate-500 mt-1">
@@ -136,8 +141,8 @@
 
                         <!-- Payment Channel -->
                         <div class="col-span-1">
-                            <label for="payment_option_id" class="block text-sm font-medium text-slate-700 mb-1">Payment Channel</label>
-                            <select name="payment_option_id" id="payment_option_id" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <label for="payment_option_id" class="admin-prod-label">Payment Channel</label>
+                            <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
                                 <option value="">Select Channel (Optional)</option>
                                 @foreach($paymentOptions as $option)
                                     <option value="{{ $option->id }}" 
@@ -153,21 +158,21 @@
 
                         <!-- Pending Amount (read-only, shows actual pending amount) -->
                         <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Pending Amount</label>
-                            <input type="text" id="pending_amount" readonly class="w-full rounded-md border-slate-300 bg-slate-100 shadow-sm cursor-not-allowed font-medium text-gray-700" value="{{ number_format($pendingNow, 2) }}">
+                            <label class="admin-prod-label">Pending Amount</label>
+                            <input type="text" id="pending_amount" readonly class="admin-prod-input font-medium cursor-not-allowed" value="{{ number_format($pendingNow, 2) }}">
                             <p class="text-xs text-slate-500 mt-1">Actual pending amount = Total − total paid. Updates automatically as you type.</p>
                         </div>
 
                         <!-- Payment Receipt Image -->
                         <div class="col-span-2">
-                            <label for="payment_receipt_image" class="block text-sm font-medium text-slate-700 mb-1">Payment Receipt Image</label>
+                            <label for="payment_receipt_image" class="admin-prod-label">Payment Receipt Image</label>
                             @if($purchase->payment_receipt_image)
                                 <div class="mb-2">
                                     <img src="{{ asset('storage/' . $purchase->payment_receipt_image) }}" alt="Payment Receipt" class="w-32 h-32 object-cover rounded border border-slate-200">
                                 </div>
                             @endif
                             <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-[#fa8900] file:text-white file:font-medium hover:file:bg-[#e67d00]">
+                                class="admin-prod-file">
                             <p class="text-xs text-slate-500 mt-1">Upload or replace payment receipt image (optional). Formats: JPG, PNG, GIF, WebP. Max 5MB.</p>
                             @error('payment_receipt_image')
                                 <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -219,16 +224,11 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-3">
-                        <a href="{{ route('admin.stock.purchases') }}" class="bg-gray-100 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-                            Cancel
-                        </a>
-                        <button type="submit" class="bg-[#fa8900] text-white px-6 py-2 rounded-lg hover:bg-[#fa8900]/90 transition-colors font-medium">
-                            Update Purchase
-                        </button>
+                    <div class="admin-prod-form-footer !mt-6">
+                        <a href="{{ route('admin.stock.purchases') }}" class="admin-prod-btn-ghost">Cancel</a>
+                        <button type="submit" class="admin-prod-btn-primary px-8">Update purchase</button>
                     </div>
                 </form>
-            </div>
         </div>
     </div>
 

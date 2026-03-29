@@ -157,6 +157,15 @@
                     inset 1px 1px 2px rgba(255, 255, 255, 0.75);
             }
 
+            .admin-prod-alert--warning {
+                color: #92400e;
+                background: linear-gradient(145deg, rgba(254, 243, 199, 0.65), rgba(255, 255, 255, 0.92));
+                border-color: rgba(245, 158, 11, 0.35);
+                box-shadow:
+                    3px 4px 12px rgba(245, 158, 11, 0.08),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.75);
+            }
+
             .admin-prod-table-wrap {
                 border-radius: 1rem;
                 overflow: hidden;
@@ -423,6 +432,27 @@
                 box-shadow:
                     inset 2px 2px 6px rgba(163, 177, 198, 0.06),
                     0 0 0 3px rgba(250, 137, 0, 0.2);
+            }
+
+            .admin-prod-input:disabled,
+            .admin-prod-select:disabled,
+            .admin-prod-textarea:disabled {
+                opacity: 0.92;
+                cursor: not-allowed;
+                background: linear-gradient(165deg, rgba(241, 245, 249, 0.95), rgba(248, 250, 252, 0.98));
+                border-color: rgba(148, 163, 184, 0.5);
+            }
+
+            .admin-prod-readonly-box {
+                width: 100%;
+                border-radius: 0.75rem;
+                border: 1px solid rgba(148, 163, 184, 0.55);
+                background: linear-gradient(165deg, rgba(241, 245, 249, 0.9), rgba(248, 250, 252, 0.95));
+                box-shadow: inset 2px 2px 6px rgba(163, 177, 198, 0.06);
+                padding: 0.65rem 0.85rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: #334155;
             }
 
             .admin-prod-textarea {

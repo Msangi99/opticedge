@@ -1,81 +1,91 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Pending Sales</h1>
-                <p class="mt-2 text-slate-600">Sales waiting for payment option selection. Select payment option and save to complete.</p>
+                <p class="admin-prod-eyebrow">Agent sales</p>
+                <h1 class="admin-prod-title">Pending sales</h1>
+                <p class="admin-prod-subtitle">Select payment option and save to complete.</p>
             </div>
-            <a href="{{ route('admin.stock.create-agent-sale') }}" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record new sale</a>
+            <a href="{{ route('admin.stock.create-agent-sale') }}"
+                class="shrink-0 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record new sale</a>
         </div>
 
         @if(session('success'))
-            <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
 
-        <div class="mt-8 admin-clay-panel overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Date</th>
-                        <th class="px-6 py-3">Customer</th>
-                        <th class="px-6 py-3">Seller</th>
-                        <th class="px-6 py-3">Product</th>
-                        <th class="px-6 py-3">Qty</th>
-                        <th class="px-6 py-3">Buy Price</th>
-                        <th class="px-6 py-3">Sell Price</th>
-                        <th class="px-6 py-3">Total Sell</th>
-                        <th class="px-6 py-3">Profit</th>
-                        <th class="px-6 py-3">Payment Option</th>
-                        <th class="px-6 py-3">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($pendingSales as $sale)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3">{{ $sale->date }}</td>
-                            <td class="px-6 py-3 font-medium">{{ $sale->customer_name ?? 'N/A' }}</td>
-                            <td class="px-6 py-3">{{ $sale->seller_name ?? '-' }}</td>
-                            <td class="px-6 py-3">{{ $sale->product ? (($sale->product->category->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}</td>
-                            <td class="px-6 py-3">{{ $sale->quantity_sold }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->purchase_price ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">{{ number_format($sale->selling_price ?? 0, 0) }}</td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
-                            <td class="px-6 py-3 text-green-600">{{ number_format($sale->profit ?? 0, 0) }}</td>
-                            <td class="px-6 py-3">
-                                <form action="{{ route('admin.stock.save-pending-sale', $sale->id) }}" method="POST" class="inline">
-                                    @csrf
-                                    <select name="payment_option_id" required onchange="this.form.submit()"
-                                        class="text-sm rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]">
-                                        <option value="">Select Payment Option...</option>
-                                        @foreach($paymentOptions as $option)
-                                            <option value="{{ $option->id }}" {{ $sale->payment_option_id == $option->id ? 'selected' : '' }}>
-                                                {{ $option->name }} ({{ ucfirst($option->type) }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </form>
-                            </td>
-                            <td class="px-6 py-3">
-                                @if($sale->payment_option_id)
-                                    <form action="{{ route('admin.stock.save-pending-sale', $sale->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="payment_option_id" value="{{ $sale->payment_option_id }}">
-                                        <button type="submit" class="text-blue-600 hover:text-blue-900 font-medium">Save</button>
-                                    </form>
-                                @else
-                                    <span class="text-slate-400 text-xs">Select payment option</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
+        <div class="admin-clay-panel overflow-x-auto">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
+                <table class="min-w-[1100px]">
+                    <thead>
                         <tr>
-                            <td colspan="11" class="px-6 py-8 text-center text-slate-500">
-                                No pending sales. <a href="{{ route('admin.stock.create-agent-sale') }}" class="text-[#fa8900] hover:underline">Record a new sale</a>
-                            </td>
+                            <th scope="col" class="admin-prod-th">Date</th>
+                            <th scope="col" class="admin-prod-th">Customer</th>
+                            <th scope="col" class="admin-prod-th">Seller</th>
+                            <th scope="col" class="admin-prod-th">Product</th>
+                            <th scope="col" class="admin-prod-th">Qty</th>
+                            <th scope="col" class="admin-prod-th">Buy</th>
+                            <th scope="col" class="admin-prod-th">Sell</th>
+                            <th scope="col" class="admin-prod-th">Total sell</th>
+                            <th scope="col" class="admin-prod-th">Profit</th>
+                            <th scope="col" class="admin-prod-th">Payment</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($pendingSales as $sale)
+                            <tr>
+                                <td class="text-slate-600">{{ $sale->date }}</td>
+                                <td class="font-semibold text-[#232f3e]">{{ $sale->customer_name ?? 'N/A' }}</td>
+                                <td class="text-slate-600">{{ $sale->seller_name ?? '-' }}</td>
+                                <td class="text-slate-600 text-sm">
+                                    {{ $sale->product ? (($sale->product->category->name ?? '—') . ' – ' . $sale->product->name) : 'N/A' }}
+                                </td>
+                                <td class="font-variant-numeric">{{ $sale->quantity_sold }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->purchase_price ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($sale->selling_price ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
+                                <td class="font-variant-numeric text-green-700">{{ number_format($sale->profit ?? 0, 0) }}</td>
+                                <td>
+                                    <form action="{{ route('admin.stock.save-pending-sale', $sale->id) }}" method="POST">
+                                        @csrf
+                                        <select name="payment_option_id" required onchange="this.form.submit()"
+                                            class="admin-prod-select text-sm min-w-[10rem] max-w-[14rem] py-2">
+                                            <option value="">Select payment…</option>
+                                            @foreach($paymentOptions as $option)
+                                                <option value="{{ $option->id }}" @selected($sale->payment_option_id == $option->id)>
+                                                    {{ $option->name }} ({{ ucfirst($option->type) }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                </td>
+                                <td class="admin-prod-cell-actions">
+                                    @if($sale->payment_option_id)
+                                        <form action="{{ route('admin.stock.save-pending-sale', $sale->id) }}" method="POST"
+                                            class="inline">
+                                            @csrf
+                                            <input type="hidden" name="payment_option_id" value="{{ $sale->payment_option_id }}">
+                                            <button type="submit" class="admin-prod-btn-inline admin-prod-link">Save</button>
+                                        </form>
+                                    @else
+                                        <span class="admin-prod-muted text-xs">Select payment</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="11" class="text-center text-slate-500 py-10">
+                                    No pending sales.
+                                    <a href="{{ route('admin.stock.create-agent-sale') }}" class="admin-prod-link">Record a sale</a>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

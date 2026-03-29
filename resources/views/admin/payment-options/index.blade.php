@@ -1,70 +1,80 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center mb-6">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Channels</h1>
-                <p class="mt-2 text-slate-600">Manage payment channels (Mobile, Bank, and Cash).</p>
+                <p class="admin-prod-eyebrow">Payments</p>
+                <h1 class="admin-prod-title">Channels</h1>
+                <p class="admin-prod-subtitle">Payment channels: mobile, bank, and cash. Balances update from sales and expenses.</p>
             </div>
-            <a href="{{ route('admin.payment-options.create') }}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-[#fa8900] text-white font-medium rounded-md hover:bg-[#e67d00] transition-colors">
+            <a href="{{ route('admin.payment-options.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2 shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Add Channel
+                Add channel
             </a>
         </div>
 
         @if(session('success'))
-            <div class="mt-4 p-4 bg-green-50 text-green-800 rounded-lg">{{ session('success') }}</div>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
 
-        <div class="mt-8 admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Name</th>
-                        <th class="px-6 py-3">Type</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3">Balance (TZS)</th>
-                        <th class="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($paymentOptions as $option)
-                        <tr class="hover:bg-slate-50 {{ $option->is_hidden ? 'bg-slate-100/70' : '' }}">
-                            <td class="px-6 py-3 font-medium">{{ $option->name }}</td>
-                            <td class="px-6 py-3">
-                                <span class="px-2 py-1 rounded text-xs font-medium {{ $option->type === 'mobile' ? 'bg-blue-100 text-blue-800' : ($option->type === 'bank' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') }}">
-                                    {{ ucfirst($option->type) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-3">
-                                @if($option->is_hidden)
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-slate-200 text-slate-600">Hidden</span>
-                                @else
-                                    <span class="px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">Visible</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3 font-bold">{{ number_format($option->balance ?? 0, 0) }}</td>
-                            <td class="px-6 py-3 text-right">
-                                <form action="{{ route('admin.payment-options.toggle-visibility', $option) }}" method="POST" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="font-medium {{ $option->is_hidden ? 'text-emerald-600 hover:text-emerald-900' : 'text-slate-600 hover:text-slate-900' }}">
-                                        {{ $option->is_hidden ? 'Show' : 'Hide' }}
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
+        <div class="admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">
-                                No channels yet. <a href="{{ route('admin.payment-options.create') }}" class="text-[#fa8900] hover:underline">Add your first channel</a>
-                            </td>
+                            <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Type</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">Balance (TZS)</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($paymentOptions as $option)
+                            <tr class="{{ $option->is_hidden ? 'opacity-90' : '' }}">
+                                <td class="font-semibold text-[#232f3e]">{{ $option->name }}</td>
+                                <td>
+                                    <span
+                                        class="admin-prod-tag {{ $option->type === 'mobile' ? 'border-blue-200 text-blue-800 bg-blue-50/80' : ($option->type === 'bank' ? 'admin-prod-tag--accent' : '') }}">
+                                        {{ ucfirst($option->type) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($option->is_hidden)
+                                        <span class="admin-prod-user-status admin-prod-user-status--inactive">Hidden</span>
+                                    @else
+                                        <span class="admin-prod-user-status admin-prod-user-status--active">Visible</span>
+                                    @endif
+                                </td>
+                                <td class="font-bold font-variant-numeric text-slate-800">{{ number_format($option->balance ?? 0, 0) }}</td>
+                                <td class="admin-prod-cell-actions">
+                                    <div class="admin-prod-actions flex-wrap gap-x-3 gap-y-1 justify-end">
+                                        <a href="{{ route('admin.payment-options.edit', $option) }}" class="admin-prod-link">Edit</a>
+                                        <form action="{{ route('admin.payment-options.toggle-visibility', $option) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                class="admin-prod-btn-inline {{ $option->is_hidden ? 'admin-prod-link--success' : 'admin-prod-link' }}">
+                                                {{ $option->is_hidden ? 'Show' : 'Hide' }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-slate-500 py-10">
+                                    No channels yet.
+                                    <a href="{{ route('admin.payment-options.create') }}" class="admin-prod-link">Add your first channel</a>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>
