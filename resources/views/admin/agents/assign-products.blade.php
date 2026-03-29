@@ -1,87 +1,104 @@
 <x-admin-layout>
+    @include('admin.partials.catalog-styles')
+
     @push('styles')
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <style>
-            .select2-container--default .select2-selection--single {
-                min-height: 42px;
-                padding: 6px 8px;
-                border-color: #cbd5e1;
+            .admin-prod-select2-wrap .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 1.75rem;
+                padding-left: 0.15rem;
             }
 
-            .select2-container--default .select2-selection--single .select2-selection__rendered {
-                line-height: 28px;
-            }
-
-            .select2-container--default .select2-selection--single .select2-selection__arrow {
-                height: 40px;
-            }
-
-            .select2-container--default .select2-selection--multiple {
-                min-height: 42px;
-                border-color: #cbd5e1;
-                padding: 4px 8px;
-            }
-
-            .select2-container--default .select2-selection--multiple .select2-selection__choice {
-                background-color: #fff7ed;
-                border-color: #fdba74;
+            .admin-prod-select2-wrap .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 2.5rem;
             }
         </style>
     @endpush
-    <div class="py-12 px-8">
-        <a href="{{ route('admin.agents.index') }}" class="text-slate-600 hover:text-slate-900">&larr; Agents</a>
-        <div class="mt-4">
-            <h1 class="text-2xl font-bold text-slate-900">Assign products to agent</h1>
-            <p class="mt-2 text-slate-600">Select an agent and product, then choose one or more IMEIs (unsold units from paid purchases). The agent will only see those devices on the sell screen in the app.</p>
+
+    <div class="admin-prod-page admin-prod-form-wide">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div>
+                <p class="admin-prod-eyebrow">Sales team</p>
+                <h1 class="admin-prod-title">Assign products to agent</h1>
+                <p class="admin-prod-subtitle">Select an agent and product, then choose one or more IMEIs (unsold units from
+                    paid purchases). The agent will only see those devices on the sell screen in the app.</p>
+            </div>
+            <a href="{{ route('admin.agents.index') }}" class="admin-prod-back shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to agents
+            </a>
         </div>
 
         @if(session('success'))
-            <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
 
-        <div class="mt-8 max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <form method="POST" action="{{ route('admin.agents.store-assignment') }}" class="space-y-4" id="assign-form">
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden admin-prod-select2-wrap">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Assignment</h2>
+                <p class="admin-prod-form-hint">Agent, product, and IMEIs.</p>
+            </div>
+            <form method="POST" action="{{ route('admin.agents.store-assignment') }}" class="admin-prod-form-body space-y-6"
+                id="assign-form">
                 @csrf
                 <div>
-                    <label for="agent_id" class="block text-sm font-medium text-slate-700">Agent</label>
-                    <select id="agent_id" name="agent_id" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]" required>
+                    <label for="agent_id" class="admin-prod-label">Agent</label>
+                    <select id="agent_id" name="agent_id" class="admin-prod-select" required>
                         <option value="">Select agent</option>
                         @foreach($agents as $a)
-                            <option value="{{ $a->id }}" {{ old('agent_id', request('agent_id')) == $a->id ? 'selected' : '' }}>{{ $a->name }} ({{ $a->email }})</option>
+                            <option value="{{ $a->id }}"
+                                {{ old('agent_id', request('agent_id')) == $a->id ? 'selected' : '' }}>
+                                {{ $a->name }} ({{ $a->email }})
+                            </option>
                         @endforeach
                     </select>
-                    @error('agent_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    @error('agent_id')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
-                    <label for="product_id" class="block text-sm font-medium text-slate-700">Product</label>
-                    <select id="product_id" name="product_id" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]" required>
+                    <label for="product_id" class="admin-prod-label">Product</label>
+                    <select id="product_id" name="product_id" class="admin-prod-select" required>
                         <option value="">Select product</option>
                         @foreach($products as $p)
-                            <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>{{ $p->category->name ?? '—' }} – {{ $p->name }}</option>
+                            <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
+                                {{ $p->category->name ?? '—' }} – {{ $p->name }}
+                            </option>
                         @endforeach
                     </select>
-                    @error('product_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    @error('product_id')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div id="imei-wrap" class="hidden">
-                    <label for="imei_select" class="block text-sm font-medium text-slate-700">IMEIs to assign</label>
-                    <p class="mt-1 text-xs text-slate-500">Only unsold devices from purchases marked paid are listed.</p>
-                    <select id="imei_select" name="product_list_ids[]" multiple="multiple" class="mt-2 w-full"></select>
-                    @error('product_list_ids') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    @error('product_list_ids.*') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <label for="imei_select" class="admin-prod-label">IMEIs to assign</label>
+                    <p class="text-xs text-slate-500 mt-0.5 mb-2">Only unsold devices from purchases marked paid are listed.</p>
+                    <select id="imei_select" name="product_list_ids[]" multiple="multiple" class="w-full"></select>
+                    @error('product_list_ids')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                    @error('product_list_ids.*')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button type="submit" class="rounded-lg bg-[#fa8900] px-4 py-2 text-sm font-medium text-white hover:bg-[#e87b00]">Assign</button>
-                    <a href="{{ route('admin.agents.index') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+                <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
+                    <a href="{{ route('admin.agents.index') }}" class="admin-prod-btn-ghost">Cancel</a>
+                    <button type="submit" class="admin-prod-btn-primary px-8">Assign</button>
                 </div>
             </form>
         </div>
     </div>
 
     @push('scripts')
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
             (function () {

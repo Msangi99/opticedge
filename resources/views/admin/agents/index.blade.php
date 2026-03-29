@@ -1,53 +1,67 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Agents</h1>
-                <p class="mt-2 text-slate-600">Manage agents and assign products for them to sell.</p>
+                <p class="admin-prod-eyebrow">Sales team</p>
+                <h1 class="admin-prod-title">Agents</h1>
+                <p class="admin-prod-subtitle">Manage agents and assign products for them to sell.</p>
             </div>
-            <div class="flex gap-2">
-                <a href="{{ route('admin.agents.create') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Add agent</a>
-                <a href="{{ route('admin.agents.assign-products') }}"
-                    class="rounded-lg bg-[#fa8900] px-4 py-2 text-sm font-medium text-white hover:bg-[#e87b00]">Assign products</a>
+            <div class="flex flex-wrap gap-2 shrink-0">
+                <a href="{{ route('admin.agents.create') }}" class="admin-prod-btn-ghost">Add agent</a>
+                <a href="{{ route('admin.agents.assign-products') }}" class="admin-prod-btn-primary">Assign products</a>
             </div>
         </div>
 
         @if(session('success'))
-            <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
 
-        <div class="mt-8 admin-clay-panel overflow-hidden">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Name</th>
-                        <th class="px-6 py-3">Email</th>
-                        <th class="px-6 py-3">Status</th>
-                        <th class="px-6 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($agents as $agent)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3 font-medium">{{ $agent->name }}</td>
-                            <td class="px-6 py-3">{{ $agent->email }}</td>
-                            <td class="px-6 py-3">
-                                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $agent->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800' }}">{{ ucfirst($agent->status ?? 'N/A') }}</span>
-                            </td>
-                            <td class="px-6 py-3 text-right">
-                                <a href="{{ route('admin.agents.show', $agent) }}" class="text-[#fa8900] hover:underline">View & assign</a>
-                            </td>
-                        </tr>
-                    @empty
+        <div class="admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No agents yet. <a href="{{ route('admin.agents.create') }}" class="text-[#fa8900] hover:underline">Add an agent</a>.</td>
+                            <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Email</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($agents as $agent)
+                            <tr>
+                                <td class="font-semibold text-[#232f3e]">{{ $agent->name }}</td>
+                                <td class="text-slate-600">{{ $agent->email }}</td>
+                                <td>
+                                    @php
+                                        $active = ($agent->status ?? '') === 'active';
+                                    @endphp
+                                    <span
+                                        class="admin-prod-user-status {{ $active ? 'admin-prod-user-status--active' : 'admin-prod-user-status--inactive' }}">
+                                        {{ ucfirst($agent->status ?? 'N/A') }}
+                                    </span>
+                                </td>
+                                <td class="admin-prod-cell-actions">
+                                    <a href="{{ route('admin.agents.show', $agent) }}" class="admin-prod-link">View &amp;
+                                        assign</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-slate-500 py-10">
+                                    No agents yet.
+                                    <a href="{{ route('admin.agents.create') }}" class="admin-prod-link">Add an agent</a>.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

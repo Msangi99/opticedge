@@ -1,148 +1,162 @@
 <x-admin-layout>
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800">{{ $user->name }}</h1>
-            <p class="text-sm text-slate-500">Dealer Account Details</p>
-        </div>
-        <a href="{{ route('admin.dealers.index') }}" class="text-[#fa8900] hover:text-[#e67d00] font-medium">Back to List</a>
-    </div>
+    @include('admin.partials.catalog-styles')
 
-            <!-- Dealer Info Card -->
-            <div class="admin-clay-panel overflow-hidden sm:rounded-[1.25rem] mb-6">
-                <div class="px-4 py-5 sm:px-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Applicant Information</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application status.</p>
-                </div>
-                <div class="border-t border-gray-200">
-                    <dl>
-                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Business Name</dt>
-                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-bold">{{ $user->business_name }}</dd>
-                        </div>
-                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Full name</dt>
-                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->name }}</dd>
-                        </div>
-                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Email address</dt>
-                            <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2 text-indigo-600 font-medium">{{ $user->email }}</dd>
-                        </div>
-                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Phone number</dt>
-                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->phone ?? 'N/A' }}</dd>
-                        </div>
-                        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Status</dt>
-                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $user->status === 'active' ? 'bg-green-100 text-green-800' : ($user->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                    {{ ucfirst($user->status) }}
-                                </span>
-                            </dd>
-                        </div>
-                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-gray-500">Joined Date</dt>
-                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{{ $user->created_at->format('F d, Y') }}</dd>
-                        </div>
-                    </dl>
-                </div>
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar !mb-6">
+            <div>
+                <p class="admin-prod-eyebrow">Partners</p>
+                <h1 class="admin-prod-title">{{ $user->name }}</h1>
+                <p class="admin-prod-subtitle">Dealer account details and locations.</p>
             </div>
+            <a href="{{ route('admin.dealers.index') }}" class="admin-prod-back shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to dealers
+            </a>
+        </div>
 
-            <!-- Addresses Section -->
-            <div class="admin-clay-panel overflow-hidden sm:rounded-[1.25rem] mb-6">
-                 <div class="px-4 py-5 sm:px-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Adresses & Locations</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Registered locations for this dealer.</p>
+        <div class="admin-clay-panel overflow-hidden mb-6">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Applicant information</h2>
+                <p class="admin-prod-form-hint">Personal details and application status.</p>
+            </div>
+            <dl class="admin-prod-detail-body">
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Business name</dt>
+                    <dd class="admin-prod-detail-dd font-bold">{{ $user->business_name }}</dd>
                 </div>
-                <div class="border-t border-gray-200 p-6">
-                    @if($user->addresses->isEmpty())
-                        <p class="text-gray-500 text-sm">No addresses registered yet.</p>
-                    @else
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            @foreach($user->addresses as $address)
-                                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                    <div class="mb-4">
-                                        <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-gray-200 text-gray-700 mb-2">{{ $address->type }}</span>
-                                        @if($address->is_default)
-                                            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 mb-2">Default</span>
-                                        @endif
-                                        <p class="text-sm text-gray-900 font-bold block">{{ $address->address }}</p>
-                                        <p class="text-sm text-gray-600 block">{{ $address->city }}, {{ $address->state }} {{ $address->zip }}</p>
-                                        <p class="text-sm text-gray-600 block">{{ $address->country }}</p>
-                                    </div>
-                                    
-                                    @if($address->latitude && $address->longitude)
-                                        <div id="map-{{ $address->id }}" class="h-48 w-full rounded-md border border-gray-300 shadow-sm z-0"></div>
-                                        <div class="mt-2 text-xs">
-                                            <span class="text-gray-400">Lat: {{ $address->latitude }}, Lng: {{ $address->longitude }}</span>
-                                            <span class="mx-1 text-gray-300">|</span>
-                                            <a href="https://www.google.com/maps/search/?api=1&query={{ $address->latitude }},{{ $address->longitude }}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                                Open in Google Maps
-                                            </a>
-                                        </div>
-                                    @else
-                                        <div class="h-48 w-full rounded-md border border-gray-300 shadow-sm bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                                            No map location provided
-                                        </div>
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Full name</dt>
+                    <dd class="admin-prod-detail-dd">{{ $user->name }}</dd>
+                </div>
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Email</dt>
+                    <dd class="admin-prod-detail-dd">
+                        <a href="mailto:{{ $user->email }}" class="admin-prod-link">{{ $user->email }}</a>
+                    </dd>
+                </div>
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Phone</dt>
+                    <dd class="admin-prod-detail-dd">{{ $user->phone ?? 'N/A' }}</dd>
+                </div>
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Status</dt>
+                    <dd class="admin-prod-detail-dd">
+                        @php
+                            $st = $user->status;
+                            $stClass =
+                                $st === 'active'
+                                    ? 'admin-prod-dealer-status--active'
+                                    : ($st === 'pending'
+                                        ? 'admin-prod-dealer-status--pending'
+                                        : 'admin-prod-dealer-status--suspended');
+                        @endphp
+                        <span class="admin-prod-dealer-status {{ $stClass }}">{{ ucfirst($st) }}</span>
+                    </dd>
+                </div>
+                <div class="admin-prod-detail-row">
+                    <dt class="admin-prod-detail-dt">Joined</dt>
+                    <dd class="admin-prod-detail-dd font-variant-numeric">{{ $user->created_at->format('F j, Y') }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="admin-clay-panel overflow-hidden mb-6">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Addresses &amp; locations</h2>
+                <p class="admin-prod-form-hint">Registered locations for this dealer.</p>
+            </div>
+            <div class="admin-prod-form-body">
+                @if($user->addresses->isEmpty())
+                    <p class="admin-prod-muted">No addresses registered yet.</p>
+                @else
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @foreach($user->addresses as $address)
+                            <div class="admin-prod-address-card">
+                                <div class="mb-3 flex flex-wrap gap-2">
+                                    <span class="admin-prod-tag">{{ $address->type }}</span>
+                                    @if($address->is_default)
+                                        <span class="admin-prod-tag admin-prod-tag--accent">Default</span>
                                     @endif
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
-            </div>
+                                <p class="text-sm font-bold text-[#232f3e]">{{ $address->address }}</p>
+                                <p class="text-sm text-slate-600 mt-1">{{ $address->city }}, {{ $address->state }}
+                                    {{ $address->zip }}</p>
+                                <p class="text-sm text-slate-600">{{ $address->country }}</p>
 
-            <!-- Actions -->
-             <div class="bg-white shadow sm:rounded-lg mb-6 border border-gray-200 p-6 flex items-center gap-4">
-                 @if($user->status === 'pending')
-                    <form action="{{ route('admin.dealers.approve', $user->id) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            Approve Dealer
-                        </button>
-                    </form>
-                    <form action="{{ route('admin.dealers.reject', $user->id) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            Reject
-                        </button>
-                    </form>
-                @elseif($user->status === 'active')
-                    <form action="{{ route('admin.dealers.reject', $user->id) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
-                         <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            Suspend Account
-                        </button>
-                    </form>
-                @elseif($user->status === 'suspended')
-                    <form action="{{ route('admin.dealers.approve', $user->id) }}" method="POST">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            Re-activate Account
-                        </button>
-                    </form>
+                                @if($address->latitude && $address->longitude)
+                                    <div id="map-{{ $address->id }}" class="admin-prod-map-frame mt-4"></div>
+                                    <div class="mt-2 text-xs text-slate-500">
+                                        <span class="font-variant-numeric">Lat: {{ $address->latitude }}, Lng:
+                                            {{ $address->longitude }}</span>
+                                        <span class="mx-1 text-slate-300">|</span>
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ $address->latitude }},{{ $address->longitude }}"
+                                            target="_blank" rel="noopener noreferrer" class="admin-prod-link">
+                                            Open in Google Maps
+                                        </a>
+                                    </div>
+                                @else
+                                    <div class="admin-prod-map-placeholder mt-4">No map location provided</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 @endif
-             </div>
+            </div>
+        </div>
+
+        <div class="admin-prod-actions-bar mb-6">
+            @if($user->status === 'pending')
+                <form action="{{ route('admin.dealers.approve', $user->id) }}" method="POST" class="inline">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="admin-prod-btn-primary admin-prod-btn-primary--success">
+                        Approve dealer
+                    </button>
+                </form>
+                <form action="{{ route('admin.dealers.reject', $user->id) }}" method="POST" class="inline">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="admin-prod-btn-primary admin-prod-btn-primary--danger">
+                        Reject
+                    </button>
+                </form>
+            @elseif($user->status === 'active')
+                <form action="{{ route('admin.dealers.reject', $user->id) }}" method="POST" class="inline">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="admin-prod-btn-primary admin-prod-btn-primary--danger">
+                        Suspend account
+                    </button>
+                </form>
+            @elseif($user->status === 'suspended')
+                <form action="{{ route('admin.dealers.approve', $user->id) }}" method="POST" class="inline">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="admin-prod-btn-primary admin-prod-btn-primary--success">
+                        Re-activate account
+                    </button>
+                </form>
+            @endif
+        </div>
+    </div>
 
     @push('styles')
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-        <style>
-            .leaflet-container {
-                z-index: 1; /* Ensure maps don't overlap strangely */
-            }
-        </style>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     @endpush
 
     @push('scripts')
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var addresses = @json($user->addresses);
 
-                addresses.forEach(function(address) {
+                addresses.forEach(function (address) {
                     if (address.latitude && address.longitude) {
                         var mapId = 'map-' + address.id;
                         var lat = parseFloat(address.latitude);
@@ -160,7 +174,7 @@
                         });
 
                         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }).addTo(map);
 
                         L.marker([lat, lng]).addTo(map);

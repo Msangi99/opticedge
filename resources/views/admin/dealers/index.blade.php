@@ -1,109 +1,109 @@
 <x-admin-layout>
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-800">Dealers Management</h1>
-        <p class="mt-2 text-sm text-slate-600">A list of all dealers including their name, email, status, and verification actions.</p>
-    </div>
+    @include('admin.partials.catalog-styles')
 
-    @if(session('success'))
-        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
+    <div class="admin-prod-page">
+        <div class="admin-prod-toolbar !mb-0">
+            <div>
+                <p class="admin-prod-eyebrow">Partners</p>
+                <h1 class="admin-prod-title">Dealers</h1>
+                <p class="admin-prod-subtitle">Review applications, approve accounts, and suspend when needed.</p>
+            </div>
         </div>
-    @endif
 
-    <div class="admin-clay-panel overflow-hidden">
-        <div class="overflow-x-auto">
-            <div class="inline-block min-w-full align-middle">
-                <div class="overflow-hidden md:rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-300">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col"
-                                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                                            Name</th>
-                                        <th scope="col"
-                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Email</th>
-                                        <th scope="col"
-                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Phone</th>
-                                        <th scope="col"
-                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Registered
-                                            At</th>
-                                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                            <span class="sr-only">Actions</span>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200 bg-white">
-                                    @foreach($dealers as $dealer)
-                                        <tr>
-                                            <td
-                                                class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                                <a href="{{ route('admin.dealers.show', $dealer->id) }}"
-                                                    class="text-indigo-600 hover:text-indigo-900 hover:underline">
-                                                    {{ $dealer->name }}
-                                                </a>
-                                            </td>
-                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                {{ $dealer->email }}
-                                            </td>
-                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                {{ $dealer->phone ?? 'N/A' }}
-                                            </td>
-                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                <span
-                                                    class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 {{ $dealer->status === 'active' ? 'bg-green-100 text-green-800' : ($dealer->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                    {{ ucfirst($dealer->status) }}
-                                                </span>
-                                            </td>
-                                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                {{ $dealer->created_at->format('M d, Y') }}
-                                            </td>
-                                            <td
-                                                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                                <a href="{{ route('admin.dealers.show', $dealer->id) }}"
-                                                    class="text-indigo-600 hover:text-indigo-900 mr-2">View</a>
-                                                @if($dealer->status === 'pending')
-                                                    <form action="{{ route('admin.dealers.approve', $dealer->id) }}"
-                                                        method="POST" class="inline-block">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit"
-                                                            class="text-green-600 hover:text-green-900 mr-2">Approve</button>
-                                                    </form>
-                                                    <form action="{{ route('admin.dealers.reject', $dealer->id) }}"
-                                                        method="POST" class="inline-block">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit"
-                                                            class="text-red-600 hover:text-red-900">Reject</button>
-                                                    </form>
-                                                @else
-                                                    @if($dealer->status === 'active')
-                                                        <form action="{{ route('admin.dealers.reject', $dealer->id) }}"
-                                                            method="POST" class="inline-block">
-                                                            @csrf
-                                                            @method('PATCH')
-                                                            <button type="submit"
-                                                                class="text-red-600 hover:text-red-900">Suspend</button>
-                                                        </form>
-                                                    @elseif($dealer->status === 'suspended')
-                                                        <form action="{{ route('admin.dealers.approve', $dealer->id) }}"
-                                                            method="POST" class="inline-block">
-                                                            @csrf
-                                                            @method('PATCH')
-                                                            <button type="submit"
-                                                                class="text-green-600 hover:text-green-900">Re-activate</button>
-                                                        </form>
-                                                    @endif
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                </div>
+        @if(session('success'))
+            <div class="admin-prod-alert admin-prod-alert--success mt-6" role="status">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="mt-6 admin-clay-panel overflow-hidden">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Email</th>
+                            <th scope="col" class="admin-prod-th">Phone</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">Registered</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dealers as $dealer)
+                            <tr>
+                                <td class="font-semibold">
+                                    <a href="{{ route('admin.dealers.show', $dealer->id) }}"
+                                        class="admin-prod-link text-[#232f3e] hover:text-[#c2410c]">{{ $dealer->name }}</a>
+                                </td>
+                                <td class="text-slate-600">{{ $dealer->email }}</td>
+                                <td class="text-slate-600">{{ $dealer->phone ?? '—' }}</td>
+                                <td>
+                                    @php
+                                        $st = $dealer->status;
+                                        $stClass =
+                                            $st === 'active'
+                                                ? 'admin-prod-dealer-status--active'
+                                                : ($st === 'pending'
+                                                    ? 'admin-prod-dealer-status--pending'
+                                                    : 'admin-prod-dealer-status--suspended');
+                                    @endphp
+                                    <span class="admin-prod-dealer-status {{ $stClass }}">{{ ucfirst($st) }}</span>
+                                </td>
+                                <td class="text-slate-600 text-sm font-variant-numeric">
+                                    {{ $dealer->created_at->format('M j, Y') }}
+                                </td>
+                                <td class="admin-prod-cell-actions">
+                                    <div class="admin-prod-actions flex-wrap justify-end gap-x-3 gap-y-1">
+                                        <a href="{{ route('admin.dealers.show', $dealer->id) }}" class="admin-prod-link">View</a>
+                                        @if($dealer->status === 'pending')
+                                            <form action="{{ route('admin.dealers.approve', $dealer->id) }}" method="POST"
+                                                class="inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="admin-prod-btn-inline admin-prod-link--success">
+                                                    Approve
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
+                                                class="inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        @else
+                                            @if($dealer->status === 'active')
+                                                <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
+                                                    class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
+                                                        Suspend
+                                                    </button>
+                                                </form>
+                                            @elseif($dealer->status === 'suspended')
+                                                <form action="{{ route('admin.dealers.approve', $dealer->id) }}" method="POST"
+                                                    class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="admin-prod-btn-inline admin-prod-link--success">
+                                                        Re-activate
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-slate-500 py-10">No dealers found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

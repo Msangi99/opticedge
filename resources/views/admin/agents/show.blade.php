@@ -1,43 +1,61 @@
 <x-admin-layout>
-    <div class="py-12 px-8">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.agents.index') }}" class="text-slate-600 hover:text-slate-900">&larr; Agents</a>
-        </div>
-        <div class="mt-4 flex justify-between items-center">
+    @include('admin.partials.catalog-styles')
+
+    <div class="admin-prod-page">
+        <a href="{{ route('admin.agents.index') }}" class="admin-prod-back inline-flex mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to agents
+        </a>
+
+        <div class="admin-prod-toolbar !mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">{{ $agent->name }}</h1>
-                <p class="mt-1 text-slate-600">{{ $agent->email }}</p>
+                <p class="admin-prod-eyebrow">Agent</p>
+                <h1 class="admin-prod-title">{{ $agent->name }}</h1>
+                <p class="admin-prod-subtitle">{{ $agent->email }}</p>
             </div>
             <a href="{{ route('admin.agents.assign-products') }}?agent_id={{ $agent->id }}"
-                class="rounded-lg bg-[#fa8900] px-4 py-2 text-sm font-medium text-white hover:bg-[#e87b00]">Assign products</a>
+                class="admin-prod-btn-primary shrink-0">Assign products</a>
         </div>
 
-        <div class="mt-8 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <h3 class="border-b border-slate-100 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-900">Assigned products</h3>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
-                        <th class="px-6 py-3">Product</th>
-                        <th class="px-6 py-3">Assigned</th>
-                        <th class="px-6 py-3">Sold</th>
-                        <th class="px-6 py-3">Remaining</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($assignments as $a)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-3">{{ $a->product->category->name ?? '—' }} – {{ $a->product->name }}</td>
-                            <td class="px-6 py-3">{{ $a->quantity_assigned }}</td>
-                            <td class="px-6 py-3">{{ $a->quantity_sold }}</td>
-                            <td class="px-6 py-3">{{ $a->quantity_assigned - $a->quantity_sold }}</td>
-                        </tr>
-                    @empty
+        <div class="admin-clay-panel overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Assigned products</h2>
+                <p class="admin-prod-form-hint">Inventory allocated to this agent.</p>
+            </div>
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+                <table>
+                    <thead>
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-500">No products assigned yet.</td>
+                            <th scope="col" class="admin-prod-th">Product</th>
+                            <th scope="col" class="admin-prod-th">Assigned</th>
+                            <th scope="col" class="admin-prod-th">Sold</th>
+                            <th scope="col" class="admin-prod-th">Remaining</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($assignments as $a)
+                            <tr>
+                                <td class="font-medium text-[#232f3e]">
+                                    {{ $a->product->category->name ?? '—' }} – {{ $a->product->name }}
+                                </td>
+                                <td class="font-variant-numeric text-slate-600">{{ $a->quantity_assigned }}</td>
+                                <td class="font-variant-numeric text-slate-600">{{ $a->quantity_sold }}</td>
+                                <td class="font-variant-numeric text-slate-600">
+                                    {{ $a->quantity_assigned - $a->quantity_sold }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-slate-500 py-10">No products assigned yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </x-admin-layout>

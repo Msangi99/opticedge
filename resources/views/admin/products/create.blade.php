@@ -18,7 +18,7 @@
             </a>
         </div>
 
-        <div class="admin-clay-panel overflow-hidden">
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Product details</h2>
                 <p class="admin-prod-form-hint">Brand defaults to Samsung. Price and stock can be set when editing.</p>

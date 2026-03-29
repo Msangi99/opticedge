@@ -18,7 +18,7 @@
             </a>
         </div>
 
-        <div class="admin-clay-panel overflow-hidden">
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Category details</h2>
                 <p class="admin-prod-form-hint">Name and optional cover image.</p>

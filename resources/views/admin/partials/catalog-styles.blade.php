@@ -329,7 +329,7 @@
             .admin-prod-form-head {
                 padding: 1.1rem 1.5rem;
                 background: linear-gradient(165deg, rgba(255, 255, 255, 0.65), rgba(241, 245, 249, 0.45));
-                border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+                border-bottom: 1px solid rgba(203, 213, 225, 0.85);
                 box-shadow: inset 0 -2px 8px rgba(148, 163, 184, 0.06);
             }
 
@@ -389,17 +389,19 @@
                 display: block;
                 width: 100%;
                 border-radius: 0.75rem;
-                border: 1px solid rgba(255, 255, 255, 0.95);
-                background: linear-gradient(165deg, rgba(248, 250, 252, 0.95), rgba(255, 255, 255, 0.98));
+                border: 1px solid rgba(148, 163, 184, 0.72);
+                background: linear-gradient(165deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.99));
                 box-shadow:
-                    inset 3px 3px 8px rgba(163, 177, 198, 0.1),
-                    inset -2px -2px 6px rgba(255, 255, 255, 0.95),
-                    1px 2px 6px rgba(163, 177, 198, 0.06);
+                    inset 2px 2px 6px rgba(163, 177, 198, 0.08),
+                    inset -1px -1px 4px rgba(255, 255, 255, 0.9),
+                    0 1px 2px rgba(15, 23, 42, 0.04);
                 padding: 0.65rem 0.85rem;
                 font-size: 0.875rem;
                 font-weight: 500;
                 color: #0f172a;
-                transition: box-shadow 0.15s ease, outline 0.15s ease;
+                transition:
+                    border-color 0.15s ease,
+                    box-shadow 0.15s ease;
             }
 
             .admin-prod-input::placeholder,
@@ -407,11 +409,20 @@
                 color: #94a3b8;
             }
 
+            .admin-prod-input:hover,
+            .admin-prod-select:hover,
+            .admin-prod-textarea:hover {
+                border-color: rgba(100, 116, 139, 0.55);
+            }
+
             .admin-prod-input:focus,
             .admin-prod-select:focus,
             .admin-prod-textarea:focus {
-                outline: 2px solid rgba(250, 137, 0, 0.35);
-                outline-offset: 1px;
+                outline: none;
+                border-color: rgba(250, 137, 0, 0.85);
+                box-shadow:
+                    inset 2px 2px 6px rgba(163, 177, 198, 0.06),
+                    0 0 0 3px rgba(250, 137, 0, 0.2);
             }
 
             .admin-prod-textarea {
@@ -424,10 +435,12 @@
                 font-size: 0.8125rem;
                 color: #64748b;
                 border-radius: 0.75rem;
-                border: 1px dashed rgba(148, 163, 184, 0.45);
-                background: rgba(255, 255, 255, 0.5);
+                border: 1px dashed rgba(148, 163, 184, 0.75);
+                background: rgba(255, 255, 255, 0.65);
                 padding: 0.5rem;
-                box-shadow: inset 2px 2px 6px rgba(163, 177, 198, 0.08);
+                box-shadow:
+                    inset 2px 2px 6px rgba(163, 177, 198, 0.08),
+                    0 0 0 1px rgba(255, 255, 255, 0.6);
             }
 
             .admin-prod-file::file-selector-button {
@@ -451,8 +464,8 @@
             .admin-prod-form-footer {
                 margin-top: 1.5rem;
                 padding-top: 1.25rem;
-                border-top: 1px solid rgba(255, 255, 255, 0.75);
-                box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
+                border-top: 1px solid rgba(203, 213, 225, 0.75);
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
@@ -625,6 +638,240 @@
             .admin-prod-muted {
                 color: #94a3b8;
                 font-size: 0.8125rem;
+            }
+
+            /* Dealers: account status */
+            .admin-prod-dealer-status {
+                display: inline-flex;
+                padding: 0.28rem 0.65rem;
+                border-radius: 9999px;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                border: 1px solid rgba(255, 255, 255, 0.9);
+                box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75);
+            }
+
+            .admin-prod-dealer-status--active {
+                background: linear-gradient(145deg, rgba(220, 252, 231, 0.95), rgba(255, 255, 255, 0.92));
+                color: #166534;
+                border-color: rgba(34, 197, 94, 0.22);
+            }
+
+            .admin-prod-dealer-status--pending {
+                background: linear-gradient(145deg, rgba(254, 243, 199, 0.95), rgba(255, 255, 255, 0.92));
+                color: #92400e;
+                border-color: rgba(245, 158, 11, 0.28);
+            }
+
+            .admin-prod-dealer-status--suspended {
+                background: linear-gradient(145deg, rgba(254, 226, 226, 0.95), rgba(255, 255, 255, 0.92));
+                color: #991b1b;
+                border-color: rgba(239, 68, 68, 0.22);
+            }
+
+            .admin-prod-link--success {
+                color: #059669;
+            }
+
+            .admin-prod-link--success:hover {
+                color: #047857;
+            }
+
+            .admin-prod-btn-inline {
+                background: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                cursor: pointer;
+                font: inherit;
+                font-size: 0.8125rem;
+                font-weight: 600;
+            }
+
+            /* Detail panels (dealer show, etc.) */
+            .admin-prod-detail-body {
+                border-top: 1px solid rgba(255, 255, 255, 0.65);
+            }
+
+            .admin-prod-detail-row {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.35rem;
+                padding: 1rem 1.25rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+            }
+
+            @media (min-width: 640px) {
+                .admin-prod-detail-row {
+                    grid-template-columns: 10rem 1fr;
+                    gap: 1rem;
+                    align-items: start;
+                }
+            }
+
+            .admin-prod-detail-row:nth-child(odd) {
+                background: linear-gradient(90deg, rgba(248, 250, 252, 0.55), rgba(255, 255, 255, 0.15));
+            }
+
+            .admin-prod-detail-row:last-child {
+                border-bottom: none;
+            }
+
+            .admin-prod-detail-dt {
+                font-size: 0.8125rem;
+                font-weight: 600;
+                color: #64748b;
+            }
+
+            .admin-prod-detail-dd {
+                font-size: 0.875rem;
+                color: #0f172a;
+                margin: 0;
+            }
+
+            .admin-prod-address-card {
+                border-radius: 1rem;
+                padding: 1.15rem;
+                background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.88));
+                border: 1px solid rgba(255, 255, 255, 0.92);
+                box-shadow:
+                    4px 6px 16px rgba(163, 177, 198, 0.12),
+                    inset 1px 1px 3px rgba(255, 255, 255, 0.85);
+            }
+
+            .admin-prod-tag {
+                display: inline-flex;
+                padding: 0.2rem 0.5rem;
+                border-radius: 0.35rem;
+                font-size: 0.65rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                background: rgba(241, 245, 249, 0.95);
+                color: #475569;
+                border: 1px solid rgba(148, 163, 184, 0.25);
+            }
+
+            .admin-prod-tag--accent {
+                background: linear-gradient(145deg, rgba(220, 252, 231, 0.9), rgba(255, 255, 255, 0.95));
+                color: #166534;
+                border-color: rgba(34, 197, 94, 0.22);
+            }
+
+            .admin-prod-map-placeholder {
+                height: 12rem;
+                border-radius: 0.65rem;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                background: linear-gradient(165deg, rgba(241, 245, 249, 0.9), rgba(248, 250, 252, 0.7));
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #94a3b8;
+                font-size: 0.8125rem;
+                box-shadow: inset 2px 2px 8px rgba(163, 177, 198, 0.1);
+            }
+
+            .admin-prod-map-frame {
+                height: 12rem;
+                width: 100%;
+                border-radius: 0.65rem;
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                overflow: hidden;
+                box-shadow: inset 1px 1px 4px rgba(163, 177, 198, 0.1);
+            }
+
+            .admin-prod-map-frame.leaflet-container {
+                z-index: 1;
+            }
+
+            .admin-prod-actions-bar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 1.25rem 1.5rem;
+                border-radius: 1rem;
+                background: linear-gradient(165deg, rgba(255, 255, 255, 0.75), rgba(248, 250, 252, 0.5));
+                border: 1px solid rgba(255, 255, 255, 0.85);
+                box-shadow:
+                    4px 6px 16px rgba(163, 177, 198, 0.1),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+            }
+
+            .admin-prod-btn-primary--success {
+                background: linear-gradient(145deg, #10b981, #059669);
+                border-color: rgba(255, 255, 255, 0.35);
+                box-shadow:
+                    4px 6px 16px rgba(16, 185, 129, 0.28),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.35);
+            }
+
+            .admin-prod-btn-primary--success:hover {
+                box-shadow:
+                    6px 8px 20px rgba(16, 185, 129, 0.35),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+            }
+
+            .admin-prod-btn-primary--danger {
+                background: linear-gradient(145deg, #ef4444, #dc2626);
+                border-color: rgba(255, 255, 255, 0.3);
+                box-shadow:
+                    4px 6px 16px rgba(239, 68, 68, 0.28),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.25);
+            }
+
+            .admin-prod-btn-primary--danger:hover {
+                box-shadow:
+                    6px 8px 20px rgba(239, 68, 68, 0.35),
+                    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+            }
+
+            .admin-prod-form-wide {
+                max-width: 48rem;
+            }
+
+            /* Primary create/assign forms: clearer card + field chrome */
+            .admin-prod-form-shell.admin-clay-panel {
+                border: 1px solid rgba(148, 163, 184, 0.62);
+                box-shadow:
+                    10px 12px 24px rgba(163, 177, 198, 0.28),
+                    -6px -8px 20px rgba(255, 255, 255, 0.9),
+                    inset 0 0 0 1px rgba(250, 137, 0, 0.14),
+                    inset 2px 2px 5px rgba(255, 255, 255, 0.85),
+                    inset -2px -3px 8px rgba(148, 163, 184, 0.05);
+            }
+
+            .admin-prod-form-shell .admin-prod-form-head {
+                border-bottom: 1px solid rgba(148, 163, 184, 0.42);
+            }
+
+            /* Select2 alignment with clay forms */
+            .admin-prod-select2-wrap .select2-container {
+                width: 100% !important;
+            }
+
+            .admin-prod-select2-wrap .select2-container--default .select2-selection--single,
+            .admin-prod-select2-wrap .select2-container--default .select2-selection--multiple {
+                min-height: 2.75rem;
+                border-radius: 0.75rem;
+                border: 1px solid rgba(148, 163, 184, 0.72);
+                background: linear-gradient(165deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.99));
+                box-shadow:
+                    inset 2px 2px 6px rgba(163, 177, 198, 0.08),
+                    0 1px 2px rgba(15, 23, 42, 0.04);
+                padding: 0.2rem 0.35rem;
+            }
+
+            .admin-prod-select2-wrap .select2-container--default.select2-container--focus .select2-selection--single,
+            .admin-prod-select2-wrap .select2-container--default.select2-container--focus .select2-selection--multiple {
+                border-color: rgba(250, 137, 0, 0.85);
+                box-shadow: 0 0 0 3px rgba(250, 137, 0, 0.2);
+            }
+
+            .admin-prod-select2-wrap .select2-container--default .select2-selection--multiple .select2-selection__choice {
+                background: linear-gradient(145deg, rgba(255, 247, 237, 0.95), rgba(255, 255, 255, 0.98));
+                border: 1px solid rgba(251, 146, 60, 0.35);
+                border-radius: 0.4rem;
             }
         </style>
     @endpush
