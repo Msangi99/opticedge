@@ -101,6 +101,144 @@
                 inset -3px -3px 8px rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+
+        /* Sidebar: primary rows */
+        .admin-sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgb(51 65 85);
+            border-radius: 0.85rem;
+            border: 1px solid transparent;
+            transition:
+                background 0.2s ease,
+                box-shadow 0.2s ease,
+                color 0.2s ease,
+                transform 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .admin-sidebar-item:hover:not(.admin-sidebar-item-active) {
+            background: rgba(255, 255, 255, 0.88);
+            border-color: rgba(255, 255, 255, 0.65);
+            box-shadow:
+                4px 5px 14px rgba(163, 177, 198, 0.2),
+                -2px -2px 10px rgba(255, 255, 255, 0.95),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+            transform: translateX(3px);
+            color: rgb(15 23 42);
+        }
+
+        .admin-sidebar-item-active {
+            background: linear-gradient(135deg, rgba(250, 137, 0, 0.16), rgba(255, 255, 255, 0.94));
+            border-color: rgba(250, 137, 0, 0.28);
+            color: rgb(35 47 62);
+            font-weight: 600;
+            box-shadow:
+                4px 6px 16px rgba(250, 137, 0, 0.14),
+                -3px -3px 12px rgba(255, 255, 255, 0.98),
+                inset 2px 2px 6px rgba(255, 255, 255, 0.8),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+        }
+
+        .admin-sidebar-item svg {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: rgb(148 163 184);
+            transition: color 0.2s ease;
+        }
+
+        .admin-sidebar-item:hover:not(.admin-sidebar-item-active) svg {
+            color: rgb(100 116 139);
+        }
+
+        .admin-sidebar-item-active svg {
+            color: #fa8900;
+        }
+
+        .admin-sidebar-item:focus-visible {
+            outline: 2px solid rgba(250, 137, 0, 0.45);
+            outline-offset: 2px;
+        }
+
+        .admin-sidebar-group-btn {
+            width: 100%;
+            justify-content: space-between;
+            text-align: left;
+        }
+
+        .admin-sidebar-chevron {
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+            color: rgb(148 163 184);
+            transition:
+                color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .admin-sidebar-item-active .admin-sidebar-chevron {
+            color: #fa8900;
+        }
+
+        .admin-sidebar-item:hover:not(.admin-sidebar-item-active) .admin-sidebar-chevron {
+            color: rgb(100 116 139);
+        }
+
+        /* Sidebar: nested links */
+        .admin-sidebar-sublink {
+            display: block;
+            padding: 0.45rem 0.65rem 0.45rem 0.75rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: rgb(71 85 105);
+            border-radius: 0.65rem;
+            border-left: 3px solid transparent;
+            transition:
+                background 0.2s ease,
+                color 0.2s ease,
+                border-color 0.2s ease,
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .admin-sidebar-sublink:hover:not(.admin-sidebar-sublink-active) {
+            background: rgba(255, 255, 255, 0.72);
+            color: rgb(15 23 42);
+            border-left-color: rgba(250, 137, 0, 0.35);
+            transform: translateX(2px);
+            box-shadow: 2px 2px 8px rgba(163, 177, 198, 0.12);
+        }
+
+        .admin-sidebar-sublink-active {
+            background: rgba(255, 255, 255, 0.95);
+            color: rgb(35 47 62);
+            font-weight: 600;
+            border-left-color: #fa8900;
+            box-shadow:
+                inset 0 1px 2px rgba(255, 255, 255, 0.9),
+                2px 2px 10px rgba(250, 137, 0, 0.08);
+        }
+
+        .admin-sidebar-sublink:focus-visible {
+            outline: 2px solid rgba(250, 137, 0, 0.4);
+            outline-offset: 1px;
+        }
+
+        .admin-sidebar-section-title {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgb(100 116 139);
+            margin-bottom: 0.5rem;
+        }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
@@ -270,17 +408,74 @@
                 </button>
             </div>
 
-            <nav class="flex-1 px-4 py-6 space-y-6">
+            @php
+                $sidebarUsersActive = request()->routeIs([
+                    'admin.customers.*',
+                    'admin.dealers.*',
+                    'admin.agents.*',
+                ]);
+                $sidebarStockActive = request()->routeIs([
+                    'admin.stock.*',
+                    'admin.branches.*',
+                    'admin.orders.*',
+                ]);
+                $navStockStocks = request()->routeIs([
+                    'admin.stock.stocks',
+                    'admin.stock.stocks.models',
+                    'admin.stock.stocks.show',
+                    'admin.stock.stock-receipts',
+                    'admin.stock.add-product',
+                    'admin.stock.store-add-product',
+                    'admin.stock.decode-barcodes',
+                ]);
+                $navStockPurchases = request()->routeIs([
+                    'admin.stock.purchases',
+                    'admin.stock.purchases.receipts',
+                    'admin.stock.purchase.show',
+                    'admin.stock.create-purchase',
+                    'admin.stock.store-purchase',
+                    'admin.stock.edit-purchase',
+                    'admin.stock.update-purchase',
+                    'admin.stock.destroy-purchase',
+                    'admin.stock.update-product-prices',
+                ]);
+                $navStockDistribution = request()->routeIs([
+                    'admin.stock.distribution',
+                    'admin.stock.create-distribution',
+                    'admin.stock.store-distribution',
+                    'admin.stock.edit-distribution',
+                    'admin.stock.update-distribution',
+                    'admin.stock.destroy-distribution',
+                    'admin.stock.distribution-update-status',
+                    'admin.stock.distribution-save-channel',
+                ]);
+                $navStockAgentSales = request()->routeIs([
+                    'admin.stock.agent-sales',
+                    'admin.stock.create-agent-sale',
+                    'admin.stock.store-agent-sale',
+                    'admin.stock.agent-sales-update-commission',
+                    'admin.stock.agent-sales-save-channel',
+                ]);
+                $navStockAgentCredits = request()->routeIs([
+                    'admin.stock.agent-credits',
+                    'admin.stock.edit-agent-credit',
+                    'admin.stock.agent-credit-payment-channel',
+                    'admin.stock.agent-credit-pay-remaining',
+                    'admin.stock.update-agent-credit',
+                ]);
+            @endphp
+
+            <nav class="flex-1 px-3 py-5 sm:px-4 sm:py-6 space-y-5">
 
                 <!-- Dashboard Section -->
                 <div>
-                    <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Dashboard</h3>
+                    <h3 class="admin-sidebar-section-title">Dashboard</h3>
                     <div class="space-y-1">
                         <a href="{{ route('admin.dashboard') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.dashboard')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.dashboard') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                             </svg>
@@ -291,57 +486,58 @@
 
                 <!-- Management Section -->
                 <div>
-                    <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Management</h3>
+                    <h3 class="admin-sidebar-section-title">Management</h3>
                     <div class="space-y-1">
 
-                        <!-- Products -->
                         <a href="{{ route('admin.products.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.products.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.products.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
                             Products
                         </a>
                         <a href="{{ route('admin.categories.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.categories.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.categories.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
                             Categories
                         </a>
 
-                        <!-- Customers -->
-                        <div x-data="{ open: false }">
-                            <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                                <div class="flex items-center gap-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                        class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <div x-data="{ open: {{ $sidebarUsersActive ? 'true' : 'false' }} }">
+                            <button type="button" @click="open = !open"
+                                class="admin-sidebar-item admin-sidebar-group-btn {{ $sidebarUsersActive ? 'admin-sidebar-item-active' : '' }}">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
-                                    Users & Dealers
+                                    <span class="truncate">Users & Dealers</span>
                                 </div>
-                                <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ 'rotate-180': open }"
+                                <svg class="admin-sidebar-chevron transition-transform" :class="{ 'rotate-180': open }"
                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="open" x-cloak class="pl-10 space-y-1 mt-1 border-l-2 border-white/60 ml-4">
+                            <div x-show="open" x-cloak
+                                class="mt-1.5 ml-3 pl-3 space-y-0.5 border-l border-slate-300/50">
                                 <a href="{{ route('admin.customers.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Customers</a>
+                                    @if (request()->routeIs('admin.customers.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.customers.*') ? 'admin-sidebar-sublink-active' : '' }}">Customers</a>
                                 <a href="{{ route('admin.dealers.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Dealers</a>
+                                    @if (request()->routeIs('admin.dealers.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.dealers.*') ? 'admin-sidebar-sublink-active' : '' }}">Dealers</a>
                                 <a href="{{ route('admin.agents.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agents</a>
+                                    @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
                             </div>
                         </div>
 
@@ -350,41 +546,48 @@
 
                 <!-- Stock Management Section -->
                 <div>
-                    <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Stock Management</h3>
+                    <h3 class="admin-sidebar-section-title">Stock Management</h3>
                     <div class="space-y-1">
                         <div x-data="{ open: true }">
-                            <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                                <div class="flex items-center gap-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                        class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <button type="button" @click="open = !open"
+                                class="admin-sidebar-item admin-sidebar-group-btn {{ $sidebarStockActive ? 'admin-sidebar-item-active' : '' }}">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
-                                    Stock
+                                    <span class="truncate">Stock</span>
                                 </div>
-                                <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ 'rotate-180': open }"
+                                <svg class="admin-sidebar-chevron transition-transform" :class="{ 'rotate-180': open }"
                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="open" x-cloak class="pl-10 space-y-1 mt-1 border-l-2 border-white/60 ml-4">
+                            <div x-show="open" x-cloak
+                                class="mt-1.5 ml-3 pl-3 space-y-0.5 border-l border-slate-300/50">
                                 <a href="{{ route('admin.stock.stocks') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Stocks</a>
+                                    @if ($navStockStocks) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockStocks ? 'admin-sidebar-sublink-active' : '' }}">Stocks</a>
                                 <a href="{{ route('admin.branches.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Branches</a>
+                                    @if (request()->routeIs('admin.branches.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.branches.*') ? 'admin-sidebar-sublink-active' : '' }}">Branches</a>
                                 <a href="{{ route('admin.stock.purchases') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Purchases</a>
+                                    @if ($navStockPurchases) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockPurchases ? 'admin-sidebar-sublink-active' : '' }}">Purchases</a>
                                 <a href="{{ route('admin.orders.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Orders</a>
+                                    @if (request()->routeIs('admin.orders.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.orders.*') ? 'admin-sidebar-sublink-active' : '' }}">Orders</a>
                                 <a href="{{ route('admin.stock.distribution') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Distribution</a>
+                                    @if ($navStockDistribution) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockDistribution ? 'admin-sidebar-sublink-active' : '' }}">Distribution</a>
                                 <a href="{{ route('admin.stock.agent-sales') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Sales</a>
+                                    @if ($navStockAgentSales) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockAgentSales ? 'admin-sidebar-sublink-active' : '' }}">Agent Sales</a>
                                 <a href="{{ route('admin.stock.agent-credits') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Agent Credit</a>
+                                    @if ($navStockAgentCredits) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockAgentCredits ? 'admin-sidebar-sublink-active' : '' }}">Agent Credit</a>
                             </div>
                         </div>
                     </div>
@@ -392,53 +595,53 @@
 
                 <!-- Operations Section -->
                 <div>
-                    <h3 class="px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Operations</h3>
+                    <h3 class="admin-sidebar-section-title">Operations</h3>
                     <div class="space-y-1">
                         <a href="{{ route('admin.payment-options.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.payment-options.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.payment-options.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
                             Channels
                         </a>
                         <a href="{{ route('admin.expenses.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.expenses.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.expenses.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             Expenses
                         </a>
                         <a href="{{ route('admin.reports.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.reports.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.reports.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             Sales Reports
                         </a>
                         <a href="{{ route('admin.settings.index') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('admin.settings.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.settings.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                             Store Settings
                         </a>
                         <a href="{{ route('command.center') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-white/75 group transition-all shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            @if (request()->routeIs('command.*', 'admin.command.*')) aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('command.*', 'admin.command.*') ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
