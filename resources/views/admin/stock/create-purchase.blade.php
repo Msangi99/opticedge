@@ -1,4 +1,20 @@
 <x-admin-layout>
+    @push('styles')
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <style>
+            .select2-container--default .select2-selection--single {
+                min-height: 42px;
+                padding: 6px 8px;
+                border-color: #cbd5e1;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                line-height: 28px;
+            }
+            .select2-container--default .select2-selection--single .select2-selection__arrow {
+                height: 40px;
+            }
+        </style>
+    @endpush
     <div class="py-12 px-8">
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-6">
@@ -26,14 +42,6 @@
                             </div>
                         @endif
 
-                        <!-- Invoice Number -->
-                        <div class="col-span-2">
-                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Leave empty for auto (XXXX-YYYY-MM-DD)">
-                            <p id="invoice_preview" class="text-xs text-slate-500 mt-1" aria-live="polite"></p>
-                            @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
-
                         <!-- Date -->
                         <div class="col-span-1">
                             <label for="date" class="block text-sm font-medium text-slate-700 mb-1">Date of Purchase</label>
@@ -53,6 +61,14 @@
                             @error('distributor_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
+                        <!-- Invoice Number -->
+                        <div class="col-span-2">
+                            <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Invoice Number</label>
+                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Leave empty for auto (DistributorName-YYYY-MM-DD-HH-MM)">
+                            <p id="invoice_preview" class="text-xs text-slate-500 mt-1" aria-live="polite"></p>
+                            @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
                         <!-- Branch -->
                         <div class="col-span-2">
                             <label for="branch_id" class="block text-sm font-medium text-slate-700 mb-1">Branch</label>
@@ -65,34 +81,35 @@
                             @error('branch_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Category: from stock (read-only) or editable -->
-                        <div class="col-span-1">
-                            <label for="category_id" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                            @if($fromStock)
+                        <!-- Category + model: from stock (read-only), or product picker (Select2) -->
+                        @if($fromStock)
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
                                 <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_category_name ?? '–' }}</div>
                                 <input type="hidden" name="category_id" value="{{ $fromStock->purchase_category_id }}">
-                            @else
-                                <select name="category_id" id="category_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Select Category</option>
-                                    @foreach($categories as $category)
-                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                                    @endforeach
-                                </select>
-                            @endif
-                            @error('category_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
-
-                        <!-- Model: from stock (read-only) or editable -->
-                        <div class="col-span-1">
-                            <label for="model" class="block text-sm font-medium text-slate-700 mb-1">Model (Product Name)</label>
-                            @if($fromStock)
+                                @error('category_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Model (product name)</label>
                                 <div class="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{{ $fromStock->purchase_model }}</div>
                                 <input type="hidden" name="model" value="{{ $fromStock->purchase_model }}">
-                            @else
-                                <input type="text" name="model" id="model" value="{{ old('model') }}" required placeholder="Type model name..." class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @endif
-                            @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
+                                @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                        @else
+                            <div class="col-span-2">
+                                <label for="product_id" class="block text-sm font-medium text-slate-700 mb-1">Model (product name)</label>
+                                <select name="product_id" id="product_id" required class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Search or select…</option>
+                                    @foreach($productsForSelect as $p)
+                                        <option value="{{ $p->id }}" {{ (string) old('product_id') === (string) $p->id ? 'selected' : '' }}>
+                                            {{ ($p->category?->name ?? '—') }}-{{ $p->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-slate-500 mt-1">Options are listed as <span class="font-medium">category-model</span>. Search filters the list.</p>
+                                @error('product_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
 
                         <!-- Quantity: from stock limit (read-only) or editable -->
                         <div class="col-span-1">
@@ -346,36 +363,65 @@
         </div>
     </div>
 
-    <script>
-        function calculateTotal() {
-            const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
-            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
-            const total = qty * price;
-            const el = document.getElementById('total_amount');
-            if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }
-        
-        function invoicePreviewText() {
-            const dist = (document.getElementById('distributor_name')?.value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4).padEnd(4, 'X');
-            const d = document.getElementById('date')?.value || '';
-            const el = document.getElementById('invoice_preview');
-            if (!el) return;
-            if (!d) {
-                el.textContent = '';
-                return;
+    @push('scripts')
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+            function calculateTotal() {
+                const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
+                const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
+                const total = qty * price;
+                const el = document.getElementById('total_amount');
+                if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
-            el.textContent = document.getElementById('name')?.value?.trim()
-                ? ''
-                : ('Suggested if invoice left empty: ' + dist + '-' + d);
-        }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            calculateTotal();
-            invoicePreviewText();
-            ['distributor_name', 'date', 'name'].forEach(function(id) {
-                document.getElementById(id)?.addEventListener('input', invoicePreviewText);
-                document.getElementById(id)?.addEventListener('change', invoicePreviewText);
+            function slugifyDistributorName(s) {
+                if (!s || !String(s).trim()) return 'UNKNOWN';
+                s = String(s).trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+                return s || 'UNKNOWN';
+            }
+
+            function invoicePreviewText() {
+                const slug = slugifyDistributorName(document.getElementById('distributor_name')?.value || '');
+                const d = document.getElementById('date')?.value || '';
+                const el = document.getElementById('invoice_preview');
+                if (!el) return;
+                if (!d) {
+                    el.textContent = '';
+                    return;
+                }
+                const now = new Date();
+                const h = String(now.getHours()).padStart(2, '0');
+                const min = String(now.getMinutes()).padStart(2, '0');
+                const timePart = h + '-' + min;
+                el.textContent = document.getElementById('name')?.value?.trim()
+                    ? ''
+                    : ('Suggested if invoice left empty: ' + slug + '-' + d + '-' + timePart);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                calculateTotal();
+                invoicePreviewText();
+                ['distributor_name', 'date', 'name'].forEach(function(id) {
+                    document.getElementById(id)?.addEventListener('input', invoicePreviewText);
+                    document.getElementById(id)?.addEventListener('change', invoicePreviewText);
+                });
+
+                @if(!$fromStock)
+                if (window.jQuery && jQuery.fn.select2) {
+                    var $sel = jQuery('#product_id');
+                    $sel.select2({
+                        placeholder: 'Search category-model…',
+                        width: '100%',
+                        allowClear: false
+                    });
+                    var oldPid = @json(old('product_id'));
+                    if (oldPid) {
+                        $sel.val(String(oldPid)).trigger('change');
+                    }
+                }
+                @endif
             });
-        });
-    </script>
+        </script>
+    @endpush
 </x-admin-layout>

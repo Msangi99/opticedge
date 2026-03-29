@@ -30,10 +30,11 @@
                     @csrf
                     <div class="space-y-4">
                         <div>
-                            <label for="imei_numbers" class="block text-sm font-medium text-slate-700 mb-1">IMEI numbers (one per line)</label>
-                            <textarea name="imei_numbers" id="imei_numbers" rows="6" required
+                            <label for="imei_numbers" class="block text-sm font-medium text-slate-700 mb-1">IMEI / serial numbers</label>
+                            <p class="text-xs text-slate-500 mb-1">Put <strong>one code per line</strong>, or separate with <strong>spaces</strong>, <strong>commas</strong>, or <strong>semicolons</strong>. Long runs of digits-only text are split every 15 digits (IMEI length) when needed.</p>
+                            <textarea name="imei_numbers" id="imei_numbers" rows="8" required
                                 class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm"
-                                placeholder="Paste or type IMEIs, one per line&#10;Or use “Read codes from photos” above">{{ old('imei_numbers') }}</textarea>
+                                placeholder="Example:&#10;352123456789012&#10;352123456789013&#10;Or: 352123456789012, 352123456789013&#10;Or from photos: use “Read codes from photos” above">{{ old('imei_numbers') }}</textarea>
                             @error('imei_numbers') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
                         <div>

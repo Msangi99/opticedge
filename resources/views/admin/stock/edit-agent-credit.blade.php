@@ -100,7 +100,7 @@
                             <textarea name="installment_notes" id="installment_notes" rows="2" class="w-full rounded-md border-slate-300 shadow-sm">{{ old('installment_notes', $credit->installment_notes) }}</textarea>
                         </div>
 
-                        <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                        <div id="repayment" class="col-span-2 border-t border-slate-100 pt-4 mt-2 scroll-mt-24">
                             <h3 class="text-lg font-medium text-slate-900 mb-4">Repayment</h3>
                         </div>
                         <div>

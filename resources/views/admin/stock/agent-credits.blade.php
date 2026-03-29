@@ -10,6 +10,9 @@
         @if(session('success'))
             <p class="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">{{ session('success') }}</p>
         @endif
+        @if($errors->any())
+            <p class="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ $errors->first() }}</p>
+        @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mt-8">
             <dl class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -52,7 +55,7 @@
         </div>
 
         <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200 overflow-x-auto">
-            <table class="w-full text-left min-w-[900px]">
+            <table class="w-full text-left min-w-[960px]">
                 <thead>
                     <tr class="border-b border-slate-100 text-xs uppercase text-slate-500">
                         <th class="px-6 py-3 bg-gray-100">Date</th>
@@ -61,7 +64,7 @@
                         <th class="px-6 py-3 bg-gray-100">Product</th>
                         <th class="px-6 py-3 bg-gray-100">IMEI</th>
                         <th class="px-6 py-3 bg-gray-100">Total</th>
-                        <th class="px-6 py-3 bg-gray-100">Paid</th>
+                        <th class="px-6 py-3 bg-gray-100 min-w-[200px]">Channel</th>
                         <th class="px-6 py-3 bg-gray-100">Pending</th>
                         <th class="px-6 py-3 bg-gray-100">Status</th>
                         <th class="px-6 py-3 bg-gray-100">Action</th>
@@ -71,8 +74,7 @@
                     @forelse($credits as $credit)
                         @php
                             $t = (float) $credit->total_amount;
-                            $p = (float) ($credit->paid_amount ?? 0);
-                            $pend = max(0, $t - $p);
+                            $pend = max(0, $t - (float) ($credit->paid_amount ?? 0));
                         @endphp
                         <tr class="hover:bg-slate-50">
                             <td class="px-6 py-3">{{ $credit->date instanceof \Carbon\Carbon ? $credit->date->format('Y-m-d') : $credit->date }}</td>
@@ -81,7 +83,29 @@
                             <td class="px-6 py-3">{{ $credit->product ? (($credit->product->category?->name ?? '—') . ' – ' . $credit->product->name) : 'N/A' }}</td>
                             <td class="px-6 py-3 font-mono text-xs">{{ $credit->productListItem?->imei_number ?? '—' }}</td>
                             <td class="px-6 py-3">{{ number_format($t, 2) }}</td>
-                            <td class="px-6 py-3">{{ number_format($p, 2) }}</td>
+                            <td class="px-6 py-3 align-middle">
+                                @if($paymentOptions->isEmpty())
+                                    <span class="text-slate-500">{{ $credit->paymentOption?->name ?? '—' }}</span>
+                                @else
+                                    <form method="POST" action="{{ route('admin.stock.agent-credit-payment-channel', $credit->id) }}" class="inline-block min-w-[180px]">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select
+                                            name="payment_option_id"
+                                            class="w-full max-w-[220px] rounded-md border-slate-300 text-sm shadow-sm focus:border-[#fa8900] focus:ring-[#fa8900]"
+                                            onchange="this.form.submit()"
+                                            title="Bank / payment channel"
+                                        >
+                                            <option value="">— None —</option>
+                                            @foreach($paymentOptions as $option)
+                                                <option value="{{ $option->id }}" @selected((int) ($credit->payment_option_id ?? 0) === (int) $option->id)>
+                                                    {{ $option->name }} ({{ number_format((float) $option->balance, 2) }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                @endif
+                            </td>
                             <td class="px-6 py-3 font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
                             <td class="px-6 py-3">
                                 <span class="px-2 py-1 rounded text-xs font-bold uppercase
@@ -90,8 +114,10 @@
                                     {{ $credit->payment_status }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3">
-                                <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="text-[#fa8900] hover:underline font-medium">Edit / Pay</a>
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="text-slate-700 hover:text-slate-900 font-medium hover:underline">Edit</a>
+                                <span class="mx-2 text-slate-300">·</span>
+                                <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}#repayment" class="text-[#fa8900] hover:underline font-medium">Pay</a>
                             </td>
                         </tr>
                     @empty

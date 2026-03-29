@@ -57,6 +57,107 @@ class AgentCreditController extends Controller
         return view('admin.stock.edit-agent-credit', compact('credit', 'paymentOptions'));
     }
 
+    /**
+     * Update only the payment channel from the agent credits list (balances adjusted like full update).
+     */
+    public function updatePaymentChannel(Request $request, int $id)
+    {
+        $credit = AgentCredit::findOrFail($id);
+
+        $rules = [
+            'payment_option_id' => Schema::hasTable('payment_options')
+                ? 'nullable|exists:payment_options,id'
+                : 'nullable',
+        ];
+        $validated = $request->validate($rules);
+
+        $totalAmount = (float) $credit->total_amount;
+        $oldPaidAmount = (float) ($credit->paid_amount ?? 0);
+        $eps = 0.0001;
+
+        $newPaidAmount = min($totalAmount, $oldPaidAmount);
+        $paymentDifference = 0.0;
+
+        $paymentStatus = $newPaidAmount >= $totalAmount - $eps ? 'paid' : ($newPaidAmount > $eps ? 'partial' : 'pending');
+
+        $oldPaymentOption = $credit->payment_option_id;
+        $newPaymentOptionId = $validated['payment_option_id'] ?? null;
+        if ($newPaymentOptionId === '' || $newPaymentOptionId === false) {
+            $newPaymentOptionId = null;
+        } else {
+            $newPaymentOptionId = (int) $newPaymentOptionId;
+        }
+
+        $oldOptId = $oldPaymentOption !== null ? (int) $oldPaymentOption : null;
+        $newOptId = $newPaymentOptionId;
+
+        if ($newOptId === null && $oldOptId !== null && $oldPaidAmount > $eps) {
+            $oldOption = PaymentOption::find($oldOptId);
+            if ($oldOption) {
+                $oldOption->increment('balance', $oldPaidAmount);
+            }
+        } elseif ($oldOptId !== null && $newOptId !== null && $oldOptId !== $newOptId) {
+            if ($oldPaidAmount > $eps) {
+                $oldOption = PaymentOption::find($oldOptId);
+                if ($oldOption) {
+                    $oldOption->increment('balance', $oldPaidAmount);
+                }
+            }
+            if ($newPaidAmount > $eps) {
+                $paymentOption = PaymentOption::find($newOptId);
+                if ($paymentOption) {
+                    if ($paymentOption->balance + $eps >= $newPaidAmount) {
+                        $paymentOption->decrement('balance', $newPaidAmount);
+                    } else {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
+                    }
+                }
+            }
+        } elseif ($newOptId !== null) {
+            $paymentOption = PaymentOption::find($newOptId);
+            if ($paymentOption) {
+                $deltaToApply = $paymentDifference;
+                if ($oldOptId === null && $paymentDifference <= $eps && $oldPaidAmount > $eps) {
+                    $deltaToApply = $oldPaidAmount;
+                }
+                if ($deltaToApply > $eps) {
+                    if ($paymentOption->balance + $eps >= $deltaToApply) {
+                        $paymentOption->decrement('balance', $deltaToApply);
+                    } else {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel for this credit.']);
+                    }
+                } elseif ($deltaToApply < -$eps) {
+                    $paymentOption->increment('balance', abs($deltaToApply));
+                }
+            }
+        }
+
+        $updateData = [
+            'paid_amount' => $newPaidAmount,
+            'payment_status' => $paymentStatus,
+            'paid_date' => $credit->paid_date,
+        ];
+
+        try {
+            $columns = Schema::getColumnListing('agent_credits');
+            if (in_array('payment_option_id', $columns)) {
+                $updateData['payment_option_id'] = $newOptId;
+            }
+        } catch (\Exception $e) {
+            Log::warning('agent_credits payment_option_id: ' . $e->getMessage());
+        }
+
+        $credit->update($updateData);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Payment channel updated.');
+    }
+
     public function update(Request $request, int $id)
     {
         $credit = AgentCredit::findOrFail($id);

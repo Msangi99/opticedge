@@ -233,29 +233,26 @@
                     <div class="space-y-1">
 
                         <!-- Products -->
-                        <div x-data="{ open: true }">
-                            <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
-                                <div class="flex items-center gap-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                        class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                    Products
-                                </div>
-                                <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ 'rotate-180': open }"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="open" x-cloak class="pl-10 space-y-1 mt-1 border-l-2 border-slate-100 ml-4">
-                                <a href="{{ route('admin.categories.index') }}"
-                                    class="block px-2 py-1.5 text-sm text-slate-600 hover:text-slate-900">Categories</a>
-                            </div>
-                        </div>
+                        <a href="{{ route('admin.products.index') }}"
+                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                            Products
+                        </a>
+                        <a href="{{ route('admin.categories.index') }}"
+                            class="flex items-center gap-3 px-2 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 group">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-5 h-5 text-slate-400 group-hover:text-slate-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            Categories
+                        </a>
 
                         <!-- Customers -->
                         <div x-data="{ open: false }">

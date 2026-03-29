@@ -66,6 +66,10 @@
                                 @else
                                     <a href="{{ route('admin.stock.stocks.show', $stock->id) }}" class="text-[#fa8900] hover:underline">{{ $stock->name }}</a>
                                 @endif
+                                <div class="text-xs font-normal text-slate-500 mt-1">
+                                    {{ number_format($stock->imei_count ?? 0) }} device(s) with IMEI
+                                    <span class="text-slate-400">— open to expand each row for assignment / sale details</span>
+                                </div>
                             </td>
                             <td class="px-6 py-3">{{ number_format($stock->stock_quantity) }}</td>
                             <td class="px-6 py-3">{{ number_format($stock->added) }}</td>

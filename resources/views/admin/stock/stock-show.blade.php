@@ -9,7 +9,7 @@
                     Back to Stocks
                 </a>
                 <h1 class="text-2xl font-bold text-slate-900">{{ $stock->name }}</h1>
-                <p class="mt-1 text-slate-600">Devices in this stock (model and IMEI). Limit: {{ number_format($stock->stock_limit) }}.</p>
+                <p class="mt-1 text-slate-600">Devices in this stock (model and IMEI). Click a row to expand full details per IMEI (assignment, credit, sales). Limit: {{ number_format($stock->stock_limit) }}.</p>
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.stock.stock-receipts', $stock->id) }}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 text-sm font-medium flex items-center gap-2">
@@ -36,6 +36,7 @@
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase text-slate-500">
+                        <th class="px-2 py-3 w-10" aria-label="Expand"></th>
                         <th class="px-6 py-3">#</th>
                         <th class="px-6 py-3">Model</th>
                         <th class="px-6 py-3">IMEI</th>
@@ -43,14 +44,24 @@
                         <th class="px-6 py-3">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
-                    @forelse($stock->productListItems as $index => $item)
-                        <tr class="hover:bg-slate-50">
+                @forelse($stock->productListItems as $index => $item)
+                    <tbody x-data="{ open: false }" class="border-b border-slate-100 last:border-0">
+                        <tr
+                            class="hover:bg-slate-50 cursor-pointer"
+                            @click="open = !open"
+                            role="button"
+                            tabindex="0"
+                            @keydown.enter.prevent="open = !open"
+                            @keydown.space.prevent="open = !open"
+                        >
+                            <td class="px-2 py-3 text-slate-400 select-none w-10" title="Click row for full IMEI details">
+                                <span x-text="open ? '▼' : '▶'" class="inline-block w-5 text-center text-xs"></span>
+                            </td>
                             <td class="px-6 py-3 text-slate-400">{{ $index + 1 }}</td>
                             <td class="px-6 py-3 font-medium">{{ $item->model ?? '–' }}</td>
                             <td class="px-6 py-3 font-mono">{{ $item->imei_number ?? '–' }}</td>
                             <td class="px-6 py-3">
-                                {{ $item->product->name ?? '–' }}
+                                {{ $item->product?->name ?? '–' }}
                                 @if($item->category)
                                     <span class="text-slate-400"> / {{ $item->category->name }}</span>
                                 @endif
@@ -63,12 +74,19 @@
                                 @endif
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No devices in this stock yet. Add products from the admin app.</td>
+                        <tr x-show="open" x-cloak class="!border-b border-slate-200">
+                            <td colspan="6" class="p-0">
+                                @include('admin.stock.partials.imei-full-info', ['item' => $item])
+                            </td>
                         </tr>
-                    @endforelse
-                </tbody>
+                    </tbody>
+                @empty
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-500">No devices in this stock yet. Add products from the admin app.</td>
+                        </tr>
+                    </tbody>
+                @endforelse
             </table>
         </div>
     </div>

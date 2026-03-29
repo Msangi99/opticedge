@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\Stock;
 use App\Services\BarcodeImageDecoder;
+use App\Support\ImeiListParser;
 use App\Support\PurchaseInvoiceNumber;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -48,13 +49,16 @@ class StockController extends Controller
                 
                 $stockQuantity = (int) ($stock->stock_limit ?? 0);
                 $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
-                
+
+                $imeiCount = (int) ProductListItem::where('stock_id', $stock->id)->count();
+
                 return (object) [
                     'id' => $stock->id,
                     'name' => $stock->name ?? 'Unnamed Stock',
                     'stock_quantity' => $stockQuantity,
                     'added' => (int) $added,
                     'status' => $status,
+                    'imei_count' => $imeiCount,
                 ];
             });
             
@@ -76,6 +80,7 @@ class StockController extends Controller
                             'stock_quantity' => $limit,
                             'added' => $added,
                             'status' => $status,
+                            'imei_count' => $added,
                         ];
                     });
                 }
@@ -107,7 +112,16 @@ class StockController extends Controller
     {
         $purchase = Purchase::findOrFail($id);
         $items = $purchase->productListItems()
-            ->with('category:id,name')
+            ->with([
+                'category:id,name',
+                'product:id,name,category_id',
+                'stock:id,name',
+                'agentProductListAssignment.agent:id,name,email',
+                'agentCredit.agent:id,name,email',
+                'agentCredit.paymentOption:id,name',
+                'pendingSale',
+                'agentSale.agent:id,name,email',
+            ])
             ->orderBy('model')
             ->orderBy('imei_number')
             ->get();
@@ -124,7 +138,17 @@ class StockController extends Controller
     public function showStock(Stock $stock)
     {
         $stock->load(['productListItems' => function ($q) {
-            $q->with(['category', 'product'])->orderBy('model')->orderBy('imei_number');
+            $q->with([
+                'category',
+                'product',
+                'purchase',
+                'stock:id,name',
+                'agentProductListAssignment.agent:id,name,email',
+                'agentCredit.agent:id,name,email',
+                'agentCredit.paymentOption:id,name',
+                'pendingSale',
+                'agentSale.agent:id,name,email',
+            ])->orderBy('model')->orderBy('imei_number');
         }]);
 
         $available = $stock->productListItems->whereNull('sold_at')->count();
@@ -425,23 +449,22 @@ class StockController extends Controller
             'stock_id' => 'required|exists:stocks,id',
             'model' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'imei_numbers' => 'required|string',
+            'imei_numbers' => 'required|string|max:65535',
         ]);
 
-        $raw = preg_split('/[\r\n,;\t]+/', $validated['imei_numbers'], -1, PREG_SPLIT_NO_EMPTY);
-        $imeis = [];
-        foreach ($raw as $line) {
-            $t = trim($line);
-            if ($t !== '') {
-                $imeis[] = $t;
-            }
-        }
-        $imeis = array_values(array_unique($imeis));
+        $imeis = ImeiListParser::parse($validated['imei_numbers']);
 
         if ($imeis === []) {
             return redirect()->route('admin.stock.add-product')
                 ->withInput()
-                ->withErrors(['imei_numbers' => 'Enter at least one IMEI.']);
+                ->withErrors(['imei_numbers' => 'Enter at least one IMEI. Use one per line, or separate with spaces, commas, or semicolons.']);
+        }
+
+        $lenErrors = ImeiListParser::lengthErrors($imeis);
+        if ($lenErrors !== []) {
+            return redirect()->route('admin.stock.add-product')
+                ->withInput()
+                ->withErrors(['imei_numbers' => implode(' ', $lenErrors)]);
         }
 
         $stock = Stock::findOrFail($validated['stock_id']);
@@ -518,20 +541,27 @@ class StockController extends Controller
             }
         });
 
-        $msg = $created > 0
-            ? 'Added '.$created.' product(s).'
-            : 'No products added.';
-        if ($failed !== []) {
-            $msg .= ' Skipped: '.implode('; ', array_slice($failed, 0, 10)).(count($failed) > 10 ? '…' : '');
+        if ($created > 0) {
+            $msg = 'Added '.$created.' device(s) ('.count($imeis).' IMEI(s) parsed).';
+            if ($failed !== []) {
+                $msg .= ' Skipped: '.implode('; ', array_slice($failed, 0, 10)).(count($failed) > 10 ? '…' : '');
+            }
+
+            return redirect()->route('admin.stock.add-product')->with('success', $msg);
         }
 
-        return redirect()->route('admin.stock.add-product')
-            ->with($created > 0 ? 'success' : 'error', $msg);
+        $msg = 'No devices added. ';
+        if ($failed !== []) {
+            $msg .= 'Reasons: '.implode('; ', array_slice($failed, 0, 15)).(count($failed) > 15 ? '…' : '');
+        } else {
+            $msg .= 'Check IMEI list and purchase limit.';
+        }
+
+        return redirect()->route('admin.stock.add-product')->with('error', $msg);
     }
 
     public function createPurchase(Request $request)
     {
-        $categories = \App\Models\Category::orderBy('name')->get();
         $distributors = Purchase::select('distributor_name')
             ->whereNotNull('distributor_name')
             ->distinct()
@@ -597,11 +627,27 @@ class StockController extends Controller
 
         $branches = Branch::orderBy('name')->get();
 
-        return view('admin.stock.create-purchase', compact('categories', 'distributors', 'fromStock', 'purchaseImages', 'branches'));
+        $productsForSelect = Product::with('category')
+            ->get()
+            ->sortBy(fn (Product $p) => ($p->category?->name ?? '') . $p->name)
+            ->values();
+
+        return view('admin.stock.create-purchase', compact('distributors', 'fromStock', 'purchaseImages', 'branches', 'productsForSelect'));
     }
 
     public function storePurchase(Request $request)
     {
+        if (! $request->filled('stock_id')) {
+            $request->validate([
+                'product_id' => 'required|exists:products,id',
+            ]);
+            $selectedProduct = Product::findOrFail($request->product_id);
+            $request->merge([
+                'category_id' => $selectedProduct->category_id,
+                'model' => $selectedProduct->name,
+            ]);
+        }
+
         $validated = $request->validate([
             'stock_id' => 'nullable|exists:stocks,id',
             'branch_id' => 'nullable|exists:branches,id',
@@ -642,22 +688,25 @@ class StockController extends Controller
             $validated['name'] = $nameInput;
         }
 
-        // Find or create the product based on category and model name
-        // Use sell_price if available, otherwise use unit_price for initial product creation
+        // Product: from explicit selection, or find/create when adding from stock
         $productPrice = $validated['sell_price'] ?? $validated['unit_price'];
-        $product = \App\Models\Product::firstOrCreate(
-            [
-                'category_id' => $validated['category_id'],
-                'name' => $validated['model']
-            ],
-            [
-                'price' => $productPrice,
-                'stock_quantity' => 0,
-                'rating' => 5.0,
-                'description' => 'Auto-created from purchase',
-                'images' => [],
-            ]
-        );
+        if ($request->filled('stock_id')) {
+            $product = Product::firstOrCreate(
+                [
+                    'category_id' => $validated['category_id'],
+                    'name' => $validated['model'],
+                ],
+                [
+                    'price' => $productPrice,
+                    'stock_quantity' => 0,
+                    'rating' => 5.0,
+                    'description' => 'Auto-created from purchase',
+                    'images' => [],
+                ]
+            );
+        } else {
+            $product = Product::findOrFail($request->product_id);
+        }
         
         // Note: Product price will be updated after purchase creation to use latest sell_price
 

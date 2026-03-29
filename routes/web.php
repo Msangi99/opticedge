@@ -89,6 +89,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('agents', [App\Http\Controllers\Admin\AgentController::class, 'store'])->name('agents.store');
         Route::get('agents/assign-products', [App\Http\Controllers\Admin\AgentController::class, 'assignProductsForm'])->name('agents.assign-products');
         Route::post('agents/assign-products', [App\Http\Controllers\Admin\AgentController::class, 'storeAssignment'])->name('agents.store-assignment');
+        Route::get('agents/assignable-imeis', [App\Http\Controllers\Admin\AgentController::class, 'assignableImeis'])->name('agents.assignable-imeis');
         Route::get('agents/{agent}', [App\Http\Controllers\Admin\AgentController::class, 'show'])->name('agents.show');
 
         // Orders
@@ -164,6 +165,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
             Route::get('agent-credits', [App\Http\Controllers\Admin\AgentCreditController::class, 'index'])->name('agent-credits');
             Route::get('agent-credits/{id}/edit', [App\Http\Controllers\Admin\AgentCreditController::class, 'edit'])->name('edit-agent-credit');
+            Route::patch('agent-credits/{id}/payment-channel', [App\Http\Controllers\Admin\AgentCreditController::class, 'updatePaymentChannel'])->name('agent-credit-payment-channel');
             Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
 
             Route::get('shop-records', [App\Http\Controllers\Admin\StockController::class , 'shopRecords'])->name('shop-records');

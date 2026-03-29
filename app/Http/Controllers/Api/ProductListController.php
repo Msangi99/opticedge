@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AgentAssignment;
+use App\Models\AgentProductListAssignment;
 use App\Models\ProductListItem;
 use App\Models\Product;
 use App\Models\AgentCredit;
@@ -11,6 +13,7 @@ use App\Models\PendingSale;
 use App\Models\PaymentOption;
 use App\Models\Purchase;
 use App\Services\DistributionSaleService;
+use App\Support\ImeiListParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +31,7 @@ class ProductListController extends Controller
             'stock_id' => 'nullable|exists:stocks,id',
             'category_id' => 'nullable|exists:categories,id',
             'model' => 'nullable|string|max:255',
-            'imei_number' => 'required|string|max:255|unique:product_list,imei_number',
+            'imei_number' => 'required|string|max:512|unique:product_list,imei_number',
         ]);
 
         $purchase = null;
@@ -131,7 +134,7 @@ class ProductListController extends Controller
         $validated = $request->validate([
             'purchase_id' => 'required|exists:purchases,id',
             'imei_numbers' => 'required|array|min:1',
-            'imei_numbers.*' => 'required|string|max:255',
+            'imei_numbers.*' => 'required|string|max:65535',
         ]);
 
         $purchase = Purchase::with('product')->findOrFail($validated['purchase_id']);
@@ -146,8 +149,24 @@ class ProductListController extends Controller
             ], 422);
         }
 
-        $raw = array_map('trim', $validated['imei_numbers']);
-        $imeis = array_values(array_unique(array_filter($raw, fn ($s) => $s !== '')));
+        $imeis = [];
+        foreach ($validated['imei_numbers'] as $entry) {
+            $imeis = array_merge($imeis, ImeiListParser::parse((string) $entry));
+        }
+        $imeis = array_values(array_unique($imeis));
+
+        if ($imeis === []) {
+            return response()->json([
+                'message' => 'No IMEIs after parsing. Use one code per line or separate with spaces, commas, or semicolons.',
+            ], 422);
+        }
+
+        $lenErrors = ImeiListParser::lengthErrors($imeis);
+        if ($lenErrors !== []) {
+            return response()->json([
+                'message' => implode(' ', $lenErrors),
+            ], 422);
+        }
 
         if (count($imeis) > $purchase->limit_remaining) {
             return response()->json([
@@ -222,10 +241,13 @@ class ProductListController extends Controller
         $status = count($created) > 0 ? 201 : 422;
 
         return response()->json([
-            'message' => count($created) > 0 ? 'Batch add completed.' : 'No items added.',
+            'message' => count($created) > 0
+                ? 'Batch add completed.'
+                : 'No items added (all duplicates, limit reached, or nothing valid after splitting IMEIs).',
             'data' => [
                 'created' => $created,
                 'failed' => $failed,
+                'parsed_count' => count($imeis),
             ],
         ], $status);
     }
@@ -236,7 +258,11 @@ class ProductListController extends Controller
      */
     public function available()
     {
+        $agentId = Auth::id();
+        $assignedIds = AgentProductListAssignment::where('agent_id', $agentId)->pluck('product_list_id');
+
         $items = ProductListItem::with(['category', 'product', 'stock', 'purchase'])
+            ->whereIn('id', $assignedIds)
             ->whereNull('sold_at')
             ->orderBy('model')
             ->orderBy('imei_number')
@@ -299,6 +325,8 @@ class ProductListController extends Controller
      */
     public function showByImei(string $imei)
     {
+        $agentId = Auth::id();
+
         $item = ProductListItem::with(['category', 'product', 'stock', 'purchase'])
             ->where('imei_number', $imei)
             ->whereNull('sold_at')
@@ -307,6 +335,12 @@ class ProductListController extends Controller
         if (!$item) {
             return response()->json([
                 'message' => 'This device is not in stock or has already been sold. Only devices that are purchased and still in stock can be sold.',
+            ], 404);
+        }
+
+        if (! AgentProductListAssignment::where('agent_id', $agentId)->where('product_list_id', $item->id)->exists()) {
+            return response()->json([
+                'message' => 'This device is not assigned to you. Only devices assigned by admin can be sold.',
             ], 404);
         }
 
@@ -388,6 +422,14 @@ class ProductListController extends Controller
             ], 422);
         }
 
+        $agent = Auth::user();
+
+        if (! AgentProductListAssignment::where('agent_id', $agent->id)->where('product_list_id', $item->id)->exists()) {
+            return response()->json([
+                'message' => 'This device is not assigned to you. Only devices assigned by admin can be sold.',
+            ], 403);
+        }
+
         $product = $item->product;
         if (!$product) {
             $product = Product::firstOrCreate(
@@ -411,8 +453,6 @@ class ProductListController extends Controller
         $totalBuy = $buyPrice * 1;
         $profit = $totalSell - $totalBuy;
 
-        $agent = Auth::user();
-
         $sale = DB::transaction(function () use ($item, $product, $validated, $buyPrice, $totalSell, $totalBuy, $profit, $agent) {
             // Save to pending sales instead of agent_sales
             $sale = PendingSale::create([
@@ -434,6 +474,11 @@ class ProductListController extends Controller
             ]);
 
             $product->decrement('stock_quantity'); // keep product.stock_quantity in sync if used elsewhere
+
+            AgentProductListAssignment::where('product_list_id', $item->id)->delete();
+            AgentAssignment::where('agent_id', $agent->id)
+                ->where('product_id', $product->id)
+                ->increment('quantity_sold');
 
             return $sale;
         });
@@ -484,6 +529,14 @@ class ProductListController extends Controller
             ], 422);
         }
 
+        $agent = Auth::user();
+
+        if (! AgentProductListAssignment::where('agent_id', $agent->id)->where('product_list_id', $item->id)->exists()) {
+            return response()->json([
+                'message' => 'This device is not assigned to you. Only devices assigned by admin can be sold.',
+            ], 403);
+        }
+
         $product = $item->product;
         if (!$product) {
             $product = Product::firstOrCreate(
@@ -528,8 +581,6 @@ class ProductListController extends Controller
         }
 
         $paymentStatus = $down >= $totalCredit - $eps ? 'paid' : ($down > $eps ? 'partial' : 'pending');
-
-        $agent = Auth::user();
 
         $notes = $validated['description'] ?? $validated['installment_notes'] ?? null;
 
@@ -584,6 +635,11 @@ class ProductListController extends Controller
             ]);
 
             $product->decrement('stock_quantity');
+
+            AgentProductListAssignment::where('product_list_id', $item->id)->delete();
+            AgentAssignment::where('agent_id', $agent->id)
+                ->where('product_id', $product->id)
+                ->increment('quantity_sold');
 
             return $credit;
         });

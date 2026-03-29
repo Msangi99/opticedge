@@ -60,6 +60,58 @@ class ProductListItem extends Model
         return $this->belongsTo(AgentCredit::class, 'agent_credit_id');
     }
 
+    public function agentProductListAssignment()
+    {
+        return $this->hasOne(AgentProductListAssignment::class, 'product_list_id');
+    }
+
+    /**
+     * Unsold IMEIs for a product that are paid-for and not yet assigned to any agent.
+     */
+    public function scopeAssignableToAgent($query, int $productId)
+    {
+        return $query
+            ->where('product_id', $productId)
+            ->whereNull('sold_at')
+            ->whereDoesntHave('agentProductListAssignment')
+            ->where(function ($q) {
+                $q->whereHas('purchase', fn ($p) => $p->where('payment_status', 'paid'))
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('purchase_id')
+                            ->whereExists(function ($sub) {
+                                $sub->selectRaw('1')
+                                    ->from('purchases')
+                                    ->whereColumn('purchases.stock_id', 'product_list.stock_id')
+                                    ->whereColumn('purchases.product_id', 'product_list.product_id')
+                                    ->where('purchases.payment_status', 'paid');
+                            });
+                    });
+            });
+    }
+
+    /**
+     * Whether the linked purchase (or stock+product purchase) is fully paid.
+     */
+    public function isPurchasePaid(): bool
+    {
+        if ($this->purchase_id) {
+            $this->loadMissing('purchase');
+
+            return $this->purchase && $this->purchase->payment_status === 'paid';
+        }
+
+        if ($this->stock_id && $this->product_id) {
+            $p = Purchase::where('stock_id', $this->stock_id)
+                ->where('product_id', $this->product_id)
+                ->latest('date')
+                ->first();
+
+            return $p && $p->payment_status === 'paid';
+        }
+
+        return false;
+    }
+
     public function isSold(): bool
     {
         return $this->sold_at !== null;

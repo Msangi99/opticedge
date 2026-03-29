@@ -1,16 +1,21 @@
 <x-admin-layout>
     <div class="py-12 px-8">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-slate-900">Stock Management (Samsung Phones)</h1>
+            <h1 class="text-2xl font-bold text-slate-900">Products</h1>
             <a href="{{ route('admin.products.create') }}"
                 class="px-4 py-2 bg-[#fa8900] text-white rounded-md hover:bg-orange-600 transition-colors shadow-sm font-medium">
-                Add Stock
+                Add product
             </a>
         </div>
 
         @if(session('success'))
             <div class="mb-4 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md">
                 {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-md">
+                {{ session('error') }}
             </div>
         @endif
 
@@ -21,8 +26,7 @@
                         <th class="px-6 py-3">Image</th>
                         <th class="px-6 py-3">Name</th>
                         <th class="px-6 py-3">Brand</th>
-                        <th class="px-6 py-3">Price</th>
-                        <th class="px-6 py-3">Stock Quantity</th>
+                        <th class="px-6 py-3 min-w-[12rem] max-w-md">Description</th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
@@ -46,29 +50,29 @@
                             </td>
                             <td class="px-6 py-3 font-medium text-slate-900">{{ $product->name }}</td>
                             <td class="px-6 py-3">{{ $product->brand }}</td>
-                            <td class="px-6 py-3">${{ number_format($product->price, 2) }}</td>
-                            <td class="px-6 py-3">
-                                @php
-                                    $stockClass = 'bg-red-100 text-red-700';
-                                    if ($product->stock_quantity > 20) {
-                                        $stockClass = 'bg-green-100 text-green-700';
-                                    } elseif ($product->stock_quantity > 5) {
-                                        $stockClass = 'bg-orange-100 text-orange-700';
-                                    }
-                                @endphp
-                                <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $stockClass }}">
-                                    {{ $product->stock_quantity }}
-                                </span>
+                            <td class="px-6 py-3 max-w-md text-slate-600">
+                                @if(filled($product->description))
+                                    @php($descPlain = strip_tags($product->description))
+                                    <p class="line-clamp-3 text-sm" title="{{ e(\Illuminate\Support\Str::limit($descPlain, 500)) }}">{{ \Illuminate\Support\Str::limit($descPlain, 280) }}</p>
+                                @else
+                                    <span class="text-slate-400">—</span>
+                                @endif
                             </td>
-                            <td class="px-6 py-3 text-right">
+                            <td class="px-6 py-3 text-right flex justify-end items-center gap-4">
                                 <a href="{{ route('admin.products.edit', $product->id) }}"
                                     class="text-brand-orange hover:text-orange-700 font-medium">Edit</a>
+                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline"
+                                    onsubmit="return confirm('Delete this product? This cannot be undone.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 font-medium">Delete</button>
+                                </form>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="5" class="px-6 py-8 text-center text-slate-400">
-                                No stock items found.
+                                No products found.
                             </td>
                         </tr>
                     @endforelse

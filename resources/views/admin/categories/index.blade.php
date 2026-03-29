@@ -18,7 +18,6 @@
             <table class="w-full text-left text-sm text-slate-600">
                 <thead class="bg-slate-50 border-b border-slate-200 font-medium text-slate-900">
                     <tr>
-                        <th class="px-6 py-3 w-12"></th>
                         <th class="px-6 py-3 w-20">Image</th>
                         <th class="px-6 py-3">ID</th>
                         <th class="px-6 py-3">Name</th>
@@ -29,16 +28,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($categories as $category)
-                        <tr class="hover:bg-slate-50 transition-colors" x-data="{ open: false }">
-                            <td class="px-6 py-3 w-12">
-                                @if($category->products->isNotEmpty())
-                                    <button type="button" @click="open = !open" class="p-1 rounded hover:bg-slate-200 text-slate-600">
-                                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                        </svg>
-                                    </button>
-                                @endif
-                            </td>
+                        <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-3">
                                 @if($category->image)
                                     <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}"
@@ -56,7 +46,19 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3 text-slate-500 font-mono">{{ $category->id }}</td>
-                            <td class="px-6 py-3 font-medium text-slate-900">{{ $category->name }}</td>
+                            <td class="px-6 py-3">
+                                <div class="font-medium text-slate-900">{{ $category->name }}</div>
+                                @if($category->products->isNotEmpty())
+                                    <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-normal">
+                                        @foreach($category->products as $product)
+                                            <span class="inline-flex items-center gap-1">
+                                                <a href="{{ route('admin.products.imei', $product) }}" class="text-[#fa8900] hover:underline font-medium">{{ $product->name }}</a>
+                                                <span class="text-slate-500">({{ number_format($product->stock_quantity ?? 0) }})</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
                             <td class="px-6 py-3">
                                 <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
                                     {{ $category->products_count }}
@@ -79,36 +81,9 @@
                                 </form>
                             </td>
                         </tr>
-                        @if($category->products->isNotEmpty())
-                            <tr x-show="open" x-cloak class="bg-slate-50/80">
-                                <td colspan="7" class="px-6 py-3">
-                                    <div class="pl-8 border-l-2 border-slate-200 ml-2">
-                                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Model & Idadi</p>
-                                        <table class="w-full max-w-xl text-sm">
-                                            <thead>
-                                                <tr class="text-slate-500 border-b border-slate-200">
-                                                    <th class="text-left py-1">Model</th>
-                                                    <th class="text-right py-1">Idadi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-100">
-                                                @foreach($category->products as $product)
-                                                    <tr>
-                                                        <td class="py-1.5 text-slate-700">
-                                                            <a href="{{ route('admin.products.imei', $product) }}" class="text-[#fa8900] hover:underline font-medium">{{ $product->name }}</a>
-                                                        </td>
-                                                        <td class="py-1.5 text-right font-medium">{{ number_format($product->stock_quantity ?? 0) }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-slate-400">
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-400">
                                 No categories found.
                             </td>
                         </tr>

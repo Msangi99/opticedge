@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CartItem;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -17,59 +20,30 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = \App\Models\Category::all();
+        $categories = \App\Models\Category::orderBy('name')->get();
         return view('admin.products.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
-            'rating' => 'required|numeric|min:0|max:5',
             'description' => 'nullable|string',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120', // Max 5MB
-            'images' => 'nullable|array|max:5',
         ]);
-
-        // Check if upload failed due to server limits (e.g. upload_max_filesize = 2M)
-        if ($request->hasFile('images') === false && $request->header('Content-Length') > 0) {
-             $maxSize = ini_get('upload_max_filesize');
-             // Rough estimation: if content length > 2MB and no files, it's likely dropped
-             if ($request->header('Content-Length') > 2 * 1024 * 1024) { // > 2MB
-                 Log::error('Product creation failed: Image upload exceeded server limit.', [
-                     'content_length' => $request->header('Content-Length'),
-                     'max_allowed' => $maxSize,
-                     'user_id' => auth()->id()
-                 ]);
-                 return back()->withInput()->withErrors(['images' => "One or more files exceeded the server upload limit of {$maxSize}."]);
-             }
-        }
-
-        $imagePaths = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $path = $image->store('products', 'public');
-                    $imagePaths[] = $path;
-                }
-            }
-        }
 
         Product::create([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'brand' => 'Samsung', // Enforce Samsung as per requirement
-            'price' => $request->price,
-            'rating' => $request->rating,
-            'stock_quantity' => $request->stock_quantity,
-            'description' => $request->description,
-            'images' => $imagePaths,
+            'category_id' => $validated['category_id'],
+            'name' => $validated['name'],
+            'brand' => 'Samsung',
+            'price' => 0,
+            'rating' => 5.0,
+            'stock_quantity' => 0,
+            'description' => $validated['description'] ?? null,
+            'images' => [],
         ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Stock added successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Product added successfully.');
     }
     /**
      * Show product list items (IMEI numbers) for this model.
@@ -149,5 +123,36 @@ class ProductController extends Controller
         ]);
 
         return redirect()->route('admin.products.index')->with('success', 'Stock updated successfully.');
+    }
+
+    public function destroy(Product $product)
+    {
+        if ($product->purchases()->exists()) {
+            return redirect()->route('admin.products.index')->with('error', 'Cannot delete this product because it has linked purchases.');
+        }
+
+        if (OrderItem::where('product_id', $product->id)->exists()) {
+            return redirect()->route('admin.products.index')->with('error', 'Cannot delete this product because it appears in customer orders.');
+        }
+
+        if (CartItem::where('product_id', $product->id)->exists()) {
+            return redirect()->route('admin.products.index')->with('error', 'Cannot delete this product while it is in shopping carts.');
+        }
+
+        if ($product->productListItems()->exists()) {
+            return redirect()->route('admin.products.index')->with('error', 'Cannot delete this product because it has IMEI / stock list entries. Remove or reassign those first.');
+        }
+
+        if (is_array($product->images)) {
+            foreach ($product->images as $path) {
+                if (is_string($path) && $path !== '') {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        }
+
+        $product->delete();
+
+        return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 }
