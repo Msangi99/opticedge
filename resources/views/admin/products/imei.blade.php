@@ -27,13 +27,16 @@
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Category</th>
                             <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th"><span class="sr-only">Details</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($product->productListItems as $index => $item)
                             <tr>
                                 <td class="text-slate-400 font-medium">{{ $index + 1 }}</td>
-                                <td class="font-mono text-[#232f3e] font-medium">{{ $item->imei_number ?? '–' }}</td>
+                                <td class="font-mono text-[#232f3e] font-medium">
+                                    <a href="{{ route('admin.stock.imei-item', $item) }}" class="hover:underline">{{ $item->imei_number ?? '–' }}</a>
+                                </td>
                                 <td>{{ $item->category?->name ?? '–' }}</td>
                                 <td>
                                     @if($item->sold_at)
@@ -42,10 +45,13 @@
                                         <span class="admin-prod-status admin-prod-status--ok">Available</span>
                                     @endif
                                 </td>
+                                <td>
+                                    <a href="{{ route('admin.stock.imei-item', $item) }}" class="admin-prod-link text-sm font-medium">Details</a>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-slate-500 py-10">
+                                <td colspan="5" class="text-center text-slate-500 py-10">
                                     No products (IMEI) for this model yet.
                                 </td>
                             </tr>

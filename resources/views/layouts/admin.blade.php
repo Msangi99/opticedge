@@ -419,6 +419,10 @@
                     'admin.branches.*',
                     'admin.orders.*',
                 ]);
+                $navStockImei = request()->routeIs([
+                    'admin.stock.imei-search',
+                    'admin.stock.imei-item',
+                ]);
                 $navStockStocks = request()->routeIs([
                     'admin.stock.stocks',
                     'admin.stock.stocks.models',
@@ -570,6 +574,9 @@
                                 <a href="{{ route('admin.stock.stocks') }}"
                                     @if ($navStockStocks) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockStocks ? 'admin-sidebar-sublink-active' : '' }}">Stocks</a>
+                                <a href="{{ route('admin.stock.imei-search') }}"
+                                    @if ($navStockImei) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockImei ? 'admin-sidebar-sublink-active' : '' }}">IMEI search</a>
                                 <a href="{{ route('admin.branches.index') }}"
                                     @if (request()->routeIs('admin.branches.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.branches.*') ? 'admin-sidebar-sublink-active' : '' }}">Branches</a>

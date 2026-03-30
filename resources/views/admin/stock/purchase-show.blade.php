@@ -39,7 +39,9 @@
                                 <td class="text-slate-500 text-sm">{{ $index + 1 }}</td>
                                 <td class="font-medium text-[#232f3e]">{{ $item->model ?? '–' }}</td>
                                 <td>{{ $item->category?->name ?? '–' }}</td>
-                                <td class="font-mono text-sm">{{ $item->imei_number ?? '–' }}</td>
+                                <td class="font-mono text-sm" @click.stop>
+                                    <a href="{{ route('admin.stock.imei-item', $item) }}" class="text-[#232f3e] hover:underline">{{ $item->imei_number ?? '–' }}</a>
+                                </td>
                             </tr>
                             <tr x-show="open" x-cloak class="!border-b border-slate-200/80">
                                 <td colspan="5" class="p-0">

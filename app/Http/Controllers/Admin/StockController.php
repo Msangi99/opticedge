@@ -1254,4 +1254,50 @@ class StockController extends Controller
         return redirect()->route('admin.stock.purchases')
             ->with('success', "Updated {$updatedCount} product(s) to use sell_price from their latest purchase.");
     }
+
+    /**
+     * Search product_list by IMEI / serial (partial match). Detail: admin.stock.imei-item.
+     */
+    public function imeiSearch(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $normalized = $q === '' ? '' : preg_replace('/\s+/', '', $q);
+
+        $results = collect();
+        if ($normalized !== '' && strlen($normalized) >= 3) {
+            $like = '%'.addcslashes($normalized, '%_\\').'%';
+            $results = ProductListItem::query()
+                ->with(['stock:id,name', 'category:id,name', 'product:id,name'])
+                ->where('imei_number', 'like', $like)
+                ->orderBy('imei_number')
+                ->limit(100)
+                ->get();
+        }
+
+        return view('admin.stock.imei-search', [
+            'q' => $q,
+            'normalized' => $normalized,
+            'results' => $results,
+        ]);
+    }
+
+    /**
+     * Full admin view for one product_list row (all IMEI / sale / assignment context).
+     */
+    public function showImeiItem(ProductListItem $productListItem)
+    {
+        $item = $productListItem->load([
+            'purchase.paymentOption',
+            'stock',
+            'category',
+            'product',
+            'agentProductListAssignment.agent',
+            'agentCredit.agent',
+            'agentCredit.paymentOption',
+            'pendingSale',
+            'agentSale.agent',
+        ]);
+
+        return view('admin.stock.imei-detail', compact('item'));
+    }
 }

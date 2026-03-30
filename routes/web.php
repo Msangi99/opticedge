@@ -125,6 +125,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Stock Management
         Route::prefix('stock')->name('stock.')->group(function () {
+            Route::get('imei-search', [App\Http\Controllers\Admin\StockController::class, 'imeiSearch'])->name('imei-search');
+            Route::get('imei/{productListItem}', [App\Http\Controllers\Admin\StockController::class, 'showImeiItem'])->name('imei-item');
             Route::get('stocks', [App\Http\Controllers\Admin\StockController::class, 'stocks'])->name('stocks');
             Route::get('stocks/{stock}/models', [App\Http\Controllers\Admin\StockController::class, 'modelsForStock'])->name('stocks.models');
             Route::get('stocks/{stock}', [App\Http\Controllers\Admin\StockController::class, 'showStock'])->name('stocks.show');
