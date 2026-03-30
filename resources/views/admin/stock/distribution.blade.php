@@ -64,7 +64,7 @@
             </div>
         </div>
 
-        <div class="mt-6 admin-clay-panel overflow-x-auto">
+        <div class="mt-6 admin-clay-panel overflow-x-auto min-w-0">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
                 <table class="min-w-[1400px]">
                     <thead>

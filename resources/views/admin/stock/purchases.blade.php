@@ -96,8 +96,8 @@
             </div>
         </div>
 
-        <div class="mt-6 admin-clay-panel overflow-hidden">
-            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
+        <div class="mt-6 admin-clay-panel overflow-x-auto min-w-0">
+            <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
                 <table class="min-w-[1200px]">
                     <thead>
                         <tr>

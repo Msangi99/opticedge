@@ -168,7 +168,10 @@
 
             .admin-prod-table-wrap {
                 border-radius: 1rem;
-                overflow: hidden;
+                /* overflow-x for wide tables; do not use overflow:hidden — combined with
+                   Tailwind overflow-x-auto it left overflow-y:hidden and blocked page scroll. */
+                overflow-x: auto;
+                overflow-y: visible;
                 border: 1px solid rgba(255, 255, 255, 0.75);
                 box-shadow:
                     inset 0 1px 0 rgba(255, 255, 255, 0.9),
