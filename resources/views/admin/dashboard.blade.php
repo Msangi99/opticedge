@@ -852,7 +852,7 @@
                         <h3 class="admin-dash-section-title">Overdue Payables</h3>
                         <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
                     </div>
-                    <a href="{{ route('admin.payables') }}" class="admin-dash-link text-xs shrink-0">
+                    <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
                         View all
                     </a>
                 </div>
