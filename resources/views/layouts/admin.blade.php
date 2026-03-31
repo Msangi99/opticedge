@@ -366,6 +366,8 @@
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Orders</a>
             <a href="{{ route('admin.dealers.index') }}"
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Dealers</a>
+            <a href="{{ route('admin.vendors.index') }}"
+                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Vendors</a>
             <a href="{{ route('admin.agents.index') }}"
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Agents</a>
             <a href="{{ route('admin.stock.stocks') }}"
@@ -413,6 +415,7 @@
                     'admin.customers.*',
                     'admin.dealers.*',
                     'admin.agents.*',
+                    'admin.vendors.*',
                 ]);
                 $sidebarStockActive = request()->routeIs([
                     'admin.stock.*',
@@ -542,6 +545,9 @@
                                 <a href="{{ route('admin.agents.index') }}"
                                     @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
+                                <a href="{{ route('admin.vendors.index') }}"
+                                    @if (request()->routeIs('admin.vendors.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.vendors.*') ? 'admin-sidebar-sublink-active' : '' }}">Vendors</a>
                             </div>
                         </div>
 

@@ -50,7 +50,7 @@
                             <th scope="col" class="admin-prod-th">Model</th>
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Product / category</th>
-                            <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">In stock / sold</th>
                         </tr>
                     </thead>
                     @forelse($stock->productListItems as $index => $item)

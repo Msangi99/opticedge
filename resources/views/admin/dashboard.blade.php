@@ -590,7 +590,7 @@
 
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
-        <div class="mt-8 admin-clay-panel overflow-hidden">
+        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false }">
             <div class="admin-dash-section-head">
                 <h3 class="admin-dash-section-title">Financial Summary</h3>
                 <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
@@ -612,11 +612,15 @@
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['stock_in_hand_value'], 0) }} TZS</p>
                         <p class="admin-dash-metric-hint">Total value of our stock</p>
                     </div>
-                    <div class="admin-dash-metric admin-dash-metric--violet">
+                    <button type="button"
+                        class="admin-dash-metric admin-dash-metric--violet text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fa8900]"
+                        @click="cashInHandModalOpen = true">
                         <p class="admin-dash-metric-label">Cash in Hand</p>
-                        <p class="admin-dash-metric-value">{{ number_format(isset($paymentOptions) ? $paymentOptions->sum('balance') : $financialMetrics['cash_in_hand'], 0) }} TZS</p>
+                        <p class="admin-dash-metric-value">
+                            {{ number_format(isset($paymentOptions) ? $paymentOptions->sum('balance') : $financialMetrics['cash_in_hand'], 0) }} TZS
+                        </p>
                         <p class="admin-dash-metric-hint">Total amount in all payment options</p>
-                    </div>
+                    </button>
                 </div>
                 <div class="admin-dash-divider grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="admin-dash-metric admin-dash-metric--slate">
@@ -654,82 +658,110 @@
                     </div>
                 </div>
             </div>
-        </div>
-        @endif
 
-        <!-- Cash in Hand Section -->
-        @if(isset($paymentOptions) && $paymentOptions->count() > 0)
-        <div class="mt-8 admin-clay-panel overflow-hidden">
-            <div class="admin-dash-section-head">
-                <h3 class="admin-dash-section-title">Cash in Hand</h3>
-                <p class="admin-dash-section-desc">Payment options and their current balances.</p>
-            </div>
-            <div class="admin-dash-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($paymentOptions as $option)
-                        @php
-                            $currentBalance = $option->balance ?? 0;
-                            $openingBalance = $option->opening_balance ?? 0;
-                            $difference = $currentBalance - $openingBalance;
-                            $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
-                            $isIncrease = $difference > 0;
-                            $isDecrease = $difference < 0;
-                            $cashCardClass =
-                                $option->type === 'mobile'
-                                    ? 'admin-dash-cash-card--mobile'
-                                    : ($option->type === 'bank'
-                                        ? 'admin-dash-cash-card--bank'
-                                        : 'admin-dash-cash-card--other');
-                        @endphp
-                        <div class="admin-dash-cash-card {{ $cashCardClass }}">
-                            <div class="flex items-start justify-between gap-2">
-                                <p class="text-sm font-semibold text-slate-700 leading-snug">{{ $option->name }}</p>
-                                <span class="admin-dash-pill shrink-0">{{ ucfirst($option->type) }}</span>
-                            </div>
-                            <p class="text-2xl font-bold text-[#232f3e] mt-2 tracking-tight">{{ number_format($currentBalance, 0) }}
-                                <span class="text-sm font-semibold text-slate-500">TZS</span></p>
-                            <div
-                                class="mt-3 pt-3 space-y-1.5 border-t border-white/80 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)]">
-                                <div class="flex items-center justify-between gap-2">
-                                    <p class="text-xs font-medium text-slate-500">Opening balance</p>
-                                    <p class="text-xs font-bold text-slate-800">{{ number_format($openingBalance, 0) }} TZS</p>
-                                </div>
-                                @if($difference != 0)
-                                    <div class="flex items-center gap-1 flex-wrap">
-                                        @if($isIncrease)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 shrink-0"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                            </svg>
-                                            <span class="text-xs font-semibold text-emerald-700">Imepanda
-                                                {{ number_format(abs($difference), 0) }} TZS
-                                                ({{ number_format(abs($percentageChange), 1) }}%)</span>
-                                        @elseif($isDecrease)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-red-600 shrink-0"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                                            </svg>
-                                            <span class="text-xs font-semibold text-red-700">Imeshuka
-                                                {{ number_format(abs($difference), 0) }} TZS
-                                                ({{ number_format(abs($percentageChange), 1) }}%)</span>
+            <!-- Cash in Hand Modal -->
+            @if(isset($paymentOptions) && $paymentOptions->count() > 0)
+            <div x-show="cashInHandModalOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click.self="cashInHandModalOpen = false">
+                <div
+                    class="w-full max-w-5xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                    <div class="admin-dash-section-head flex items-start justify-between">
+                        <div>
+                            <h3 class="admin-dash-section-title">Cash in Hand</h3>
+                            <p class="admin-dash-section-desc">Payment options and their current balances.</p>
+                        </div>
+                        <button type="button" class="ml-4 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                            @click="cashInHandModalOpen = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="admin-dash-body">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @foreach($paymentOptions as $option)
+                                @php
+                                    $currentBalance = $option->balance ?? 0;
+                                    $openingBalance = $option->opening_balance ?? 0;
+                                    $difference = $currentBalance - $openingBalance;
+                                    $percentageChange = $openingBalance > 0 ? (($difference / $openingBalance) * 100) : 0;
+                                    $isIncrease = $difference > 0;
+                                    $isDecrease = $difference < 0;
+                                    $cashCardClass =
+                                        $option->type === 'mobile'
+                                            ? 'admin-dash-cash-card--mobile'
+                                            : ($option->type === 'bank'
+                                                ? 'admin-dash-cash-card--bank'
+                                                : 'admin-dash-cash-card--other');
+                                @endphp
+                                <div class="admin-dash-cash-card {{ $cashCardClass }}">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <p class="text-sm font-semibold text-slate-700 leading-snug">{{ $option->name }}</p>
+                                        <span class="admin-dash-pill shrink-0">{{ ucfirst($option->type) }}</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-[#232f3e] mt-2 tracking-tight">
+                                        {{ number_format($currentBalance, 0) }}
+                                        <span class="text-sm font-semibold text-slate-500">TZS</span>
+                                    </p>
+                                    <div
+                                        class="mt-3 pt-3 space-y-1.5 border-t border-white/80 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)]">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-xs font-medium text-slate-500">Opening balance</p>
+                                            <p class="text-xs font-bold text-slate-800">{{ number_format($openingBalance, 0) }} TZS</p>
+                                        </div>
+                                        @if($difference != 0)
+                                            <div class="flex items-center gap-1 flex-wrap">
+                                                @if($isIncrease)
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="w-3.5 h-3.5 text-emerald-600 shrink-0"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                                    </svg>
+                                                    <span class="text-xs font-semibold text-emerald-700">
+                                                        Imepanda {{ number_format(abs($difference), 0) }} TZS
+                                                        ({{ number_format(abs($percentageChange), 1) }}%)
+                                                    </span>
+                                                @elseif($isDecrease)
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="w-3.5 h-3.5 text-red-600 shrink-0"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                                    </svg>
+                                                    <span class="text-xs font-semibold text-red-700">
+                                                        Imeshuka {{ number_format(abs($difference), 0) }} TZS
+                                                        ({{ number_format(abs($percentageChange), 1) }}%)
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <p class="text-xs text-slate-500">Hakuna mabadiliko</p>
                                         @endif
                                     </div>
-                                @else
-                                    <p class="text-xs text-slate-500">Hakuna mabadiliko</p>
-                                @endif
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
-                    @endforeach
-                </div>
-                <div class="admin-dash-cash-footer mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <p class="text-sm font-semibold text-slate-700">Total Cash in Hand</p>
-                    <p class="text-xl sm:text-2xl font-bold text-[#232f3e] tracking-tight">
-                        {{ number_format($paymentOptions->sum('balance'), 0) }} <span class="text-sm font-semibold text-slate-500">TZS</span>
-                    </p>
+                        <div class="admin-dash-cash-footer mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <p class="text-sm font-semibold text-slate-700">Total Cash in Hand</p>
+                            <p class="text-xl sm:text-2xl font-bold text-[#232f3e] tracking-tight">
+                                {{ number_format($paymentOptions->sum('balance'), 0) }}
+                                <span class="text-sm font-semibold text-slate-500">TZS</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
+            @endif
         </div>
         @endif
 

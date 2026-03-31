@@ -57,12 +57,14 @@
                         <!-- Distributor -->
                         <div class="col-span-1">
                             <label for="distributor_name" class="admin-prod-label">Distributor Name</label>
-                            <input list="distributors" name="distributor_name" id="distributor_name" value="{{ old('distributor_name') }}" class="admin-prod-input" placeholder="Select or type new...">
-                            <datalist id="distributors">
-                                @foreach($distributors as $distributor)
-                                    <option value="{{ $distributor }}">
+                            <select name="distributor_name" id="distributor_name" class="admin-prod-select">
+                                <option value="">{{ __('Select vendor…') }}</option>
+                                @foreach($vendors as $vendor)
+                                    <option value="{{ $vendor->name }}" {{ old('distributor_name') === $vendor->name ? 'selected' : '' }}>
+                                        {{ $vendor->name }}@if($vendor->office_name) — {{ $vendor->office_name }}@endif
+                                    </option>
                                 @endforeach
-                            </datalist>
+                            </select>
                             @error('distributor_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
@@ -411,16 +413,22 @@
 
                 @if(!$fromStock)
                 if (window.jQuery && jQuery.fn.select2) {
-                    var $sel = jQuery('#product_id');
-                    $sel.select2({
+                    var $productSel = jQuery('#product_id');
+                    $productSel.select2({
                         placeholder: 'Search category-model…',
                         width: '100%',
                         allowClear: false
                     });
                     var oldPid = @json(old('product_id'));
                     if (oldPid) {
-                        $sel.val(String(oldPid)).trigger('change');
+                        $productSel.val(String(oldPid)).trigger('change');
                     }
+                    var $vendorSel = jQuery('#distributor_name');
+                    $vendorSel.select2({
+                        placeholder: 'Select vendor…',
+                        width: '100%',
+                        allowClear: true
+                    });
                 }
                 @endif
             });

@@ -12,6 +12,7 @@ use App\Models\PaymentOption;
 use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\Stock;
+use App\Models\Vendor;
 use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PurchaseInvoiceNumber;
@@ -562,10 +563,7 @@ class StockController extends Controller
 
     public function createPurchase(Request $request)
     {
-        $distributors = Purchase::select('distributor_name')
-            ->whereNotNull('distributor_name')
-            ->distinct()
-            ->pluck('distributor_name');
+        $vendors = Vendor::orderBy('name')->get();
 
         $fromStock = null;
         if ($request->has('from_stock')) {
@@ -632,7 +630,7 @@ class StockController extends Controller
             ->sortBy(fn (Product $p) => ($p->category?->name ?? '') . $p->name)
             ->values();
 
-        return view('admin.stock.create-purchase', compact('distributors', 'fromStock', 'purchaseImages', 'branches', 'productsForSelect'));
+        return view('admin.stock.create-purchase', compact('vendors', 'fromStock', 'purchaseImages', 'branches', 'productsForSelect'));
     }
 
     public function storePurchase(Request $request)
