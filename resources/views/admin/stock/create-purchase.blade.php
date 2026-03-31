@@ -68,14 +68,6 @@
                             @error('distributor_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Invoice Number -->
-                        <div class="col-span-2">
-                            <label for="name" class="admin-prod-label">Invoice Number</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" class="admin-prod-input" placeholder="Leave empty for auto (DistributorName-YYYY-MM-DD-HH-MM)">
-                            <p id="invoice_preview" class="text-xs text-slate-500 mt-1" aria-live="polite"></p>
-                            @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                        </div>
-
                         <!-- Branch -->
                         <div class="col-span-2">
                             <label for="branch_id" class="admin-prod-label">Branch</label>
@@ -379,37 +371,8 @@
                 if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
 
-            function slugifyDistributorName(s) {
-                if (!s || !String(s).trim()) return 'UNKNOWN';
-                s = String(s).trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
-                return s || 'UNKNOWN';
-            }
-
-            function invoicePreviewText() {
-                const slug = slugifyDistributorName(document.getElementById('distributor_name')?.value || '');
-                const d = document.getElementById('date')?.value || '';
-                const el = document.getElementById('invoice_preview');
-                if (!el) return;
-                if (!d) {
-                    el.textContent = '';
-                    return;
-                }
-                const now = new Date();
-                const h = String(now.getHours()).padStart(2, '0');
-                const min = String(now.getMinutes()).padStart(2, '0');
-                const timePart = h + '-' + min;
-                el.textContent = document.getElementById('name')?.value?.trim()
-                    ? ''
-                    : ('Suggested if invoice left empty: ' + slug + '-' + d + '-' + timePart);
-            }
-
             document.addEventListener('DOMContentLoaded', function() {
                 calculateTotal();
-                invoicePreviewText();
-                ['distributor_name', 'date', 'name'].forEach(function(id) {
-                    document.getElementById(id)?.addEventListener('input', invoicePreviewText);
-                    document.getElementById(id)?.addEventListener('change', invoicePreviewText);
-                });
 
                 @if(!$fromStock)
                 if (window.jQuery && jQuery.fn.select2) {
