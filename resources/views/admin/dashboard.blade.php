@@ -779,7 +779,7 @@
                 </div>
                 <div class="admin-dash-body">
                     <div class="admin-dash-table-wrap">
-                        <table class="w-full text-left border-collapse">
+                        <table id="overdue-purchases-table" class="w-full text-left border-collapse">
                             <thead>
                                 <tr>
                                     <th class="admin-dash-th">Invoice</th>
@@ -797,7 +797,7 @@
                                         $paid = (float) ($purchase->paid_amount ?? 0);
                                         $outstanding = max(0, $total - $paid);
                                         $created = $purchase->date ? \Carbon\Carbon::parse($purchase->date) : $purchase->created_at;
-                                        $diffDays = $created ? $created->diffInDays(now()) : 0;
+                                        $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
                                         if ($diffDays < 7) {
                                             $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
                                         } elseif ($diffDays < 30) {
@@ -858,7 +858,7 @@
                 </div>
                 <div class="admin-dash-body">
                     <div class="admin-dash-table-wrap">
-                        <table class="w-full text-left border-collapse">
+                        <table id="overdue-payables-table" class="w-full text-left border-collapse">
                             <thead>
                                 <tr>
                                     <th class="admin-dash-th">Item</th>
@@ -870,7 +870,7 @@
                                 @forelse($overduePayables ?? [] as $payable)
                                     @php
                                         $created = $payable->date ? \Carbon\Carbon::parse($payable->date) : $payable->created_at;
-                                        $diffDays = $created ? $created->diffInDays(now()) : 0;
+                                        $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
                                         if ($diffDays < 7) {
                                             $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
                                         } elseif ($diffDays < 30) {
@@ -1027,8 +1027,11 @@
         </div>
     </div>
 
-    <!-- Chart.js -->
+    <!-- Chart.js + DataTables -->
+    @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.tailwindcss.min.js"></script>
     <script>
         @if(count($topProducts) > 0)
         const ctx = document.getElementById('topProductsChart');
@@ -1107,5 +1110,29 @@
             });
         }
         @endif
+
+        // Overdue tables as DataTables (simple search + paging, keep server order)
+        if (window.jQuery && jQuery.fn.DataTable) {
+            jQuery('#overdue-purchases-table').DataTable({
+                paging: true,
+                lengthChange: false,
+                pageLength: 10,
+                searching: true,
+                ordering: false,
+                info: false,
+                autoWidth: false
+            });
+
+            jQuery('#overdue-payables-table').DataTable({
+                paging: true,
+                lengthChange: false,
+                pageLength: 10,
+                searching: true,
+                ordering: false,
+                info: false,
+                autoWidth: false
+            });
+        }
     </script>
+    @endpush
 </x-admin-layout>
