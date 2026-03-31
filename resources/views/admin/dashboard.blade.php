@@ -765,6 +765,149 @@
         </div>
         @endif
 
+        <!-- Overdue Purchases & Payables -->
+        <div class="mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="admin-clay-panel overflow-hidden">
+                <div class="admin-dash-section-head flex items-center justify-between">
+                    <div>
+                        <h3 class="admin-dash-section-title">Overdue Purchases</h3>
+                        <p class="admin-dash-section-desc">Purchases not fully paid yet, oldest first.</p>
+                    </div>
+                    <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
+                        View all
+                    </a>
+                </div>
+                <div class="admin-dash-body">
+                    <div class="admin-dash-table-wrap">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="admin-dash-th">Invoice</th>
+                                    <th class="admin-dash-th">Vendor</th>
+                                    <th class="admin-dash-th">Branch</th>
+                                    <th class="admin-dash-th">Outstanding</th>
+                                    <th class="admin-dash-th">Aging</th>
+                                    <th class="admin-dash-th admin-dash-th--end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                @forelse($overduePurchases ?? [] as $purchase)
+                                    @php
+                                        $total = (float) ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price));
+                                        $paid = (float) ($purchase->paid_amount ?? 0);
+                                        $outstanding = max(0, $total - $paid);
+                                        $created = $purchase->date ? \Carbon\Carbon::parse($purchase->date) : $purchase->created_at;
+                                        $diffDays = $created ? $created->diffInDays(now()) : 0;
+                                        if ($diffDays < 7) {
+                                            $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+                                        } elseif ($diffDays < 30) {
+                                            $weeks = floor($diffDays / 7);
+                                            $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+                                        } else {
+                                            $months = floor($diffDays / 30);
+                                            $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
+                                            {{ $purchase->name ?? ('Purchase #' . $purchase->id) }}
+                                        </td>
+                                        <td class="px-4 py-2.5 text-slate-700">
+                                            {{ $purchase->distributor_name ?? '—' }}
+                                        </td>
+                                        <td class="px-4 py-2.5 text-slate-700">
+                                            {{ $purchase->branch?->name ?? '—' }}
+                                        </td>
+                                        <td class="px-4 py-2.5 font-bold text-amber-800">
+                                            {{ number_format($outstanding, 0) }} TZS
+                                        </td>
+                                        <td class="px-4 py-2.5">
+                                            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                {{ $agingLabel }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-2.5 text-right">
+                                            <a href="{{ route('admin.stock.edit-purchase', $purchase->id) }}"
+                                               class="admin-dash-link text-xs py-1.5 px-3">
+                                                Edit
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                            No overdue purchases found.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-clay-panel overflow-hidden">
+                <div class="admin-dash-section-head flex items-center justify-between">
+                    <div>
+                        <h3 class="admin-dash-section-title">Overdue Payables</h3>
+                        <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
+                    </div>
+                    <a href="{{ route('admin.payables') }}" class="admin-dash-link text-xs shrink-0">
+                        View all
+                    </a>
+                </div>
+                <div class="admin-dash-body">
+                    <div class="admin-dash-table-wrap">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr>
+                                    <th class="admin-dash-th">Item</th>
+                                    <th class="admin-dash-th">Amount</th>
+                                    <th class="admin-dash-th">Aging</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                @forelse($overduePayables ?? [] as $payable)
+                                    @php
+                                        $created = $payable->date ? \Carbon\Carbon::parse($payable->date) : $payable->created_at;
+                                        $diffDays = $created ? $created->diffInDays(now()) : 0;
+                                        if ($diffDays < 7) {
+                                            $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+                                        } elseif ($diffDays < 30) {
+                                            $weeks = floor($diffDays / 7);
+                                            $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+                                        } else {
+                                            $months = floor($diffDays / 30);
+                                            $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
+                                            {{ $payable->item_name ?? 'Payable #' . $payable->id }}
+                                        </td>
+                                        <td class="px-4 py-2.5 font-bold text-amber-800">
+                                            {{ number_format($payable->amount ?? 0, 0) }} TZS
+                                        </td>
+                                        <td class="px-4 py-2.5">
+                                            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                {{ $agingLabel }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                            No overdue payables found.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Top Selling Products Chart -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
             <div

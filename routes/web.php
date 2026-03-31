@@ -69,8 +69,35 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             
             // Get payment options with balances
             $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
+
+            // Overdue purchases: not fully paid, oldest first
+            $overduePurchases = \App\Models\Purchase::with(['product', 'branch'])
+                ->where('payment_status', '!=', 'paid')
+                ->orderBy('date', 'asc')
+                ->orderBy('id', 'asc')
+                ->limit(20)
+                ->get();
+
+            // Overdue payables: all payables ordered by date ascending
+            $overduePayables = \App\Models\Payable::orderBy('date', 'asc')
+                ->orderBy('id', 'asc')
+                ->limit(20)
+                ->get();
             
-            return view('admin.dashboard', compact('totalCustomers', 'totalOrders', 'totalProducts', 'recentOrders', 'financialMetrics', 'salesMetrics', 'topProducts', 'startDate', 'endDate', 'paymentOptions'));
+            return view('admin.dashboard', compact(
+                'totalCustomers',
+                'totalOrders',
+                'totalProducts',
+                'recentOrders',
+                'financialMetrics',
+                'salesMetrics',
+                'topProducts',
+                'startDate',
+                'endDate',
+                'paymentOptions',
+                'overduePurchases',
+                'overduePayables'
+            ));
         }
         )->name('dashboard');
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
