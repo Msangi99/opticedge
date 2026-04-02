@@ -27,6 +27,7 @@
                             <th scope="col" class="admin-prod-th">Model</th>
                             <th scope="col" class="admin-prod-th">Category</th>
                             <th scope="col" class="admin-prod-th">IMEI</th>
+                            <th scope="col" class="admin-prod-th">Status</th>
                         </tr>
                     </thead>
                     @forelse($items as $index => $item)
@@ -42,9 +43,16 @@
                                 <td class="font-mono text-sm" @click.stop>
                                     <a href="{{ route('admin.stock.imei-item', $item) }}" class="text-[#232f3e] hover:underline">{{ $item->imei_number ?? '–' }}</a>
                                 </td>
+                                <td>
+                                    @if($item->sold_at)
+                                        <span class="admin-prod-status admin-prod-status--sold">Sold</span>
+                                    @else
+                                        <span class="admin-prod-status admin-prod-status--ok">Available</span>
+                                    @endif
+                                </td>
                             </tr>
                             <tr x-show="open" x-cloak class="!border-b border-slate-200/80">
-                                <td colspan="5" class="p-0">
+                                <td colspan="6" class="p-0">
                                     @include('admin.stock.partials.imei-full-info', ['item' => $item])
                                 </td>
                             </tr>
@@ -52,7 +60,7 @@
                     @empty
                         <tbody>
                             <tr>
-                                <td colspan="5" class="text-center text-slate-500 py-10">No items for this purchase yet.</td>
+                                <td colspan="6" class="text-center text-slate-500 py-10">No items for this purchase yet.</td>
                             </tr>
                         </tbody>
                     @endforelse

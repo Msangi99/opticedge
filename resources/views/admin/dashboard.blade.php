@@ -590,23 +590,27 @@
 
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
-        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false }">
+        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, overduePayablesModalOpen: false }">
             <div class="admin-dash-section-head">
                 <h3 class="admin-dash-section-title">Financial Summary</h3>
                 <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
             </div>
-            <div class="admin-dash-body">
+                <div class="admin-dash-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="admin-dash-metric admin-dash-metric--amber">
+                    <button type="button"
+                        class="admin-dash-metric admin-dash-metric--amber text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fa8900]"
+                        @click="overduePurchasesModalOpen = true">
                         <p class="admin-dash-metric-label">Payables</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['payables'], 0) }} TZS</p>
                         <p class="admin-dash-metric-hint">Total pending (not paid) from purchases</p>
-                    </div>
-                    <div class="admin-dash-metric admin-dash-metric--blue">
+                    </button>
+                    <button type="button"
+                        class="admin-dash-metric admin-dash-metric--blue text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3b82f6]"
+                        @click="overduePayablesModalOpen = true">
                         <p class="admin-dash-metric-label">Receivables</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['receivables'], 0) }} TZS</p>
                         <p class="admin-dash-metric-hint">Pending from Distribution Sales</p>
-                    </div>
+                    </button>
                     <div class="admin-dash-metric admin-dash-metric--emerald">
                         <p class="admin-dash-metric-label">Stock in Hand Value</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['stock_in_hand_value'], 0) }} TZS</p>
@@ -764,18 +768,36 @@
             @endif
         </div>
         @endif
-
-        <!-- Overdue Purchases & Payables -->
-        <div class="mt-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div class="admin-clay-panel overflow-hidden">
+        <!-- Overdue Purchases Modal -->
+        <div x-show="overduePurchasesModalOpen" x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click.self="overduePurchasesModalOpen = false">
+            <div
+                class="w-full max-w-6xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
                 <div class="admin-dash-section-head flex items-center justify-between">
                     <div>
                         <h3 class="admin-dash-section-title">Overdue Purchases</h3>
                         <p class="admin-dash-section-desc">Purchases not fully paid yet, oldest first.</p>
                     </div>
-                    <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
-                        View all
-                    </a>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
+                            View all
+                        </a>
+                        <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                            @click="overduePurchasesModalOpen = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="admin-dash-body">
                     <div class="admin-dash-table-wrap">
@@ -845,16 +867,38 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="admin-clay-panel overflow-hidden">
+        <!-- Overdue Payables Modal -->
+        <div x-show="overduePayablesModalOpen" x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click.self="overduePayablesModalOpen = false">
+            <div
+                class="w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
                 <div class="admin-dash-section-head flex items-center justify-between">
                     <div>
                         <h3 class="admin-dash-section-title">Overdue Payables</h3>
                         <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
                     </div>
-                    <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
-                        View all
-                    </a>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
+                            View all
+                        </a>
+                        <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                            @click="overduePayablesModalOpen = false">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="admin-dash-body">
                     <div class="admin-dash-table-wrap">

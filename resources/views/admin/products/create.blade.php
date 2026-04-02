@@ -24,7 +24,7 @@
                 <p class="admin-prod-form-hint">Brand defaults to Samsung. Price and stock can be set when editing.</p>
             </div>
 
-            <form action="{{ route('admin.products.store') }}" method="POST" class="admin-prod-form-body space-y-6">
+            <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="admin-prod-form-body space-y-6">
                 @csrf
 
                 <div>
@@ -56,6 +56,19 @@
                     <textarea name="description" id="description" rows="8" class="admin-prod-textarea"
                         placeholder="Features, specs, condition notes…">{{ old('description') }}</textarea>
                     @error('description')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="images" class="admin-prod-label">Product images (optional)</label>
+                    <input type="file" name="images[]" id="images" multiple accept="image/*"
+                        class="admin-prod-file">
+                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">Accepted: JPG, PNG, GIF, WebP. Up to 5 images.</p>
+                    @error('images')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                    @error('images.*')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>

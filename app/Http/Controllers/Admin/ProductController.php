@@ -30,7 +30,23 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'images' => 'nullable|array|max:5',
         ]);
+
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                if (! $image->isValid()) {
+                    continue;
+                }
+                if (count($imagePaths) >= 5) {
+                    break;
+                }
+                $path = $image->store('products', 'public');
+                $imagePaths[] = $path;
+            }
+        }
 
         Product::create([
             'category_id' => $validated['category_id'],
@@ -40,7 +56,7 @@ class ProductController extends Controller
             'rating' => 5.0,
             'stock_quantity' => 0,
             'description' => $validated['description'] ?? null,
-            'images' => [],
+            'images' => $imagePaths,
         ]);
 
         return redirect()->route('admin.products.index')->with('success', 'Product added successfully.');

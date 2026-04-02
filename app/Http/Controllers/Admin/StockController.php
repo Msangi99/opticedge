@@ -592,37 +592,6 @@ class StockController extends Controller
             }
         }
 
-        // Get all purchase images for gallery
-        $purchaseImages = Purchase::with('product')
-            ->whereHas('product', function ($q) {
-                $q->whereNotNull('images');
-            })
-            ->get()
-            ->flatMap(function ($purchase) {
-                $product = $purchase->product;
-                if (!$product || empty($product->images)) {
-                    return [];
-                }
-
-                $images = is_string($product->images) ? json_decode($product->images, true) : $product->images;
-                if (!is_array($images)) {
-                    return [];
-                }
-
-                return collect($images)->map(function ($imagePath) use ($purchase, $product) {
-                    return [
-                        'id' => $purchase->id . '_' . md5($imagePath),
-                        'purchase_id' => $purchase->id,
-                        'purchase_name' => $purchase->name ?? 'Purchase #' . $purchase->id,
-                        'product_name' => $product->name,
-                        'image_path' => $imagePath,
-                        'image_url' => asset('storage/' . $imagePath),
-                    ];
-                });
-            })
-            ->values()
-            ->all();
-
         $branches = Branch::orderBy('name')->get();
 
         $productsForSelect = Product::with('category')
@@ -630,7 +599,7 @@ class StockController extends Controller
             ->sortBy(fn (Product $p) => ($p->category?->name ?? '') . $p->name)
             ->values();
 
-        return view('admin.stock.create-purchase', compact('vendors', 'fromStock', 'purchaseImages', 'branches', 'productsForSelect'));
+        return view('admin.stock.create-purchase', compact('vendors', 'fromStock', 'branches', 'productsForSelect'));
     }
 
     public function storePurchase(Request $request)
@@ -660,23 +629,8 @@ class StockController extends Controller
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
             'payment_option_id' => 'nullable|exists:payment_options,id',
-            'selected_images' => 'nullable|array',
-            'selected_images.*' => 'string|max:255',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
-
-        // Validate that at least 3 images are provided (either from gallery or upload)
-        $selectedCount = count($request->input('selected_images', []));
-        $uploadedCount = $request->hasFile('images') ? count($request->file('images')) : 0;
-        $totalImages = $selectedCount + $uploadedCount;
-        
-        if ($totalImages < 3) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['images' => 'Please select at least 3 images from gallery or upload from device.']);
-        }
 
         $nameInput = trim((string) ($validated['name'] ?? ''));
         if ($nameInput === '') {
@@ -708,42 +662,13 @@ class StockController extends Controller
         
         // Note: Product price will be updated after purchase creation to use latest sell_price
 
-        // Combine selected images from gallery and uploaded images
-        $imagePaths = [];
-        
-        // Add selected images from gallery
-        if ($request->has('selected_images') && is_array($request->selected_images)) {
-            foreach ($request->selected_images as $selectedPath) {
-                // Validate that the image path exists in storage
-                if (Storage::disk('public')->exists($selectedPath)) {
-                    $imagePaths[] = $selectedPath;
-                }
-            }
-        }
-        
-        // Add uploaded images from device
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $path = $image->store('products', 'public');
-                    $imagePaths[] = $path;
-                }
-            }
-        }
-        
-        if (!empty($imagePaths)) {
-            $product->update(['images' => $imagePaths]);
-        }
-
         $stockId = !empty($validated['stock_id']) ? (int) $validated['stock_id'] : null;
         $quantity = $validated['quantity'] ?? 0;
 
         // Remove non-purchase fields from validated data
         unset($validated['category_id']);
         unset($validated['model']);
-        unset($validated['images']);
         unset($validated['stock_id']);
-        unset($validated['selected_images']);
 
         if (empty($validated['branch_id'] ?? null)) {
             $validated['branch_id'] = null;
@@ -874,25 +799,7 @@ class StockController extends Controller
             'payment_option_id' => 'nullable|exists:payment_options,id',
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
-        if ($request->hasFile('images')) {
-            $rules['images'] = 'required|array|min:3';
-            $rules['images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|max:5120';
-        }
         $validated = $request->validate($rules);
-
-        // Update product images if new ones uploaded
-        if ($request->hasFile('images') && $purchase->product) {
-            $imagePaths = [];
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $path = $image->store('products', 'public');
-                    $imagePaths[] = $path;
-                }
-            }
-            if (!empty($imagePaths)) {
-                $purchase->product->update(['images' => $imagePaths]);
-            }
-        }
 
         // Upload payment receipt image if provided (store in purchase-specific directory)
         $paymentReceiptPath = $purchase->payment_receipt_image;

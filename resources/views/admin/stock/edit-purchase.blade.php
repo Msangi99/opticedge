@@ -83,25 +83,18 @@
                                 $productImages = is_array($productImages) ? $productImages : [];
                             }
                         @endphp
-                        <!-- Product Images -->
+                        <!-- Product Images (display only; managed from Product) -->
                         <div class="col-span-2">
-                            <label for="images" class="admin-prod-label">Product Images</label>
+                            <label class="admin-prod-label">Product Images</label>
                             @if(count($productImages) > 0)
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($productImages as $img)
                                         <img src="{{ asset('storage/' . $img) }}" alt="Product" class="w-16 h-16 object-cover rounded border border-slate-200">
                                     @endforeach
                                 </div>
+                            @else
+                                <p class="text-xs text-slate-500">No images set for this product. You can add them from the product edit page.</p>
                             @endif
-                            <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="admin-prod-file">
-                            <p class="text-xs text-slate-500 mt-1">Upload new images to replace current ones. At least 3 required when uploading. Formats: JPG, PNG, GIF, WebP.</p>
-                            @error('images')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
-                            @error('images.*')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
 
                         <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
