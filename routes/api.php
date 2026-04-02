@@ -20,6 +20,9 @@ use App\Http\Controllers\Api\ReportController as ApiReportController;
 use App\Http\Controllers\Api\BarcodeDecodeController;
 use App\Http\Controllers\Api\SettingController as ApiSettingController;
 use App\Http\Controllers\Api\AgentCreditApiController;
+use App\Http\Controllers\Api\AgentProductTransferApiController;
+use App\Http\Controllers\Api\AdminAgentProductTransferApiController;
+use App\Http\Controllers\Api\AdminBranchTransferApiController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -53,6 +56,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('reports', [ApiReportController::class, 'index']);
         Route::get('settings', [ApiSettingController::class, 'index']);
         Route::put('settings', [ApiSettingController::class, 'update']);
+
+        Route::get('agent-transfers', [AdminAgentProductTransferApiController::class, 'index']);
+        Route::get('agent-transfers/{agent_product_transfer}', [AdminAgentProductTransferApiController::class, 'show']);
+        Route::post('agent-transfers/{agent_product_transfer}/approve', [AdminAgentProductTransferApiController::class, 'approve']);
+        Route::post('agent-transfers/{agent_product_transfer}/reject', [AdminAgentProductTransferApiController::class, 'reject']);
+
+        Route::get('branch-transfer/items', [AdminBranchTransferApiController::class, 'items']);
+        Route::post('branch-transfer', [AdminBranchTransferApiController::class, 'store']);
+        Route::get('branch-transfer/logs', [AdminBranchTransferApiController::class, 'logs']);
     });
 
     // Agent: dashboard, available products (unsold only), get device by IMEI, record sale
@@ -65,5 +77,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
+
+        Route::get('transferable-imeis', [AgentProductTransferApiController::class, 'transferableImeis']);
+        Route::get('transfers', [AgentProductTransferApiController::class, 'index']);
+        Route::post('transfers', [AgentProductTransferApiController::class, 'store']);
+        Route::post('transfers/{agent_product_transfer}/cancel', [AgentProductTransferApiController::class, 'cancel']);
     });
 });

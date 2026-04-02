@@ -11,6 +11,7 @@ class ProductListItem extends Model
     protected $fillable = [
         'stock_id',
         'purchase_id',
+        'branch_id',
         'category_id',
         'model',
         'imei_number',
@@ -24,6 +25,24 @@ class ProductListItem extends Model
     public function purchase()
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Location branch: explicit on row, else from linked purchase.
+     */
+    public function effectiveBranchId(): ?int
+    {
+        if ($this->branch_id !== null) {
+            return (int) $this->branch_id;
+        }
+        $this->loadMissing('purchase');
+
+        return $this->purchase?->branch_id !== null ? (int) $this->purchase->branch_id : null;
     }
 
     protected $casts = [

@@ -470,6 +470,18 @@
                     'admin.stock.agent-credit-pay-remaining',
                     'admin.stock.update-agent-credit',
                 ]);
+                $navStockAgentTransfers = request()->routeIs([
+                    'admin.stock.agent-transfers',
+                    'admin.stock.agent-transfers.show',
+                    'admin.stock.agent-transfers.approve',
+                    'admin.stock.agent-transfers.reject',
+                ]);
+                $navStockBranchTransfer = request()->routeIs([
+                    'admin.stock.branch-transfer',
+                    'admin.stock.branch-transfer.store',
+                    'admin.stock.branch-transfer.items',
+                    'admin.stock.branch-transfer.logs',
+                ]);
             @endphp
 
             <nav class="flex-1 px-3 py-5 sm:px-4 sm:py-6 space-y-5">
@@ -601,6 +613,12 @@
                                 <a href="{{ route('admin.stock.agent-credits') }}"
                                     @if ($navStockAgentCredits) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockAgentCredits ? 'admin-sidebar-sublink-active' : '' }}">Agent Credit</a>
+                                <a href="{{ route('admin.stock.agent-transfers') }}"
+                                    @if ($navStockAgentTransfers) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockAgentTransfers ? 'admin-sidebar-sublink-active' : '' }}">Agent transfers</a>
+                                <a href="{{ route('admin.stock.branch-transfer') }}"
+                                    @if ($navStockBranchTransfer) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockBranchTransfer ? 'admin-sidebar-sublink-active' : '' }}">Branch transfer</a>
                             </div>
                         </div>
                     </div>

@@ -193,6 +193,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::patch('agent-sales/{id}/commission', [App\Http\Controllers\Admin\StockController::class, 'updateAgentSaleCommission'])->name('agent-sales-update-commission');
             Route::post('agent-sales/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveAgentSaleChannel'])->name('agent-sales-save-channel');
 
+            Route::get('agent-transfers', [App\Http\Controllers\Admin\AgentTransferController::class, 'index'])->name('agent-transfers');
+            Route::get('agent-transfers/{agent_product_transfer}', [App\Http\Controllers\Admin\AgentTransferController::class, 'show'])->name('agent-transfers.show');
+            Route::post('agent-transfers/{agent_product_transfer}/approve', [App\Http\Controllers\Admin\AgentTransferController::class, 'approve'])->name('agent-transfers.approve');
+            Route::post('agent-transfers/{agent_product_transfer}/reject', [App\Http\Controllers\Admin\AgentTransferController::class, 'reject'])->name('agent-transfers.reject');
+
+            Route::get('branch-transfer/logs', [App\Http\Controllers\Admin\BranchTransferController::class, 'logs'])->name('branch-transfer.logs');
+            Route::get('branch-transfer/items', [App\Http\Controllers\Admin\BranchTransferController::class, 'branchItems'])->name('branch-transfer.items');
+            Route::get('branch-transfer', [App\Http\Controllers\Admin\BranchTransferController::class, 'create'])->name('branch-transfer');
+            Route::post('branch-transfer', [App\Http\Controllers\Admin\BranchTransferController::class, 'store'])->name('branch-transfer.store');
+
             Route::get('agent-credits', [App\Http\Controllers\Admin\AgentCreditController::class, 'index'])->name('agent-credits');
             Route::get('agent-credits/{id}/edit', [App\Http\Controllers\Admin\AgentCreditController::class, 'edit'])->name('edit-agent-credit');
             Route::patch('agent-credits/{id}/payment-channel', [App\Http\Controllers\Admin\AgentCreditController::class, 'updatePaymentChannel'])->name('agent-credit-payment-channel');
@@ -263,6 +273,11 @@ Route::middleware(['auth', 'verified', 'active', 'agent'])->prefix('agent')->nam
     Route::get('dashboard', [App\Http\Controllers\AgentController::class, 'dashboard'])->name('dashboard');
     Route::get('assignments/{assignment}/record-sale', [App\Http\Controllers\AgentController::class, 'recordSaleForm'])->name('record-sale-form');
     Route::post('record-sale', [App\Http\Controllers\AgentController::class, 'recordSale'])->name('record-sale');
+    Route::get('transfer', [App\Http\Controllers\AgentController::class, 'transferCreate'])->name('transfer.create');
+    Route::get('transferable-imeis', [App\Http\Controllers\AgentController::class, 'transferableImeis'])->name('transferable-imeis');
+    Route::post('transfer', [App\Http\Controllers\AgentController::class, 'transferStore'])->name('transfer.store');
+    Route::get('transfers', [App\Http\Controllers\AgentController::class, 'transfersIndex'])->name('transfers.index');
+    Route::post('transfers/{agent_product_transfer}/cancel', [App\Http\Controllers\AgentController::class, 'transferCancel'])->name('transfers.cancel');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {

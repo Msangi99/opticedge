@@ -11,6 +11,17 @@
         <p class="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('error') }}</p>
     @endif
 
+    <div class="mb-6 flex flex-wrap gap-3">
+        <a href="{{ route('agent.transfer.create') }}"
+            class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
+            Transfer to another agent
+        </a>
+        <a href="{{ route('agent.transfers.index') }}"
+            class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
+            My transfer requests
+        </a>
+    </div>
+
     <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium uppercase text-slate-500">Assigned</p>

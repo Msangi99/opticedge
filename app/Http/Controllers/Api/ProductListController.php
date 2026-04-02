@@ -12,6 +12,7 @@ use App\Models\AgentCreditPayment;
 use App\Models\PendingSale;
 use App\Models\PaymentOption;
 use App\Models\Purchase;
+use App\Services\AgentProductTransferService;
 use App\Services\DistributionSaleService;
 use App\Support\ImeiListParser;
 use Illuminate\Http\Request;
@@ -430,6 +431,12 @@ class ProductListController extends Controller
             ], 403);
         }
 
+        if (app(AgentProductTransferService::class)->isProductListLockedForSale((int) $item->id, (int) $agent->id)) {
+            return response()->json([
+                'message' => 'This device is in a pending transfer and cannot be sold.',
+            ], 422);
+        }
+
         $product = $item->product;
         if (!$product) {
             $product = Product::firstOrCreate(
@@ -535,6 +542,12 @@ class ProductListController extends Controller
             return response()->json([
                 'message' => 'This device is not assigned to you. Only devices assigned by admin can be sold.',
             ], 403);
+        }
+
+        if (app(AgentProductTransferService::class)->isProductListLockedForSale((int) $item->id, (int) $agent->id)) {
+            return response()->json([
+                'message' => 'This device is in a pending transfer and cannot be sold on credit.',
+            ], 422);
         }
 
         $product = $item->product;
