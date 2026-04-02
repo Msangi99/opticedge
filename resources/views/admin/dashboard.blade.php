@@ -766,191 +766,192 @@
                 </div>
             </div>
             @endif
+
+            <!-- Overdue Purchases Modal -->
+            <div x-show="overduePurchasesModalOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click.self="overduePurchasesModalOpen = false">
+                <div
+                    class="w-full max-w-6xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                    <div class="admin-dash-section-head flex items-center justify-between">
+                        <div>
+                            <h3 class="admin-dash-section-title">Overdue Purchases</h3>
+                            <p class="admin-dash-section-desc">Purchases not fully paid yet, oldest first.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
+                                View all
+                            </a>
+                            <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                                @click="overduePurchasesModalOpen = false">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-dash-body">
+                        <div class="admin-dash-table-wrap">
+                            <table id="overdue-purchases-table" class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="admin-dash-th">Invoice</th>
+                                        <th class="admin-dash-th">Vendor</th>
+                                        <th class="admin-dash-th">Branch</th>
+                                        <th class="admin-dash-th">Outstanding</th>
+                                        <th class="admin-dash-th">Aging</th>
+                                        <th class="admin-dash-th admin-dash-th--end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                    @forelse($overduePurchases ?? [] as $purchase)
+                                        @php
+                                            $total = (float) ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price));
+                                            $paid = (float) ($purchase->paid_amount ?? 0);
+                                            $outstanding = max(0, $total - $paid);
+                                            $created = $purchase->date ? \Carbon\Carbon::parse($purchase->date) : $purchase->created_at;
+                                            $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
+                                            if ($diffDays < 7) {
+                                                $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+                                            } elseif ($diffDays < 30) {
+                                                $weeks = floor($diffDays / 7);
+                                                $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+                                            } else {
+                                                $months = floor($diffDays / 30);
+                                                $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
+                                                {{ $purchase->name ?? ('Purchase #' . $purchase->id) }}
+                                            </td>
+                                            <td class="px-4 py-2.5 text-slate-700">
+                                                {{ $purchase->distributor_name ?? '—' }}
+                                            </td>
+                                            <td class="px-4 py-2.5 text-slate-700">
+                                                {{ $purchase->branch?->name ?? '—' }}
+                                            </td>
+                                            <td class="px-4 py-2.5 font-bold text-amber-800">
+                                                {{ number_format($outstanding, 0) }} TZS
+                                            </td>
+                                            <td class="px-4 py-2.5">
+                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                    {{ $agingLabel }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-2.5 text-right">
+                                                <a href="{{ route('admin.stock.edit-purchase', $purchase->id) }}"
+                                                   class="admin-dash-link text-xs py-1.5 px-3">
+                                                    Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                                No overdue purchases found.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overdue Payables Modal -->
+            <div x-show="overduePayablesModalOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click.self="overduePayablesModalOpen = false">
+                <div
+                    class="w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                    <div class="admin-dash-section-head flex items-center justify-between">
+                        <div>
+                            <h3 class="admin-dash-section-title">Overdue Payables</h3>
+                            <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
+                                View all
+                            </a>
+                            <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                                @click="overduePayablesModalOpen = false">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-dash-body">
+                        <div class="admin-dash-table-wrap">
+                            <table id="overdue-payables-table" class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="admin-dash-th">Item</th>
+                                        <th class="admin-dash-th">Amount</th>
+                                        <th class="admin-dash-th">Aging</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                    @forelse($overduePayables ?? [] as $payable)
+                                        @php
+                                            $created = $payable->date ? \Carbon\Carbon::parse($payable->date) : $payable->created_at;
+                                            $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
+                                            if ($diffDays < 7) {
+                                                $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+                                            } elseif ($diffDays < 30) {
+                                                $weeks = floor($diffDays / 7);
+                                                $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+                                            } else {
+                                                $months = floor($diffDays / 30);
+                                                $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
+                                                {{ $payable->item_name ?? 'Payable #' . $payable->id }}
+                                            </td>
+                                            <td class="px-4 py-2.5 font-bold text-amber-800">
+                                                {{ number_format($payable->amount ?? 0, 0) }} TZS
+                                            </td>
+                                            <td class="px-4 py-2.5">
+                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                    {{ $agingLabel }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                                No overdue payables found.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         @endif
-        <!-- Overdue Purchases Modal -->
-        <div x-show="overduePurchasesModalOpen" x-cloak
-            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            @click.self="overduePurchasesModalOpen = false">
-            <div
-                class="w-full max-w-6xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
-                <div class="admin-dash-section-head flex items-center justify-between">
-                    <div>
-                        <h3 class="admin-dash-section-title">Overdue Purchases</h3>
-                        <p class="admin-dash-section-desc">Purchases not fully paid yet, oldest first.</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
-                            View all
-                        </a>
-                        <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
-                            @click="overduePurchasesModalOpen = false">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="admin-dash-body">
-                    <div class="admin-dash-table-wrap">
-                        <table id="overdue-purchases-table" class="w-full text-left border-collapse">
-                            <thead>
-                                <tr>
-                                    <th class="admin-dash-th">Invoice</th>
-                                    <th class="admin-dash-th">Vendor</th>
-                                    <th class="admin-dash-th">Branch</th>
-                                    <th class="admin-dash-th">Outstanding</th>
-                                    <th class="admin-dash-th">Aging</th>
-                                    <th class="admin-dash-th admin-dash-th--end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
-                                @forelse($overduePurchases ?? [] as $purchase)
-                                    @php
-                                        $total = (float) ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price));
-                                        $paid = (float) ($purchase->paid_amount ?? 0);
-                                        $outstanding = max(0, $total - $paid);
-                                        $created = $purchase->date ? \Carbon\Carbon::parse($purchase->date) : $purchase->created_at;
-                                        $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
-                                        if ($diffDays < 7) {
-                                            $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
-                                        } elseif ($diffDays < 30) {
-                                            $weeks = floor($diffDays / 7);
-                                            $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
-                                        } else {
-                                            $months = floor($diffDays / 30);
-                                            $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
-                                        }
-                                    @endphp
-                                    <tr>
-                                        <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
-                                            {{ $purchase->name ?? ('Purchase #' . $purchase->id) }}
-                                        </td>
-                                        <td class="px-4 py-2.5 text-slate-700">
-                                            {{ $purchase->distributor_name ?? '—' }}
-                                        </td>
-                                        <td class="px-4 py-2.5 text-slate-700">
-                                            {{ $purchase->branch?->name ?? '—' }}
-                                        </td>
-                                        <td class="px-4 py-2.5 font-bold text-amber-800">
-                                            {{ number_format($outstanding, 0) }} TZS
-                                        </td>
-                                        <td class="px-4 py-2.5">
-                                            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
-                                                {{ $agingLabel }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-2.5 text-right">
-                                            <a href="{{ route('admin.stock.edit-purchase', $purchase->id) }}"
-                                               class="admin-dash-link text-xs py-1.5 px-3">
-                                                Edit
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">
-                                            No overdue purchases found.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Overdue Payables Modal -->
-        <div x-show="overduePayablesModalOpen" x-cloak
-            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            @click.self="overduePayablesModalOpen = false">
-            <div
-                class="w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
-                <div class="admin-dash-section-head flex items-center justify-between">
-                    <div>
-                        <h3 class="admin-dash-section-title">Overdue Payables</h3>
-                        <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
-                            View all
-                        </a>
-                        <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
-                            @click="overduePayablesModalOpen = false">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="admin-dash-body">
-                    <div class="admin-dash-table-wrap">
-                        <table id="overdue-payables-table" class="w-full text-left border-collapse">
-                            <thead>
-                                <tr>
-                                    <th class="admin-dash-th">Item</th>
-                                    <th class="admin-dash-th">Amount</th>
-                                    <th class="admin-dash-th">Aging</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
-                                @forelse($overduePayables ?? [] as $payable)
-                                    @php
-                                        $created = $payable->date ? \Carbon\Carbon::parse($payable->date) : $payable->created_at;
-                                        $diffDays = $created ? (int) floor($created->floatDiffInRealDays(now())) : 0;
-                                        if ($diffDays < 7) {
-                                            $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
-                                        } elseif ($diffDays < 30) {
-                                            $weeks = floor($diffDays / 7);
-                                            $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
-                                        } else {
-                                            $months = floor($diffDays / 30);
-                                            $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
-                                        }
-                                    @endphp
-                                    <tr>
-                                        <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
-                                            {{ $payable->item_name ?? 'Payable #' . $payable->id }}
-                                        </td>
-                                        <td class="px-4 py-2.5 font-bold text-amber-800">
-                                            {{ number_format($payable->amount ?? 0, 0) }} TZS
-                                        </td>
-                                        <td class="px-4 py-2.5">
-                                            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
-                                                {{ $agingLabel }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="px-4 py-8 text-center text-slate-500 text-sm">
-                                            No overdue payables found.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Top Selling Products Chart -->
         <div class="mt-8 admin-clay-panel overflow-hidden">
