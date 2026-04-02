@@ -28,7 +28,8 @@ return new class extends Migration
             $table->foreignId('product_list_id')->constrained('product_list')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['agent_product_transfer_id', 'product_list_id']);
+            // MySQL max identifier length 64; default Laravel name exceeds it.
+            $table->unique(['agent_product_transfer_id', 'product_list_id'], 'apti_transfer_product_list_uniq');
         });
     }
 
