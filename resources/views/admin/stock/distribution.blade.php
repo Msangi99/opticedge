@@ -18,6 +18,9 @@
         @if(session('error'))
             <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
+        @if(session('info'))
+            <div class="admin-prod-alert mb-4 border border-slate-200 bg-slate-50 text-slate-800" role="status">{{ session('info') }}</div>
+        @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mt-2">
             <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -66,7 +69,7 @@
 
         <div class="mt-6 admin-clay-panel overflow-x-auto min-w-0">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
-                <table class="min-w-[1400px]">
+                <table class="min-w-[1280px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Date</th>
@@ -83,13 +86,17 @@
                             <th scope="col" class="admin-prod-th">Comm.</th>
                             <th scope="col" class="admin-prod-th">Profit</th>
                             <th scope="col" class="admin-prod-th">Status</th>
-                            <th scope="col" class="admin-prod-th">Channel</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($distributionSales as $sale)
-                            @php $st = $sale->status ?? 'pending'; @endphp
+                            @php
+                                $totalSell = (float) ($sale->total_selling_value ?? 0);
+                                $paidVal = (float) ($sale->paid_amount ?? 0);
+                                $eps = 0.0001;
+                                $paymentStatus = $paidVal >= $totalSell - $eps ? 'paid' : ($paidVal > $eps ? 'partial' : 'pending');
+                            @endphp
                             <tr>
                                 <td class="text-slate-600 text-sm">{{ $sale->date }}</td>
                                 <td class="font-medium text-[#232f3e]">{{ $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A' }}</td>
@@ -107,27 +114,9 @@
                                 <td class="font-variant-numeric text-green-700">{{ number_format($sale->profit ?? 0, 0) }}</td>
                                 <td>
                                     <span
-                                        class="admin-prod-dealer-status {{ $st === 'complete' ? 'admin-prod-dealer-status--active' : 'admin-prod-dealer-status--pending' }}">{{ ucfirst($st) }}</span>
-                                </td>
-                                <td>
-                                    @if($st === 'pending')
-                                        @if($sale->payment_option_id)
-                                            <span class="text-slate-600 text-sm">{{ $sale->paymentOption?->name ?? '—' }}</span>
-                                        @else
-                                            <form action="{{ route('admin.stock.distribution-save-channel', $sale->id) }}" method="POST">
-                                                @csrf
-                                                <select name="payment_option_id" required onchange="this.form.submit()"
-                                                    class="admin-prod-select text-sm min-w-[9rem] max-w-[12rem] py-1.5">
-                                                    <option value="">Channel…</option>
-                                                    @foreach($bankPaymentOptions as $option)
-                                                        <option value="{{ $option->id }}">{{ $option->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </form>
-                                        @endif
-                                    @else
-                                        <span class="text-slate-400 text-sm">{{ $sale->paymentOption?->name ?? '—' }}</span>
-                                    @endif
+                                        class="admin-prod-dealer-status {{ $paymentStatus === 'paid' ? 'admin-prod-dealer-status--active' : ($paymentStatus === 'partial' ? 'admin-prod-dealer-status--pending' : 'admin-prod-dealer-status--suspended') }}">
+                                        {{ $paymentStatus }}
+                                    </span>
                                 </td>
                                 <td class="admin-prod-cell-actions">
                                     <div class="admin-prod-actions flex-wrap gap-2 justify-end">
@@ -151,19 +140,12 @@
                                                 </svg>
                                             </button>
                                         </form>
-                                        @if($st === 'pending')
-                                            <form action="{{ route('admin.stock.distribution-update-status', $sale) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="admin-prod-link text-xs whitespace-nowrap">Mark complete</button>
-                                            </form>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="16" class="text-center text-slate-500 py-10">No distribution sales found.</td>
+                                <td colspan="15" class="text-center text-slate-500 py-10">No distribution sales found.</td>
                             </tr>
                         @endforelse
                     </tbody>

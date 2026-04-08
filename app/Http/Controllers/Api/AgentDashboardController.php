@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
+use App\Models\AgentProductListAssignment;
 use App\Models\AgentSale;
+use App\Models\ProductListItem;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class AgentDashboardController extends Controller
 {
@@ -75,5 +77,100 @@ class AgentDashboardController extends Controller
                 'recent_sales' => $recentSales,
             ],
         ]);
+    }
+
+    /**
+     * IMEI-level breakdown for dashboard stat cards (assigned = remaining ∪ sold for this agent).
+     */
+    public function inventory()
+    {
+        $agentId = Auth::id();
+        $user = Auth::user();
+
+        $remainingItems = AgentProductListAssignment::query()
+            ->where('agent_id', $agentId)
+            ->whereHas('productListItem', fn ($q) => $q->whereNull('sold_at'))
+            ->with(['productListItem.product.category', 'productListItem.category'])
+            ->get()
+            ->map(fn (AgentProductListAssignment $row) => $this->mapInventoryItem($row->productListItem, [
+                'state' => 'remaining',
+            ]))
+            ->filter()
+            ->values()
+            ->all();
+
+        $soldQuery = ProductListItem::query()
+            ->whereNotNull('sold_at')
+            ->with(['product.category', 'category', 'pendingSale', 'agentCredit', 'agentSale']);
+
+        $soldQuery->where(function ($q) use ($agentId, $user) {
+            $q->where(function ($q2) use ($agentId) {
+                $q2->whereNotNull('agent_credit_id')
+                    ->whereHas('agentCredit', fn ($c) => $c->where('agent_id', $agentId));
+            })->orWhere(function ($q2) use ($agentId) {
+                $q2->whereNotNull('agent_sale_id')
+                    ->whereHas('agentSale', fn ($s) => $s->where('agent_id', $agentId));
+            })->orWhere(function ($q2) use ($agentId, $user) {
+                $q2->whereNotNull('pending_sale_id')
+                    ->whereHas('pendingSale', function ($p) use ($agentId, $user) {
+                        if (Schema::hasColumn('pending_sales', 'seller_id')) {
+                            $p->where('seller_id', $agentId)
+                                ->orWhere(function ($p2) use ($user) {
+                                    $p2->whereNull('seller_id')
+                                        ->where('seller_name', $user->name);
+                                });
+                        } else {
+                            $p->where('seller_name', $user->name);
+                        }
+                    });
+            });
+        });
+
+        $soldItems = $soldQuery->orderByDesc('sold_at')
+            ->get()
+            ->unique('id')
+            ->map(fn (ProductListItem $item) => $this->mapInventoryItem($item, [
+                'state' => 'sold',
+                'sold_at' => $item->sold_at ? $item->sold_at->toIso8601String() : null,
+                'customer_name' => $item->pendingSale?->customer_name
+                    ?? $item->agentCredit?->customer_name
+                    ?? $item->agentSale?->customer_name,
+            ]))
+            ->values()
+            ->all();
+
+        $assignedAll = collect($remainingItems)
+            ->merge($soldItems)
+            ->sortBy(fn ($row) => ($row['category_name'] ?? '') . ($row['product_name'] ?? '') . ($row['imei_number'] ?? ''))
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data' => [
+                'remaining' => $remainingItems,
+                'sold' => $soldItems,
+                'assigned' => $assignedAll,
+            ],
+        ]);
+    }
+
+    private function mapInventoryItem(?ProductListItem $item, array $extra = []): ?array
+    {
+        if (! $item) {
+            return null;
+        }
+
+        $item->loadMissing(['product.category', 'category']);
+        $product = $item->product;
+
+        $base = [
+            'product_list_id' => $item->id,
+            'imei_number' => $item->imei_number,
+            'model' => $item->model,
+            'product_name' => $product?->name ?? $item->model ?? '–',
+            'category_name' => $product?->category?->name ?? $item->category?->name ?? '–',
+        ];
+
+        return array_merge($base, $extra);
     }
 }

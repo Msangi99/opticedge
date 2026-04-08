@@ -77,6 +77,17 @@ class AgentController extends Controller
 
         try {
             DB::transaction(function () use ($user, $productId, $ids) {
+                $hasUnsoldAssigned = AgentProductListAssignment::query()
+                    ->where('agent_id', $user->id)
+                    ->whereHas('productListItem', fn ($q) => $q->whereNull('sold_at'))
+                    ->exists();
+
+                if ($hasUnsoldAssigned) {
+                    throw new \InvalidArgumentException(
+                        'This agent still has assigned device(s) that are not sold yet. Sell or unassign them before assigning more stock.'
+                    );
+                }
+
                 $added = 0;
 
                 foreach ($ids as $listId) {

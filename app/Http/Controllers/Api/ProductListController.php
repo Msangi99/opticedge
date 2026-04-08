@@ -18,6 +18,7 @@ use App\Support\ImeiListParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ProductListController extends Controller
 {
@@ -462,7 +463,7 @@ class ProductListController extends Controller
 
         $sale = DB::transaction(function () use ($item, $product, $validated, $buyPrice, $totalSell, $totalBuy, $profit, $agent) {
             // Save to pending sales instead of agent_sales
-            $sale = PendingSale::create([
+            $pendingAttrs = [
                 'customer_name' => $validated['customer_name'],
                 'seller_name' => $agent->name,
                 'product_id' => $product->id,
@@ -473,7 +474,11 @@ class ProductListController extends Controller
                 'total_selling_value' => $totalSell,
                 'profit' => $profit,
                 'date' => now()->toDateString(),
-            ]);
+            ];
+            if (Schema::hasColumn('pending_sales', 'seller_id')) {
+                $pendingAttrs['seller_id'] = $agent->id;
+            }
+            $sale = PendingSale::create($pendingAttrs);
 
             $item->update([
                 'sold_at' => now(),

@@ -237,7 +237,7 @@ class StockController extends Controller
 
     public function distribution(Request $request)
     {
-        $query = DistributionSale::with(['product.category', 'dealer', 'paymentOption']);
+        $query = DistributionSale::with(['product.category', 'dealer']);
         
         // Date range filter
         if ($request->filled('date_from')) {
@@ -248,48 +248,29 @@ class StockController extends Controller
         }
         
         $distributionSales = $query->latest('date')->get();
-        $bankPaymentOptions = PaymentOption::visible()->bank()->orderBy('name')->get();
 
         $distributionDashboard = [
             'count' => $distributionSales->count(),
             'total_sell' => (float) $distributionSales->sum('total_selling_value'),
             'total_profit' => (float) $distributionSales->sum('profit'),
-            'pending' => $distributionSales->where('status', 'pending')->count(),
+            'pending' => $distributionSales->filter(function ($s) {
+                $total = (float) ($s->total_selling_value ?? 0);
+                $paid = (float) ($s->paid_amount ?? 0);
+
+                return $paid < $total - 0.0001;
+            })->count(),
         ];
 
-        return view('admin.stock.distribution', compact('distributionSales', 'bankPaymentOptions', 'distributionDashboard'));
+        return view('admin.stock.distribution', compact('distributionSales', 'distributionDashboard'));
     }
 
     /**
-     * Save payment channel (bank only) for a pending distribution sale. Amount is added to the selected bank option balance.
+     * Legacy route: channel and installments are handled on the edit distribution page (like purchases).
      */
     public function saveDistributionChannel(Request $request, $id)
     {
-        $sale = DistributionSale::findOrFail($id);
-        $st = $sale->status ?? 'pending';
-        if ($st !== 'pending') {
-            return redirect()->route('admin.stock.distribution')->with('error', 'Only pending distribution sales can have channel updated.');
-        }
-
-        $validated = $request->validate([
-            'payment_option_id' => 'required|exists:payment_options,id',
-        ]);
-
-        $option = PaymentOption::findOrFail($validated['payment_option_id']);
-        if ($option->type !== PaymentOption::TYPE_BANK) {
-            return redirect()->route('admin.stock.distribution')->with('error', 'Only bank channels are allowed for dealer sales.');
-        }
-
-        $sale->update([
-            'payment_option_id' => $option->id,
-            'status' => 'complete'
-        ]);
-        $amount = (float) ($sale->total_selling_value ?? 0);
-        if ($amount > 0) {
-            $option->increment('balance', $amount);
-        }
-
-        return redirect()->route('admin.stock.distribution')->with('success', 'Channel saved. Status updated to complete. Amount added to ' . $option->name . '.');
+        return redirect()->route('admin.stock.distribution')
+            ->with('info', 'Use Edit on the sale to record payments, payment channel, and remaining balance.');
     }
 
     public function updateDistributionStatus($id)
@@ -991,9 +972,10 @@ class StockController extends Controller
         $validated['total_purchase_value'] = $validated['quantity_sold'] * $buyPrice;
         $validated['commission'] = 0; // Manual entry: no referrer commission
         $validated['profit'] = $validated['total_selling_value'] - $validated['total_purchase_value'] - 0;
-        $validated['status'] = 'pending';
         $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
         $validated['balance'] = $validated['total_selling_value'] - $validated['paid_amount'];
+        $eps = 0.0001;
+        $validated['status'] = $validated['paid_amount'] >= $validated['total_selling_value'] - $eps ? 'complete' : 'pending';
         if (!empty($validated['dealer_id'])) {
             $validated['dealer_name'] = \App\Models\User::find($validated['dealer_id'])->name ?? $validated['dealer_name'] ?? null;
         }
@@ -1009,27 +991,68 @@ class StockController extends Controller
     public function editDistribution($id)
     {
         $sale = DistributionSale::with(['product.category', 'dealer'])->findOrFail($id);
-        return view('admin.stock.edit-distribution', compact('sale'));
+        $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
+
+        return view('admin.stock.edit-distribution', compact('sale', 'paymentOptions'));
     }
 
     public function updateDistribution(Request $request, $id)
     {
         $sale = DistributionSale::findOrFail($id);
+
         $validated = $request->validate([
             'paid_amount' => 'nullable|numeric|min:0',
             'collection_date' => 'nullable|date',
+            'payment_option_id' => 'nullable|exists:payment_options,id',
         ]);
-        $paidAmount = (float) ($validated['paid_amount'] ?? $sale->paid_amount ?? 0);
+
+        // Form "paid_amount" is incremental ("Pay this time"); persist cumulative total (same as purchases).
         $totalSelling = (float) ($sale->total_selling_value ?? 0);
-        $balance = max(0, $totalSelling - $paidAmount);
+        $oldPaidAmount = (float) ($sale->paid_amount ?? 0);
+        $increment = max(0, (float) ($validated['paid_amount'] ?? 0));
+        $remaining = max(0, $totalSelling - $oldPaidAmount);
+        $eps = 0.0001;
 
-        $sale->update([
-            'paid_amount' => $paidAmount,
-            'balance' => $balance,
+        if ($increment > $remaining + $eps) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['paid_amount' => 'Pay amount cannot exceed the remaining balance for this sale.']);
+        }
+
+        $newPaidAmount = min($totalSelling, $oldPaidAmount + $increment);
+        $paymentDifference = $newPaidAmount - $oldPaidAmount;
+
+        $newPaymentOptionId = $validated['payment_option_id'] ?? null;
+        if ($newPaymentOptionId === '' || $newPaymentOptionId === false) {
+            $newPaymentOptionId = null;
+        } else {
+            $newPaymentOptionId = (int) $newPaymentOptionId;
+        }
+
+        // Dealer payment received: credit the selected channel balance (purchases debit when paying out).
+        if ($paymentDifference > $eps && $newPaymentOptionId !== null) {
+            $paymentOption = PaymentOption::find($newPaymentOptionId);
+            if ($paymentOption) {
+                $paymentOption->increment('balance', $paymentDifference);
+            }
+        }
+
+        $newStatus = $newPaidAmount >= $totalSelling - $eps ? 'complete' : 'pending';
+
+        $update = [
+            'paid_amount' => $newPaidAmount,
+            'balance' => max(0, $totalSelling - $newPaidAmount),
             'collection_date' => $validated['collection_date'] ?? $sale->collection_date,
-        ]);
+            'status' => $newStatus,
+        ];
 
-        return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale updated. Pending amount (balance) updated.');
+        if (Schema::hasColumn('distribution_sales', 'payment_option_id')) {
+            $update['payment_option_id'] = $newPaymentOptionId;
+        }
+
+        $sale->update($update);
+
+        return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale updated. Pending amount updated.');
     }
 
     public function destroyDistribution($id)

@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Agent: dashboard, available products (unsold only), get device by IMEI, record sale
     Route::middleware('agent')->prefix('agent')->group(function () {
         Route::get('dashboard', [\App\Http\Controllers\Api\AgentDashboardController::class, 'index']);
+        Route::get('dashboard/inventory', [\App\Http\Controllers\Api\AgentDashboardController::class, 'inventory']);
         Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);

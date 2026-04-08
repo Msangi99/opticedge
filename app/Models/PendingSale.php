@@ -9,6 +9,7 @@ class PendingSale extends Model
     protected $fillable = [
         'customer_name',
         'seller_name',
+        'seller_id',
         'product_id',
         'quantity_sold',
         'purchase_price',
@@ -23,6 +24,11 @@ class PendingSale extends Model
     protected $casts = [
         'date' => 'datetime',
     ];
+
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
 
     public function product()
     {
