@@ -5,12 +5,34 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AgentProductListAssignment;
 use App\Models\AgentProductTransfer;
+use App\Models\User;
 use App\Services\AgentProductTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AgentProductTransferApiController extends Controller
 {
+    /**
+     * Active agents other than the authenticated user (same rules as web AgentController::transferCreate).
+     */
+    public function transferRecipients()
+    {
+        $agents = User::query()
+            ->where('role', 'agent')
+            ->where('status', 'active')
+            ->where('id', '!=', Auth::id())
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return response()->json([
+            'data' => $agents->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+            ])->values()->all(),
+        ]);
+    }
+
     public function transferableImeis(Request $request)
     {
         $validated = $request->validate([

@@ -79,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('credits', [AgentCreditApiController::class, 'index']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
 
+        Route::get('transfer-recipients', [AgentProductTransferApiController::class, 'transferRecipients']);
         Route::get('transferable-imeis', [AgentProductTransferApiController::class, 'transferableImeis']);
         Route::get('transfers', [AgentProductTransferApiController::class, 'index']);
         Route::post('transfers', [AgentProductTransferApiController::class, 'store']);
