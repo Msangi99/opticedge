@@ -8,6 +8,7 @@ use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
+use App\Models\DistributionSalePayment;
 use App\Models\PaymentOption;
 use App\Models\Product;
 use App\Models\ProductListItem;
@@ -773,11 +774,17 @@ class StockController extends Controller
     {
         $purchase = Purchase::with('product')->findOrFail($id);
 
+        $incrementPreview = max(0, (float) ($request->input('paid_amount') ?? 0));
+        $epsRule = 0.0001;
+        $paymentOptionRules = $incrementPreview > $epsRule
+            ? 'required|exists:payment_options,id'
+            : 'nullable|exists:payment_options,id';
+
         $rules = [
             'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
-            'payment_option_id' => 'nullable|exists:payment_options,id',
+            'payment_option_id' => $paymentOptionRules,
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
         $validated = $request->validate($rules);
@@ -990,7 +997,7 @@ class StockController extends Controller
 
     public function editDistribution($id)
     {
-        $sale = DistributionSale::with(['product.category', 'dealer'])->findOrFail($id);
+        $sale = DistributionSale::with(['product.category', 'dealer', 'payments.paymentOption'])->findOrFail($id);
         $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
 
         return view('admin.stock.edit-distribution', compact('sale', 'paymentOptions'));
@@ -1000,10 +1007,16 @@ class StockController extends Controller
     {
         $sale = DistributionSale::findOrFail($id);
 
+        $incrementPreview = max(0, (float) ($request->input('paid_amount') ?? 0));
+        $eps = 0.0001;
+        $paymentOptionRules = $incrementPreview > $eps
+            ? 'required|exists:payment_options,id'
+            : 'nullable|exists:payment_options,id';
+
         $validated = $request->validate([
             'paid_amount' => 'nullable|numeric|min:0',
             'collection_date' => 'nullable|date',
-            'payment_option_id' => 'nullable|exists:payment_options,id',
+            'payment_option_id' => $paymentOptionRules,
         ]);
 
         // Form "paid_amount" is incremental ("Pay this time"); persist cumulative total (same as purchases).
@@ -1011,7 +1024,6 @@ class StockController extends Controller
         $oldPaidAmount = (float) ($sale->paid_amount ?? 0);
         $increment = max(0, (float) ($validated['paid_amount'] ?? 0));
         $remaining = max(0, $totalSelling - $oldPaidAmount);
-        $eps = 0.0001;
 
         if ($increment > $remaining + $eps) {
             return redirect()->back()
@@ -1051,6 +1063,22 @@ class StockController extends Controller
         }
 
         $sale->update($update);
+
+        if ($paymentDifference > $eps) {
+            try {
+                $paidDate = !empty($validated['collection_date'])
+                    ? \Carbon\Carbon::parse($validated['collection_date'])->toDateString()
+                    : now()->toDateString();
+                DistributionSalePayment::create([
+                    'distribution_sale_id' => $sale->id,
+                    'payment_option_id' => $newPaymentOptionId,
+                    'amount' => $paymentDifference,
+                    'paid_date' => $paidDate,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create distribution sale payment record: ' . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale updated. Pending amount updated.');
     }
@@ -1130,7 +1158,7 @@ class StockController extends Controller
         }
 
         // Move to agent_sales table
-        $agentSale = AgentSale::create([
+        $agentSaleAttrs = [
             'customer_name' => $pendingSale->customer_name,
             'seller_name' => $pendingSale->seller_name,
             'product_id' => $pendingSale->product_id,
@@ -1142,7 +1170,11 @@ class StockController extends Controller
             'profit' => $pendingSale->profit,
             'balance' => 0, // Already paid via payment option
             'date' => $pendingSale->date,
-        ]);
+        ];
+        if (Schema::hasColumn('agent_sales', 'agent_id') && $pendingSale->seller_id) {
+            $agentSaleAttrs['agent_id'] = $pendingSale->seller_id;
+        }
+        $agentSale = AgentSale::create($agentSaleAttrs);
 
         // Update product_list items linked to this pending sale
         \App\Models\ProductListItem::where('pending_sale_id', $pendingSale->id)

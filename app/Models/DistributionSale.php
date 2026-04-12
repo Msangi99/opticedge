@@ -48,4 +48,9 @@ class DistributionSale extends Model
     {
         return $this->belongsTo(PaymentOption::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(DistributionSalePayment::class)->orderByDesc('paid_date')->orderByDesc('id');
+    }
 }

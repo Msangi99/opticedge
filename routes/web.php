@@ -103,6 +103,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
         Route::resource('products', ProductController::class);
         Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+        Route::get('customer-needs', [App\Http\Controllers\Admin\CustomerNeedsController::class, 'index'])->name('customer-needs.index');
         Route::resource('vendors', App\Http\Controllers\Admin\VendorController::class)->only(['index', 'store', 'update', 'destroy']);
 
         // Dealers Management

@@ -400,7 +400,7 @@
         <p class="mt-2 text-slate-600 text-sm sm:text-base">Overview of your store performance.</p>
 
         <!-- Stats Grid -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Customers -->
             <a href="{{ route('admin.customers.index') }}"
                 class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
@@ -457,6 +457,27 @@
                     </div>
                 </div>
             </a>
+
+            @isset($financialMetrics)
+            <!-- Total quantity across purchases -->
+            <a href="{{ route('admin.stock.purchases') }}"
+                class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
+                <div class="flex items-center gap-4 relative z-10">
+                    <div
+                        class="p-3 bg-teal-50 text-teal-600 rounded-full group-hover:bg-[#fa8900] group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Total products in purchases</p>
+                        <p class="text-2xl font-bold text-slate-900">{{ number_format($financialMetrics['total_products_in_purchases'] ?? 0) }}</p>
+                    </div>
+                </div>
+            </a>
+            @endisset
         </div>
 
         <!-- Sales Metrics Cards -->
@@ -654,11 +675,6 @@
                         <p class="admin-dash-metric-label">Total Purchase Buy Price</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['total_purchase_buy_price'], 0) }} TZS</p>
                         <p class="admin-dash-metric-hint">Total buy price of all purchases</p>
-                    </div>
-                    <div class="admin-dash-metric admin-dash-metric--teal">
-                        <p class="admin-dash-metric-label">Total Products in Purchases</p>
-                        <p class="admin-dash-metric-value">{{ number_format($financialMetrics['total_products_in_purchases'], 0) }}</p>
-                        <p class="admin-dash-metric-hint">Total products in all purchases</p>
                     </div>
                 </div>
             </div>

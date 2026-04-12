@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\AgentCreditApiController;
 use App\Http\Controllers\Api\AgentProductTransferApiController;
 use App\Http\Controllers\Api\AdminAgentProductTransferApiController;
 use App\Http\Controllers\Api\AdminBranchTransferApiController;
+use App\Http\Controllers\Api\AgentCatalogController;
+use App\Http\Controllers\Api\AgentCustomerNeedController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -76,6 +78,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);
         Route::post('sell', [ProductListController::class, 'sell']);
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
+        Route::get('catalog/categories', [AgentCatalogController::class, 'categories']);
+        Route::get('catalog/categories/{category}/products', [AgentCatalogController::class, 'productsByCategory']);
+        Route::post('customer-needs', [AgentCustomerNeedController::class, 'store']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
 

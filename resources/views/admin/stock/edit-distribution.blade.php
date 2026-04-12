@@ -61,9 +61,9 @@
                         </p>
                     </div>
                     <div>
-                        <label for="payment_option_id" class="admin-prod-label">Payment channel</label>
+                        <label for="payment_option_id" class="admin-prod-label">Payment channel <span class="text-red-600">*</span></label>
                         <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
-                            <option value="">Select channel (optional)</option>
+                            <option value="">Select channel</option>
                             @foreach($paymentOptions as $option)
                                 <option value="{{ $option->id }}"
                                     data-balance="{{ $option->balance }}"
@@ -75,13 +75,56 @@
                         @error('payment_option_id')
                             <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                         @enderror
-                        <p class="text-xs text-slate-500 mt-1">If selected, this installment is credited to the channel balance (money received).</p>
+                        <p class="text-xs text-slate-500 mt-1">Required when you enter a pay amount. This installment is credited to the channel balance (money received).</p>
                     </div>
                     <div>
                         <label class="admin-prod-label">Remaining after this payment</label>
                         <input type="text" id="pending_preview" readonly class="admin-prod-input font-medium cursor-not-allowed" value="{{ number_format($pendingNow, 2) }}">
                         <p class="text-xs text-slate-500 mt-1">Total selling value − (already paid + pay this time). Updates as you type.</p>
                     </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4 mt-2">
+                    <h3 class="text-lg font-medium text-slate-900 mb-4">Payment history</h3>
+                    @php
+                        try {
+                            $distPayments = $sale->payments ?? collect();
+                        } catch (\Exception $e) {
+                            $distPayments = collect();
+                        }
+                    @endphp
+                    @if($distPayments && $distPayments->count() > 0)
+                        <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b border-slate-200">
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-700">Date</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-slate-700">Channel</th>
+                                        <th class="px-4 py-2 text-right text-xs font-medium text-slate-700">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    @foreach($distPayments as $payment)
+                                        <tr>
+                                            <td class="px-4 py-2 text-slate-600">{{ $payment->paid_date ? $payment->paid_date->format('Y-m-d') : $payment->created_at->format('Y-m-d') }}</td>
+                                            <td class="px-4 py-2 text-slate-600">{{ $payment->paymentOption ? $payment->paymentOption->name : 'N/A' }}</td>
+                                            <td class="px-4 py-2 text-right font-medium text-slate-900">{{ number_format($payment->amount, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-100 border-t-2 border-slate-300">
+                                        <td colspan="2" class="px-4 py-2 text-right font-semibold text-slate-700">Total paid:</td>
+                                        <td class="px-4 py-2 text-right font-bold text-slate-900">{{ number_format($distPayments->sum('amount'), 2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @else
+                        <div class="bg-slate-50 rounded-lg border border-slate-200 p-4 text-center text-slate-500 text-sm">
+                            No payment history recorded yet.
+                        </div>
+                    @endif
                 </div>
 
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">

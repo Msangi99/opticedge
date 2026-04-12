@@ -134,9 +134,9 @@
 
                         <!-- Payment Channel -->
                         <div class="col-span-1">
-                            <label for="payment_option_id" class="admin-prod-label">Payment Channel</label>
+                            <label for="payment_option_id" class="admin-prod-label">Payment channel <span class="text-red-600">*</span></label>
                             <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
-                                <option value="">Select Channel (Optional)</option>
+                                <option value="">Select channel</option>
                                 @foreach($paymentOptions as $option)
                                     <option value="{{ $option->id }}" 
                                         data-balance="{{ $option->balance }}"
@@ -146,7 +146,7 @@
                                 @endforeach
                             </select>
                             @error('payment_option_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                            <p class="text-xs text-slate-500 mt-1">Select channel to deduct payment from. Amount will be deducted from channel balance.</p>
+                            <p class="text-xs text-slate-500 mt-1">Required when you enter a pay amount. Amount is deducted from the channel balance.</p>
                         </div>
 
                         <!-- Pending Amount (read-only, shows actual pending amount) -->
