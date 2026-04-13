@@ -5,15 +5,42 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
             <div>
                 <p class="admin-prod-eyebrow">Management</p>
-                <h1 class="admin-prod-title">Customer needs</h1>
-                <p class="admin-prod-subtitle">Category and model requests submitted by agents from the app (Sell → Needed).</p>
+                <h1 class="admin-prod-title">Customer leads</h1>
+                <p class="admin-prod-subtitle">Category and model requests submitted by agents from the app (Sell -> Leads).</p>
+            </div>
+        </div>
+
+        <div class="admin-clay-panel overflow-hidden w-full mb-6">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Product leads trend</h2>
+                <p class="admin-prod-form-hint">Animated line chart of top requested models in the selected period.</p>
+            </div>
+            <div class="p-4 sm:p-6 space-y-4">
+                <form method="GET" action="{{ route('admin.customer-needs.index') }}" class="flex flex-wrap items-end gap-3">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" name="period" value="week" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? 'week') === 'week' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Week</button>
+                        <button type="submit" name="period" value="month" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'month' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Month</button>
+                        <button type="submit" name="period" value="year" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'year' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Year</button>
+                        <button type="submit" name="period" value="other" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'other' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Other</button>
+                    </div>
+                    <div>
+                        <label for="start_date" class="admin-prod-label">From</label>
+                        <input id="start_date" type="date" name="start_date" value="{{ $startDate ?? '' }}" class="admin-prod-input">
+                    </div>
+                    <div>
+                        <label for="end_date" class="admin-prod-label">To</label>
+                        <input id="end_date" type="date" name="end_date" value="{{ $endDate ?? '' }}" class="admin-prod-input">
+                    </div>
+                    <button type="submit" name="period" value="other" class="admin-prod-btn-primary">Apply</button>
+                </form>
+                <div id="leadsLineChart" class="w-full h-[360px]"></div>
             </div>
         </div>
 
         <div class="admin-clay-panel overflow-hidden w-full">
             <div class="admin-prod-form-head">
-                <h2 class="admin-prod-form-title">Needed</h2>
-                <p class="admin-prod-form-hint">Full list of submitted needs.</p>
+                <h2 class="admin-prod-form-title">Leads</h2>
+                <p class="admin-prod-form-hint">Full list of submitted leads.</p>
             </div>
             <div class="w-full overflow-x-auto p-4 sm:p-6">
                 <table class="w-full min-w-[640px] text-sm text-left">
@@ -43,4 +70,79 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script>
+            (function() {
+                const chartRows = @json($chartRows ?? [['Date']]);
+
+                google.charts.load('current', {
+                    packages: ['corechart']
+                });
+                google.charts.setOnLoadCallback(drawChart);
+
+                function drawChart() {
+                    const target = document.getElementById('leadsLineChart');
+                    if (!target || !Array.isArray(chartRows) || chartRows.length < 2 || chartRows[0].length < 2) {
+                        if (target) {
+                            target.innerHTML = '<div class="h-full flex items-center justify-center text-slate-500 text-sm">No leads chart data for this filter.</div>';
+                        }
+                        return;
+                    }
+
+                    const data = new google.visualization.DataTable();
+                    data.addColumn('string', chartRows[0][0]);
+                    for (let i = 1; i < chartRows[0].length; i++) {
+                        data.addColumn('number', chartRows[0][i]);
+                    }
+                    data.addRows(chartRows.slice(1));
+
+                    const options = {
+                        backgroundColor: 'transparent',
+                        chartArea: {
+                            left: 56,
+                            top: 16,
+                            width: '84%',
+                            height: '74%'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        hAxis: {
+                            textStyle: {
+                                color: '#64748b',
+                                fontSize: 11
+                            },
+                            slantedText: true,
+                            slantedTextAngle: 35
+                        },
+                        vAxis: {
+                            minValue: 0,
+                            textStyle: {
+                                color: '#64748b',
+                                fontSize: 11
+                            }
+                        },
+                        curveType: 'function',
+                        lineWidth: 3,
+                        pointSize: 4,
+                        animation: {
+                            startup: true,
+                            duration: 900,
+                            easing: 'out'
+                        }
+                    };
+
+                    const chart = new google.visualization.LineChart(target);
+                    chart.draw(data, options);
+                    window.addEventListener('resize', function() {
+                        chart.draw(data, options);
+                    }, {
+                        passive: true
+                    });
+                }
+            })();
+        </script>
+    @endpush
 </x-admin-layout>

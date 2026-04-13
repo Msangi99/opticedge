@@ -1080,7 +1080,9 @@ class StockController extends Controller
             }
         }
 
-        return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale updated. Pending amount updated.');
+        return redirect()
+            ->route('admin.stock.edit-distribution', $sale->id)
+            ->with('success', 'Distribution sale updated successfully.');
     }
 
     public function destroyDistribution($id)
