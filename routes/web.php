@@ -141,6 +141,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Reports
         Route::get('reports', [App\Http\Controllers\Admin\ReportController::class , 'index'])->name('reports.index');
+        Route::get('reports/agent-stock-export', [App\Http\Controllers\Admin\ReportController::class, 'exportAgentDailyStock'])
+            ->name('reports.agent-stock-export');
 
         // Branches (locations / stores)
         Route::resource('branches', App\Http\Controllers\Admin\BranchController::class)->except(['show']);

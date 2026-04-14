@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
         Route::get('catalog/categories', [AgentCatalogController::class, 'categories']);
         Route::get('catalog/categories/{category}/products', [AgentCatalogController::class, 'productsByCategory']);
+        Route::get('branches', [ApiBranchController::class, 'index']);
         Route::post('customer-needs', [AgentCustomerNeedController::class, 'store']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);

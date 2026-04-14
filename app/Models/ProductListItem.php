@@ -33,6 +33,25 @@ class ProductListItem extends Model
     }
 
     /**
+     * Filter rows whose effective branch matches $branchId (row branch or purchase branch).
+     * When $branchId is null, no filter is applied.
+     */
+    public function scopeWhereEffectiveBranch($query, ?int $branchId)
+    {
+        if ($branchId === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId)
+                ->orWhere(function ($inner) use ($branchId) {
+                    $inner->whereNull('branch_id')
+                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $branchId));
+                });
+        });
+    }
+
+    /**
      * Location branch: explicit on row, else from linked purchase.
      */
     public function effectiveBranchId(): ?int

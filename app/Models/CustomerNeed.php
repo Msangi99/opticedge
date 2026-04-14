@@ -10,6 +10,9 @@ class CustomerNeed extends Model
         'agent_id',
         'category_id',
         'product_id',
+        'customer_name',
+        'customer_phone',
+        'branch_id',
     ];
 
     public function agent()
@@ -25,5 +28,10 @@ class CustomerNeed extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

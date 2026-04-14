@@ -16,6 +16,9 @@ class AgentCustomerNeedController extends Controller
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'product_id' => 'required|exists:products,id',
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:64',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $product = Product::findOrFail($validated['product_id']);
@@ -29,9 +32,12 @@ class AgentCustomerNeedController extends Controller
             'agent_id' => Auth::id(),
             'category_id' => $validated['category_id'],
             'product_id' => $validated['product_id'],
+            'customer_name' => $validated['customer_name'],
+            'customer_phone' => $validated['customer_phone'],
+            'branch_id' => $validated['branch_id'] ?? null,
         ]);
 
-        $need->load(['category', 'product']);
+        $need->load(['category', 'product', 'branch']);
 
         return response()->json([
             'message' => 'Customer need recorded.',
@@ -39,6 +45,9 @@ class AgentCustomerNeedController extends Controller
                 'id' => $need->id,
                 'category' => $need->category?->name,
                 'product' => $need->product?->name,
+                'customer_name' => $need->customer_name,
+                'customer_phone' => $need->customer_phone,
+                'branch' => $need->branch?->name,
             ],
         ], 201);
     }

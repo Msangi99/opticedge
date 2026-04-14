@@ -6,32 +6,21 @@
             <div>
                 <p class="admin-prod-eyebrow">Management</p>
                 <h1 class="admin-prod-title">Customer leads</h1>
-                <p class="admin-prod-subtitle">Category and model requests submitted by agents from the app (Sell -> Leads).</p>
+                <p class="admin-prod-subtitle">Category and model requests submitted by agents from the app (Record Sale → Lead).</p>
             </div>
         </div>
 
         <div class="admin-clay-panel overflow-hidden w-full mb-6">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Product leads trend</h2>
-                <p class="admin-prod-form-hint">Animated line chart of top requested models in the selected period.</p>
+                <p class="admin-prod-form-hint">Animated line chart of top requested models in the selected period. Year is year-to-date (Jan 1 through today).</p>
             </div>
             <div class="p-4 sm:p-6 space-y-4">
-                <form method="GET" action="{{ route('admin.customer-needs.index') }}" class="flex flex-wrap items-end gap-3">
-                    <div class="flex flex-wrap gap-2">
-                        <button type="submit" name="period" value="week" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? 'week') === 'week' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Week</button>
-                        <button type="submit" name="period" value="month" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'month' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Month</button>
-                        <button type="submit" name="period" value="year" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'year' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Year</button>
-                        <button type="submit" name="period" value="other" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'other' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Other</button>
-                    </div>
-                    <div>
-                        <label for="start_date" class="admin-prod-label">From</label>
-                        <input id="start_date" type="date" name="start_date" value="{{ $startDate ?? '' }}" class="admin-prod-input">
-                    </div>
-                    <div>
-                        <label for="end_date" class="admin-prod-label">To</label>
-                        <input id="end_date" type="date" name="end_date" value="{{ $endDate ?? '' }}" class="admin-prod-input">
-                    </div>
-                    <button type="submit" name="period" value="other" class="admin-prod-btn-primary">Apply</button>
+                <form method="GET" action="{{ route('admin.customer-needs.index') }}" class="flex flex-wrap gap-2">
+                    <button type="submit" name="period" value="today" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? 'today') === 'today' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Today</button>
+                    <button type="submit" name="period" value="week" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'week' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Week</button>
+                    <button type="submit" name="period" value="month" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'month' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Month</button>
+                    <button type="submit" name="period" value="year" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'year' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Year</button>
                 </form>
                 <div id="leadsLineChart" class="w-full h-[360px]"></div>
             </div>
@@ -48,6 +37,9 @@
                         <tr>
                             <th class="py-3 pr-4">Submitted</th>
                             <th class="py-3 pr-4">Agent</th>
+                            <th class="py-3 pr-4">Customer</th>
+                            <th class="py-3 pr-4">Phone</th>
+                            <th class="py-3 pr-4">Branch</th>
                             <th class="py-3 pr-4">Category</th>
                             <th class="py-3">Model</th>
                         </tr>
@@ -57,12 +49,15 @@
                             <tr>
                                 <td class="py-3 pr-4 whitespace-nowrap align-top">{{ $n->created_at?->format('Y-m-d H:i') ?? '—' }}</td>
                                 <td class="py-3 pr-4 align-top break-words">{{ $n->agent?->name ?? '—' }}</td>
+                                <td class="py-3 pr-4 align-top break-words">{{ $n->customer_name ?? '—' }}</td>
+                                <td class="py-3 pr-4 align-top break-words">{{ $n->customer_phone ?? '—' }}</td>
+                                <td class="py-3 pr-4 align-top break-words">{{ $n->branch?->name ?? '—' }}</td>
                                 <td class="py-3 pr-4 align-top break-words">{{ $n->category?->name ?? '—' }}</td>
                                 <td class="py-3 align-top break-words">{{ $n->product?->name ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-10 text-center text-slate-500">No needs submitted yet.</td>
+                                <td colspan="7" class="py-10 text-center text-slate-500">No needs submitted yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

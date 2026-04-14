@@ -15,45 +15,31 @@ class CustomerNeedsController extends Controller
      */
     public function index(Request $request): View
     {
-        $selectedPeriod = $request->query('period', 'week');
+        $selectedPeriod = $request->query('period', 'today');
         $today = Carbon::today();
         $start = null;
         $end = null;
 
-        if ($selectedPeriod === 'month') {
+        if ($selectedPeriod === 'today') {
+            $start = $today->copy()->startOfDay();
+            $end = $today->copy()->endOfDay();
+        } elseif ($selectedPeriod === 'week') {
+            $start = $today->copy()->startOfWeek();
+            $end = $today->copy()->endOfWeek();
+        } elseif ($selectedPeriod === 'month') {
             $start = $today->copy()->startOfMonth();
             $end = $today->copy()->endOfMonth();
         } elseif ($selectedPeriod === 'year') {
             $start = $today->copy()->startOfYear();
-            $end = $today->copy()->endOfYear();
-        } elseif ($selectedPeriod === 'other') {
-            $rawStart = $request->query('start_date');
-            $rawEnd = $request->query('end_date');
-            if ($rawStart && $rawEnd) {
-                try {
-                    $start = Carbon::parse($rawStart)->startOfDay();
-                    $end = Carbon::parse($rawEnd)->endOfDay();
-                    if ($end->lt($start)) {
-                        [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
-                    }
-                } catch (\Throwable $e) {
-                    $start = $today->copy()->startOfWeek();
-                    $end = $today->copy()->endOfWeek();
-                    $selectedPeriod = 'week';
-                }
-            } else {
-                $start = $today->copy()->startOfWeek();
-                $end = $today->copy()->endOfWeek();
-                $selectedPeriod = 'week';
-            }
+            $end = $today->copy()->endOfDay();
         } else {
-            $selectedPeriod = 'week';
-            $start = $today->copy()->startOfWeek();
-            $end = $today->copy()->endOfWeek();
+            $selectedPeriod = 'today';
+            $start = $today->copy()->startOfDay();
+            $end = $today->copy()->endOfDay();
         }
 
         $customerNeedsQuery = CustomerNeed::query()
-            ->with(['agent', 'category', 'product'])
+            ->with(['agent', 'category', 'product', 'branch'])
             ->whereBetween('created_at', [$start, $end])
             ->latest('id');
 
@@ -113,8 +99,6 @@ class CustomerNeedsController extends Controller
         return view('admin.customer-needs.index', [
             'customerNeeds' => $customerNeeds,
             'selectedPeriod' => $selectedPeriod,
-            'startDate' => $start->toDateString(),
-            'endDate' => $end->toDateString(),
             'chartRows' => $chartRows,
         ]);
     }

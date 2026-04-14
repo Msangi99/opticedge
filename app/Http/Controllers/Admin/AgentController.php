@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\User;
@@ -16,7 +17,7 @@ class AgentController extends Controller
 {
     public function index()
     {
-        $agents = User::where('role', 'agent')->orderBy('name')->get();
+        $agents = User::where('role', 'agent')->with('branch')->orderBy('name')->get();
         return view('admin.agents.index', compact('agents'));
     }
 
@@ -25,6 +26,7 @@ class AgentController extends Controller
         if ($agent->role !== 'agent') {
             abort(404);
         }
+        $agent->load('branch');
         $assignments = AgentAssignment::where('agent_id', $agent->id)->with('product.category')->get();
         return view('admin.agents.show', compact('agent', 'assignments'));
     }
@@ -136,7 +138,9 @@ class AgentController extends Controller
 
     public function create()
     {
-        return view('admin.agents.create');
+        $branches = Branch::orderBy('name')->get();
+
+        return view('admin.agents.create', compact('branches'));
     }
 
     public function store(Request $request)
@@ -145,10 +149,15 @@ class AgentController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:100',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
         $validated['password'] = Hash::make($validated['password']);
         $validated['role'] = 'agent';
         $validated['status'] = 'active';
+        if (empty($validated['branch_id'])) {
+            $validated['branch_id'] = null;
+        }
         $user = User::create($validated);
         $user->forceFill(['email_verified_at' => now()])->save();
         return redirect()->route('admin.agents.index')->with('success', 'Agent created. They can log in and will see their dashboard.');

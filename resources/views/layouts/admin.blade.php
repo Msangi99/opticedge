@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'opticedgeafrica') }} - Admin</title>
+    <title>{{ config('app.name', 'opticadgeafrica') }} - Admin</title>
+    <link rel="icon" type="image/png" href="{{ asset('app-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('app-icon.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -370,14 +372,6 @@
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Vendors</a>
             <a href="{{ route('admin.agents.index') }}"
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Agents</a>
-            <a href="{{ route('admin.stock.stocks') }}"
-                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Stock</a>
-            <a href="{{ route('admin.reports.index') }}"
-                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Reports</a>
-            <a href="{{ route('admin.expenses.index') }}"
-                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Expenses</a>
-            <a href="{{ route('admin.settings.index') }}"
-                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Settings</a>
         </div>
         </div>
     </header>

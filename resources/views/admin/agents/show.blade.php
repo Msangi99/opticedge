@@ -15,7 +15,15 @@
             <div>
                 <p class="admin-prod-eyebrow">Agent</p>
                 <h1 class="admin-prod-title">{{ $agent->name }}</h1>
-                <p class="admin-prod-subtitle">{{ $agent->email }}</p>
+                <p class="admin-prod-subtitle">
+                    {{ $agent->email }}
+                    @if($agent->phone)
+                        <span class="text-slate-400">·</span> {{ $agent->phone }}
+                    @endif
+                    @if($agent->branch)
+                        <span class="text-slate-400">·</span> {{ $agent->branch->name }}
+                    @endif
+                </p>
             </div>
             <a href="{{ route('admin.agents.assign-products') }}?agent_id={{ $agent->id }}"
                 class="admin-prod-btn-primary shrink-0">Assign products</a>

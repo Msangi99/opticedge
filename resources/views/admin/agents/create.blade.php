@@ -21,7 +21,7 @@
         <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Account</h2>
-                <p class="admin-prod-form-hint">Name, email, and password for sign-in.</p>
+                <p class="admin-prod-form-hint">Name, email, phone, branch, and password for sign-in.</p>
             </div>
             <form method="POST" action="{{ route('admin.agents.store') }}" class="admin-prod-form-body space-y-6">
                 @csrf
@@ -38,6 +38,28 @@
                     <input type="email" id="email" name="email" value="{{ old('email') }}" required
                         class="admin-prod-input" autocomplete="email">
                     @error('email')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="phone" class="admin-prod-label">Phone</label>
+                    <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
+                        class="admin-prod-input" autocomplete="tel" placeholder="e.g. +255 …">
+                    @error('phone')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="branch_id" class="admin-prod-label">Branch</label>
+                    <select name="branch_id" id="branch_id" class="admin-prod-select w-full max-w-xl">
+                        <option value="">— No branch —</option>
+                        @foreach($branches ?? [] as $branch)
+                            <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('branch_id')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>

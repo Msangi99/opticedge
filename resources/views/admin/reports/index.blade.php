@@ -39,6 +39,118 @@
             </div>
         </div>
 
+        @php
+            $asr = $agentStockReport;
+        @endphp
+        <div class="admin-clay-panel overflow-hidden mb-8">
+            <div class="admin-prod-form-head">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h2 class="admin-prod-form-title">Agent opening stock &amp; sales (by product)</h2>
+                        <p class="admin-prod-form-hint max-w-3xl">
+                            <strong>Opening</strong> is end-of-previous-day <strong>closing</strong> (rollover).
+                            <strong>Shop</strong> counts devices not assigned to an agent; each <strong>agent</strong> counts assigned IMEIs.
+                            <strong>Sales</strong> are units with <code class="text-xs bg-slate-100 px-1 rounded">sold_at</code> on the report date.
+                            <strong>Transfer</strong> (shop) is net branch moves that day for unassigned items.
+                        </p>
+                    </div>
+                    <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
+                        class="admin-prod-btn-primary text-sm py-2 px-4 shrink-0 whitespace-nowrap">
+                        Export Excel (CSV)
+                    </a>
+                </div>
+            </div>
+            <div class="admin-prod-form-body !pt-4 border-t border-white/60">
+                <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-wrap items-end gap-3 mb-4">
+                    <div>
+                        <label for="report_date" class="admin-prod-label !mb-1">Report date</label>
+                        <input type="date" id="report_date" name="report_date" value="{{ $asr['report_date'] }}"
+                            class="admin-prod-input py-2 text-sm min-w-[11rem]">
+                    </div>
+                    <div>
+                        <label for="agent_report_branch_id" class="admin-prod-label !mb-1">Branch</label>
+                        <select name="branch_id" id="agent_report_branch_id" class="admin-prod-select text-sm min-w-[200px] py-2">
+                            <option value="">All branches</option>
+                            @foreach($reportBranchOptions as $b)
+                                <option value="{{ $b->id }}" @selected((string) request('branch_id') === (string) $b->id)>{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="admin-prod-btn-primary text-sm py-2 px-4">Apply</button>
+                </form>
+
+                @if($asr['agents']->isEmpty())
+                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — only <strong>Shop</strong> columns apply. Add agents under Sales team to see per-agent stock.</p>
+                @endif
+                @if(count($asr['rows']) === 0)
+                    <p class="text-sm text-slate-500 py-6">No stock movement for this date and branch filter.</p>
+                @else
+                    <div class="admin-prod-table-wrap overflow-x-auto rounded-xl">
+                        <table class="min-w-[720px] text-sm">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Price (TZS)</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Purchased<br><span class="font-normal text-slate-500">today</span></th>
+                                    <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Shop</th>
+                                    @foreach($asr['agents'] as $agent)
+                                        <th scope="col" class="admin-prod-th text-center bg-orange-50/80" colspan="3">{{ $agent->name }}</th>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Opening</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Sales</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Transfer</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Closing</th>
+                                    @foreach($asr['agents'] as $agent)
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Opening</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Sales</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Closing</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($asr['rows'] as $row)
+                                    <tr>
+                                        <td class="font-medium text-[#232f3e]">{{ $row['name'] }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['price'], 0) }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['purchased_today']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['transfer']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold">{{ number_format($row['shop']['closing']) }}</td>
+                                        @foreach($asr['agents'] as $agent)
+                                            @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
+                                            <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($ac['opening']) }}</td>
+                                            <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($ac['sales']) }}</td>
+                                            <td class="text-right font-variant-numeric bg-orange-50/30 font-semibold">{{ number_format($ac['closing']) }}</td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                                @php $tot = $asr['totals']; @endphp
+                                <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e]">
+                                    <td>Totals</td>
+                                    <td class="text-right">—</td>
+                                    <td class="text-right font-variant-numeric">{{ number_format($tot['purchased_today']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['opening']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['sales']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['transfer']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['closing']) }}</td>
+                                    @foreach($asr['agents'] as $agent)
+                                        @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
+                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['closing']) }}</td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-3 text-xs text-slate-500">Closing = opening − sales (+ shop transfer net). Purchased today = new device rows added this date.</p>
+                @endif
+            </div>
+        </div>
+
         @if($branchesBusiness->isNotEmpty() || $unassignedPurchases > 0)
             <div class="admin-clay-panel overflow-hidden mb-8">
                 <div class="admin-prod-form-head">
@@ -48,6 +160,9 @@
                             <p class="admin-prod-form-hint">Highlight a branch to see detail above the table.</p>
                         </div>
                         <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-wrap items-end gap-2">
+                            @if(request('report_date'))
+                                <input type="hidden" name="report_date" value="{{ request('report_date') }}">
+                            @endif
                             <div>
                                 <label for="branch_id" class="admin-prod-label !mb-1">Branch</label>
                                 <select name="branch_id" id="branch_id" onchange="this.form.submit()" class="admin-prod-select text-sm min-w-[200px] py-2">
@@ -58,7 +173,7 @@
                                 </select>
                             </div>
                             @if(request('branch_id'))
-                                <a href="{{ route('admin.reports.index') }}" class="admin-prod-btn-ghost text-sm py-2">Clear</a>
+                                <a href="{{ route('admin.reports.index', request()->only('report_date')) }}" class="admin-prod-btn-ghost text-sm py-2">Clear</a>
                             @endif
                         </form>
                     </div>
@@ -68,7 +183,11 @@
                         <div class="admin-prod-alert admin-prod-alert--warning mb-4">
                             <span class="font-semibold text-slate-800">{{ $selectedBranchDetail->branch->name }}</span>
                             <span class="block mt-1 text-sm">
+                                Opening: {{ number_format($selectedBranchDetail->opening_stock) }}
+                                ·
                                 Purchases: {{ $selectedBranchDetail->purchase_count }}
+                                · Sales: {{ number_format($selectedBranchDetail->sales_count) }}
+                                · Closing: {{ number_format($selectedBranchDetail->closing_stock) }}
                                 · Total:
                                 <strong class="text-[#c2410c]">{{ number_format($selectedBranchDetail->purchase_total, 2) }} TZS</strong>
                             </span>
@@ -76,11 +195,14 @@
                     @endif
 
                     <div class="admin-prod-table-wrap overflow-x-auto rounded-xl">
-                        <table class="min-w-[480px]">
+                        <table class="min-w-[760px]">
                             <thead>
                                 <tr>
                                     <th scope="col" class="admin-prod-th">Branch</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end">Opening Stock</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Purchases</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end">Sales</th>
+                                    <th scope="col" class="admin-prod-th admin-prod-th--end">Closing Stock</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Value (TZS)</th>
                                 </tr>
                             </thead>
@@ -88,21 +210,27 @@
                                 @foreach($branchesBusiness as $row)
                                     <tr class="@if(request('branch_id') == $row->id) bg-orange-50/40 @endif">
                                         <td class="font-medium text-[#232f3e]">{{ $row->name }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->opening_stock) }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->purchase_count) }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->sales_count) }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->closing_stock) }}</td>
                                         <td class="text-right font-semibold font-variant-numeric">{{ number_format($row->purchase_total, 2) }}</td>
                                     </tr>
                                 @endforeach
                                 @if($unassignedPurchases > 0)
                                     <tr class="text-slate-600">
                                         <td class="italic">No branch assigned</td>
+                                        <td class="text-right">{{ number_format($unassignedOpeningStock) }}</td>
                                         <td class="text-right">{{ number_format($unassignedPurchases) }}</td>
+                                        <td class="text-right">{{ number_format($unassignedSales) }}</td>
+                                        <td class="text-right">{{ number_format($unassignedClosingStock) }}</td>
                                         <td class="text-right">{{ number_format($unassignedPurchaseTotal, 2) }}</td>
                                     </tr>
                                 @endif
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Totals use each purchase amount (or quantity × unit price).</p>
+                    <p class="mt-3 text-xs text-slate-500">Closing stock is calculated as Opening stock + Purchases - Sales. Totals use each purchase amount (or quantity × unit price).</p>
                 </div>
             </div>
         @endif

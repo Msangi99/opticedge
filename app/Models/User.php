@@ -25,6 +25,7 @@ class User extends Authenticatable
         'status',
         'business_name',
         'phone',
+        'branch_id',
         'how_did_you_hear',
         'referred_by',
     ];
@@ -66,5 +67,10 @@ class User extends Authenticatable
     public function addresses()
     {
         return $this->hasMany(Address::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }
