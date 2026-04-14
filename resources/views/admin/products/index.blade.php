@@ -31,7 +31,7 @@
                         <tr>
                             <th scope="col" class="admin-prod-th">Image</th>
                             <th scope="col" class="admin-prod-th">Name</th>
-                            <th scope="col" class="admin-prod-th">Brand</th>
+                            <th scope="col" class="admin-prod-th">Category</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--desc">Description</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
@@ -54,7 +54,7 @@
                                     </div>
                                 </td>
                                 <td class="font-semibold text-[#232f3e]">{{ $product->name }}</td>
-                                <td>{{ $product->brand }}</td>
+                                <td>{{ $product->category?->name ?? '—' }}</td>
                                 <td class="max-w-md">
                                     @if(filled($product->description))
                                         @php($descPlain = strip_tags($product->description))
