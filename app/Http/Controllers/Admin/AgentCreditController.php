@@ -58,6 +58,34 @@ class AgentCreditController extends Controller
         return view('admin.stock.edit-agent-credit', compact('credit', 'paymentOptions'));
     }
 
+    public function downloadInvoice(int $id)
+    {
+        $credit = AgentCredit::with(['agent', 'product.category', 'productListItem'])->findOrFail($id);
+
+        if (($credit->payment_status ?? 'pending') !== 'paid') {
+            return redirect()
+                ->route('admin.stock.agent-credits')
+                ->with('info', 'Invoice is available after this credit is fully paid.');
+        }
+
+        $invoiceNo = 'AC-' . str_pad((string) $credit->id, 6, '0', STR_PAD_LEFT);
+        $invoiceDate = $credit->paid_date ?? $credit->date ?? now();
+        $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $title = 'RECEIPT';
+
+        $html = view('admin.stock.receipt-invoice', [
+            'credit' => $credit,
+            'invoiceNo' => $invoiceNo,
+            'invoiceDate' => $invoiceDate,
+            'title' => $title,
+        ])->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
     /**
      * Update only the payment channel from the agent credits list (balances adjusted like full update).
      */

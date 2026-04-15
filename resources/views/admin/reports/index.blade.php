@@ -41,6 +41,22 @@
 
         @php
             $asr = $agentStockReport;
+            $agentColorBands = [
+                'bg-orange-100/80',
+                'bg-sky-100/80',
+                'bg-emerald-100/80',
+                'bg-violet-100/80',
+                'bg-amber-100/80',
+                'bg-rose-100/80',
+            ];
+            $agentCellBands = [
+                'bg-orange-100/40',
+                'bg-sky-100/40',
+                'bg-emerald-100/40',
+                'bg-violet-100/40',
+                'bg-amber-100/40',
+                'bg-rose-100/40',
+            ];
         @endphp
         <div class="admin-clay-panel overflow-hidden mb-8">
             <div class="admin-prod-form-head">
@@ -94,7 +110,8 @@
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Purchased<br><span class="font-normal text-slate-500">today</span></th>
                                     <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Shop</th>
                                     @foreach($asr['agents'] as $agent)
-                                        <th scope="col" class="admin-prod-th text-center bg-orange-50/80" colspan="3">{{ $agent->name }}</th>
+                                        @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
+                                        <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agent->name }}</th>
                                     @endforeach
                                 </tr>
                                 <tr>
@@ -103,9 +120,10 @@
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Transfer</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Closing</th>
                                     @foreach($asr['agents'] as $agent)
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Opening</th>
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Sales</th>
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-orange-50/80">Closing</th>
+                                        @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Opening</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Sales</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Closing</th>
                                     @endforeach
                                 </tr>
                             </thead>
@@ -121,9 +139,10 @@
                                         <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold">{{ number_format($row['shop']['closing']) }}</td>
                                         @foreach($asr['agents'] as $agent)
                                             @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
-                                            <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($ac['opening']) }}</td>
-                                            <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($ac['sales']) }}</td>
-                                            <td class="text-right font-variant-numeric bg-orange-50/30 font-semibold">{{ number_format($ac['closing']) }}</td>
+                                            @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($ac['opening']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($ac['sales']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} font-semibold">{{ number_format($ac['closing']) }}</td>
                                         @endforeach
                                     </tr>
                                 @endforeach
@@ -138,9 +157,10 @@
                                     <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['closing']) }}</td>
                                     @foreach($asr['agents'] as $agent)
                                         @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
-                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['opening']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['sales']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-orange-50/30">{{ number_format($tc['closing']) }}</td>
+                                        @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['closing']) }}</td>
                                     @endforeach
                                 </tr>
                             </tbody>

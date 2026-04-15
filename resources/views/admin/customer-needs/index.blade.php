@@ -17,7 +17,6 @@
             </div>
             <div class="p-4 sm:p-6 space-y-4">
                 <form method="GET" action="{{ route('admin.customer-needs.index') }}" class="flex flex-wrap gap-2">
-                    <button type="submit" name="period" value="today" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? 'today') === 'today' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Today</button>
                     <button type="submit" name="period" value="week" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'week' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Week</button>
                     <button type="submit" name="period" value="month" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'month' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Month</button>
                     <button type="submit" name="period" value="year" class="admin-prod-btn-ghost {{ ($selectedPeriod ?? '') === 'year' ? '!text-[#232f3e] !border-[#fa8900]/60 !bg-[#fa8900]/10' : '' }}">Year</button>

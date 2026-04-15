@@ -58,6 +58,8 @@ class AgentCreditApiController extends Controller
                 'first_due_date' => $credit->first_due_date instanceof \Carbon\Carbon
                     ? $credit->first_due_date->format('Y-m-d')
                     : ($credit->first_due_date ? (string) $credit->first_due_date : null),
+                'invoice_available' => ($credit->payment_status ?? '') === 'paid',
+                'invoice_endpoint' => '/agent/credits/' . $credit->id . '/invoice',
             ];
         });
 
@@ -153,5 +155,36 @@ class AgentCreditApiController extends Controller
                 'payment_status' => $credit->payment_status,
             ],
         ], 200);
+    }
+
+    public function downloadInvoice(int $id)
+    {
+        $credit = AgentCredit::query()
+            ->where('agent_id', Auth::id())
+            ->with(['product.category', 'productListItem'])
+            ->findOrFail($id);
+
+        if (($credit->payment_status ?? 'pending') !== 'paid') {
+            return response()->json([
+                'message' => 'Invoice is available after this credit is fully paid.',
+            ], 422);
+        }
+
+        $invoiceNo = 'AC-' . str_pad((string) $credit->id, 6, '0', STR_PAD_LEFT);
+        $invoiceDate = $credit->paid_date ?? $credit->date ?? now();
+        $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $title = 'RECEIPT';
+
+        $html = view('admin.stock.receipt-invoice', [
+            'credit' => $credit,
+            'invoiceNo' => $invoiceNo,
+            'invoiceDate' => $invoiceDate,
+            'title' => $title,
+        ])->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

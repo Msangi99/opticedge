@@ -129,13 +129,27 @@ class AgentDashboardController extends Controller
         $soldItems = $soldQuery->orderByDesc('sold_at')
             ->get()
             ->unique('id')
-            ->map(fn (ProductListItem $item) => $this->mapInventoryItem($item, [
-                'state' => 'sold',
-                'sold_at' => $item->sold_at ? $item->sold_at->toIso8601String() : null,
-                'customer_name' => $item->pendingSale?->customer_name
-                    ?? $item->agentCredit?->customer_name
-                    ?? $item->agentSale?->customer_name,
-            ]))
+            ->map(function (ProductListItem $item) {
+                $agentCredit = $item->agentCredit;
+                $agentSale = $item->agentSale;
+                $creditPaid = $agentCredit && ($agentCredit->payment_status ?? '') === 'paid';
+                $salePaid = $agentSale && max(0, (float) ($agentSale->balance ?? 0)) <= 0.0001;
+
+                return $this->mapInventoryItem($item, [
+                    'state' => 'sold',
+                    'sold_at' => $item->sold_at ? $item->sold_at->toIso8601String() : null,
+                    'customer_name' => $item->pendingSale?->customer_name
+                        ?? $agentCredit?->customer_name
+                        ?? $agentSale?->customer_name,
+                    'agent_credit_id' => $agentCredit?->id,
+                    'agent_sale_id' => $agentSale?->id,
+                    'invoice_type' => $agentCredit ? 'credit' : ($agentSale ? 'sale' : null),
+                    'invoice_available' => $creditPaid || $salePaid,
+                    'invoice_endpoint' => $agentCredit
+                        ? '/agent/credits/' . $agentCredit->id . '/invoice'
+                        : ($agentSale ? '/agent/sales/' . $agentSale->id . '/invoice' : null),
+                ]);
+            })
             ->values()
             ->all();
 
@@ -151,6 +165,33 @@ class AgentDashboardController extends Controller
                 'sold' => $soldItems,
                 'assigned' => $assignedAll,
             ],
+        ]);
+    }
+
+    public function downloadSaleInvoice(int $id)
+    {
+        $sale = AgentSale::query()
+            ->where('agent_id', Auth::id())
+            ->with(['product.category'])
+            ->findOrFail($id);
+
+        $remaining = max(0, (float) ($sale->balance ?? 0));
+        if ($remaining > 0.0001) {
+            return response()->json([
+                'message' => 'Invoice is available after this sale is fully paid.',
+            ], 422);
+        }
+
+        $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
+        $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();
+        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $title = 'RECEIPT';
+
+        $html = view('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 

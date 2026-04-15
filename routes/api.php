@@ -84,6 +84,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('customer-needs', [AgentCustomerNeedController::class, 'store']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
+        Route::get('credits/{id}/invoice', [AgentCreditApiController::class, 'downloadInvoice']);
+        Route::get('sales/{id}/invoice', [\App\Http\Controllers\Api\AgentDashboardController::class, 'downloadSaleInvoice']);
 
         Route::get('transfer-recipients', [AgentProductTransferApiController::class, 'transferRecipients']);
         Route::get('transferable-imeis', [AgentProductTransferApiController::class, 'transferableImeis']);

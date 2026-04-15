@@ -336,6 +336,30 @@ class StockController extends Controller
         return redirect()->route('admin.stock.agent-sales')->with('success', 'Commission updated.');
     }
 
+    public function downloadAgentSaleInvoice($id)
+    {
+        $sale = AgentSale::with(['product.category', 'agent'])->findOrFail($id);
+
+        $remaining = max(0, (float) ($sale->balance ?? 0));
+        if ($remaining > 0.0001) {
+            return redirect()
+                ->route('admin.stock.agent-sales')
+                ->with('info', 'Invoice is available after this sale is fully paid.');
+        }
+
+        $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
+        $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();
+        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $title = 'RECEIPT';
+
+        $html = view('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
     public function shopRecords()
     {
         $shopRecords = \App\Models\ShopRecord::with('product')->latest('date')->get();
@@ -1001,6 +1025,22 @@ class StockController extends Controller
         $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
 
         return view('admin.stock.edit-distribution', compact('sale', 'paymentOptions'));
+    }
+
+    public function downloadDistributionInvoice($id)
+    {
+        $sale = DistributionSale::with(['product.category', 'dealer', 'payments.paymentOption'])->findOrFail($id);
+
+        $invoiceNo = str_pad((string) $sale->id, 4, '0', STR_PAD_LEFT);
+        $safeDate = ($sale->date ? Carbon::parse($sale->date)->format('Ymd') : now()->format('Ymd'));
+        $filename = "delivery-note-{$invoiceNo}-{$safeDate}.html";
+
+        $html = view('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'))->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 
     public function updateDistribution(Request $request, $id)

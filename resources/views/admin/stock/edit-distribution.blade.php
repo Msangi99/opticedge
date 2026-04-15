@@ -25,12 +25,22 @@
                     $pendingNow = max(0, $saleTotal - $alreadyPaid);
                 @endphp
 
-                <div class="space-y-2 text-sm text-slate-600 rounded-lg border border-slate-200/80 bg-slate-50/50 p-4">
-                    <p><span class="font-semibold text-slate-800">Dealer:</span> {{ $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A' }}</p>
-                    <p><span class="font-semibold text-slate-800">Product:</span> {{ $sale->product ? ($sale->product->name) : 'N/A' }}</p>
-                    <p><span class="font-semibold text-slate-800">Total selling value:</span> {{ number_format($saleTotal, 2) }} TZS</p>
-                    <p><span class="font-semibold text-slate-800">Already paid:</span> {{ number_format($alreadyPaid, 2) }} TZS</p>
-                    <p><span class="font-semibold text-slate-800">Remaining:</span> <strong class="text-amber-800">{{ number_format($pendingNow, 2) }} TZS</strong></p>
+                <div class="text-sm text-slate-600 rounded-lg border border-slate-200/80 bg-slate-50/50 p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="space-y-2">
+                            <p><span class="font-semibold text-slate-800">Dealer:</span> {{ $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A' }}</p>
+                            <p><span class="font-semibold text-slate-800">Product:</span> {{ $sale->product ? ($sale->product->name) : 'N/A' }}</p>
+                            <p><span class="font-semibold text-slate-800">Total selling value:</span> {{ number_format($saleTotal, 2) }} TZS</p>
+                            <p><span class="font-semibold text-slate-800">Already paid:</span> {{ number_format($alreadyPaid, 2) }} TZS</p>
+                            <p><span class="font-semibold text-slate-800">Remaining:</span> <strong class="text-amber-800">{{ number_format($pendingNow, 2) }} TZS</strong></p>
+                        </div>
+                        <a href="{{ route('admin.stock.distribution-invoice', $sale->id) }}"
+                           class="admin-prod-btn-primary shrink-0"
+                           title="Download invoice"
+                           aria-label="Download invoice">
+                            Download invoice
+                        </a>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

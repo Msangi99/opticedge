@@ -129,6 +129,10 @@
                                 </td>
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
                                     <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="admin-prod-link">Edit</a>
+                                    @if(($credit->payment_status ?? '') === 'paid')
+                                        <span class="text-slate-300 mx-1">|</span>
+                                        <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download invoice</a>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

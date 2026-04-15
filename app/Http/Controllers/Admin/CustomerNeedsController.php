@@ -15,15 +15,12 @@ class CustomerNeedsController extends Controller
      */
     public function index(Request $request): View
     {
-        $selectedPeriod = $request->query('period', 'today');
+        $selectedPeriod = $request->query('period', 'week');
         $today = Carbon::today();
         $start = null;
         $end = null;
 
-        if ($selectedPeriod === 'today') {
-            $start = $today->copy()->startOfDay();
-            $end = $today->copy()->endOfDay();
-        } elseif ($selectedPeriod === 'week') {
+        if ($selectedPeriod === 'week') {
             $start = $today->copy()->startOfWeek();
             $end = $today->copy()->endOfWeek();
         } elseif ($selectedPeriod === 'month') {
@@ -33,9 +30,9 @@ class CustomerNeedsController extends Controller
             $start = $today->copy()->startOfYear();
             $end = $today->copy()->endOfDay();
         } else {
-            $selectedPeriod = 'today';
-            $start = $today->copy()->startOfDay();
-            $end = $today->copy()->endOfDay();
+            $selectedPeriod = 'week';
+            $start = $today->copy()->startOfWeek();
+            $end = $today->copy()->endOfWeek();
         }
 
         $customerNeedsQuery = CustomerNeed::query()
