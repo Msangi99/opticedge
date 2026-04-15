@@ -172,7 +172,7 @@ class AgentDashboardController extends Controller
     {
         $sale = AgentSale::query()
             ->where('agent_id', Auth::id())
-            ->with(['product.category'])
+            ->with(['product.category', 'productListItem'])
             ->findOrFail($id);
 
         $remaining = max(0, (float) ($sale->balance ?? 0));

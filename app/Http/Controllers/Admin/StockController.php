@@ -338,7 +338,7 @@ class StockController extends Controller
 
     public function downloadAgentSaleInvoice($id)
     {
-        $sale = AgentSale::with(['product.category', 'agent'])->findOrFail($id);
+        $sale = AgentSale::with(['product.category', 'agent', 'productListItem'])->findOrFail($id);
 
         $remaining = max(0, (float) ($sale->balance ?? 0));
         if ($remaining > 0.0001) {

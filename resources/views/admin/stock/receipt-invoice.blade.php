@@ -98,7 +98,7 @@
     $remaining = max(0, $amount - $paid);
     $serial = $isCredit
         ? ($credit->productListItem?->imei_number ?? null)
-        : null;
+        : ($sale->productListItem?->imei_number ?? null);
 @endphp
 <body>
 <div class="paper">

@@ -45,4 +45,9 @@ class AgentSale extends Model
     {
         return $this->belongsTo(PaymentOption::class);
     }
+
+    public function productListItem()
+    {
+        return $this->hasOne(ProductListItem::class, 'agent_sale_id');
+    }
 }
