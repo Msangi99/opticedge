@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Distribution Invoice {{ $invoiceNo }}</title>
     <style>
+        @page { size: A4; margin: 8mm; }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 14px;
+            padding: 10px;
             background: #f3f4f6;
             font-family: Arial, Helvetica, sans-serif;
             color: #111827;
@@ -42,16 +43,19 @@
         .logo-box {
             width: 84px;
             height: 84px;
-            background: #f08a00;
+            background: transparent;
             text-align: center;
             vertical-align: middle;
             border-radius: 2px;
             overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .logo-image {
-            width: 84px;
-            height: 84px;
-            object-fit: cover;
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
             display: block;
         }
         .bar {
@@ -72,7 +76,7 @@
         .items-wrap {
             margin-top: 12px;
             border: 1px solid #6b7280;
-            min-height: 140px;
+            min-height: 96px;
         }
         .items-table thead th {
             background: #f08a00;
