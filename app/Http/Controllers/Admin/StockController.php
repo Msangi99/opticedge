@@ -17,6 +17,7 @@ use App\Models\Vendor;
 use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PurchaseInvoiceNumber;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -349,15 +350,12 @@ class StockController extends Controller
 
         $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();
-        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';
         $title = 'RECEIPT';
 
-        $html = view('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))->render();
-
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        return Pdf::loadView('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))
+            ->setPaper('a4')
+            ->download($filename);
     }
 
     public function shopRecords()
@@ -1033,14 +1031,11 @@ class StockController extends Controller
 
         $invoiceNo = str_pad((string) $sale->id, 4, '0', STR_PAD_LEFT);
         $safeDate = ($sale->date ? Carbon::parse($sale->date)->format('Ymd') : now()->format('Ymd'));
-        $filename = "delivery-note-{$invoiceNo}-{$safeDate}.html";
+        $filename = "distribution-invoice-{$invoiceNo}-{$safeDate}.pdf";
 
-        $html = view('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'))->render();
-
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
+        return Pdf::loadView('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'))
+            ->setPaper('a4')
+            ->download($filename);
     }
 
     public function updateDistribution(Request $request, $id)

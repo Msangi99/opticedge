@@ -3,283 +3,184 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Delivery Note {{ $invoiceNo }}</title>
+    <title>Distribution Invoice {{ $invoiceNo }}</title>
     <style>
-        :root {
-            --ink: #0b4ea2;
-            --ink-dark: #083a78;
-            --line: #2a66b2;
-        }
-
         * { box-sizing: border-box; }
-
         body {
             margin: 0;
-            padding: 20px;
-            background: #f5f7fb;
-            font-family: "Arial", "Helvetica", sans-serif;
-            color: #17345c;
+            padding: 18px;
+            background: #f3f4f6;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111827;
         }
-
         .sheet {
-            max-width: 760px;
+            width: 100%;
+            max-width: 800px;
             margin: 0 auto;
-            background: #fff;
-            border: 3px solid var(--line);
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(15, 53, 107, 0.08);
+            border: 1px solid #6b7280;
+            background: #ffffff;
+            padding: 22px 24px 26px;
         }
-
-        .head {
-            border-bottom: 3px solid var(--line);
-            text-align: center;
-            padding: 14px 18px 8px;
-        }
-
-        .head h1 {
-            margin: 0;
-            font-size: 40px;
-            letter-spacing: 1.2px;
-            line-height: 1;
-            color: var(--ink);
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .head .meta {
-            margin-top: 4px;
-            color: var(--ink);
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.15;
-            text-transform: uppercase;
-        }
-
-        .title {
-            text-align: center;
-            border-top: 2px solid var(--line);
-            border-bottom: 2px solid var(--line);
-            color: var(--ink);
-            font-size: 38px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            margin: 8px 14px 0;
-            padding: 8px 0 6px;
-            text-transform: uppercase;
-        }
-
-        .content {
-            padding: 12px 14px 16px;
-        }
-
-        .top-grid {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .to-box {
-            border: 2px solid var(--line);
-            border-radius: 10px;
-            padding: 10px 12px;
-            min-height: 95px;
-        }
-
-        .to-box .label,
-        .num-box .label {
-            color: var(--ink);
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .to-box .value {
-            color: #13355f;
-            font-size: 28px;
-            line-height: 1.2;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .num-box {
-            border: 2px solid var(--line);
-            border-radius: 10px;
-            padding: 10px 12px;
-            min-width: 220px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .num-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            color: #12345e;
-            font-size: 26px;
-            font-weight: 700;
-        }
-
-        table {
+        .orange { color: #f08a00; }
+        .top-table,
+        .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
         }
-
-        th, td {
-            border: 2px solid var(--line);
-            padding: 8px 10px;
-            vertical-align: top;
-        }
-
-        th {
-            text-align: left;
-            color: var(--ink);
-            font-size: 24px;
+        .title {
+            font-size: 62px;
             font-weight: 800;
+            line-height: 1;
+            margin: 0;
+            letter-spacing: 1px;
         }
-
-        td {
-            color: #12345e;
-            font-size: 24px;
-            line-height: 1.25;
-            height: 44px;
-        }
-
-        .right { text-align: right; }
-
-        .summary {
-            margin-top: 10px;
-            border: 2px solid var(--line);
-            border-radius: 10px;
-            padding: 8px 10px;
-            color: #143760;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            font-size: 24px;
+        .invoice-number {
+            margin-top: 4px;
+            font-size: 34px;
             font-weight: 700;
-            line-height: 1.4;
         }
-
-        .summary-row + .summary-row {
-            border-top: 1px dashed #8caed9;
-            margin-top: 6px;
-            padding-top: 6px;
+        .logo-box {
+            width: 96px;
+            height: 82px;
+            background: #f08a00;
+            text-align: center;
+            vertical-align: middle;
+            border-radius: 2px;
         }
-
-        .foot {
-            margin-top: 16px;
-            border-top: 2px solid var(--line);
-            padding-top: 12px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            color: #1a3f6f;
+        .logo-mark {
+            display: inline-block;
+            margin-top: 24px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 7px solid #111827;
+            position: relative;
+        }
+        .logo-mark::after {
+            content: "";
+            position: absolute;
+            right: -18px;
+            top: 8px;
+            width: 18px;
+            height: 5px;
+            background: #ffffff;
+            box-shadow: 0 8px 0 #ffffff;
+        }
+        .bar {
+            margin-top: 20px;
+            background: #f08a00;
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
+            padding: 6px 14px;
+        }
+        .meta-lines {
+            margin-top: 18px;
+            font-size: 23px;
+            line-height: 1.8;
+        }
+        .meta-lines strong { display: inline-block; min-width: 90px; }
+        .items-wrap {
+            margin-top: 24px;
+            border: 2px solid #6b7280;
+            min-height: 255px;
+        }
+        .items-table thead th {
+            background: #f08a00;
+            color: #ffffff;
             font-size: 22px;
             font-weight: 700;
+            text-align: left;
+            padding: 10px 12px;
         }
-
-        .line {
-            border-bottom: 2px solid var(--line);
-            display: inline-block;
-            min-width: 180px;
-            height: 30px;
-            vertical-align: bottom;
+        .items-table tbody td {
+            font-size: 21px;
+            padding: 12px;
+            border-top: 1px solid #d1d5db;
+            vertical-align: top;
         }
-
-        @media print {
-            body { padding: 0; background: #fff; }
-            .sheet { box-shadow: none; border-width: 2px; }
+        .right { text-align: right; }
+        .total-row {
+            margin-top: 30px;
+            font-size: 25px;
+            font-weight: 700;
+            text-align: right;
         }
+        .total-row .label { margin-right: 26px; }
+        .from-block {
+            margin-top: 26px;
+            font-size: 21px;
+            line-height: 1.7;
+        }
+        .from-block strong { display: inline-block; min-width: 95px; }
     </style>
 </head>
 @php
     $companyName = 'OPTIC EDGE AFRICA';
-    $companyAddr = 'P.O. Box 41245, Dar es Salaam';
-    $companyPhone = 'Mob: 0677 - 609929';
-    $companyLocation = 'Location: Sinza Makaburini';
     $formattedDate = $sale->date ? \Carbon\Carbon::parse($sale->date)->format('d M Y') : now()->format('d M Y');
     $dealerName = $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A';
-    $productName = $sale->product?->name ?? 'N/A';
+    $productName = $sale->product
+        ? (($sale->product->category?->name ?? 'N/A') . ' - ' . $sale->product->name)
+        : 'N/A';
     $qty = (int) ($sale->quantity_sold ?? 0);
     $unitPrice = (float) ($sale->selling_price ?? 0);
     $total = (float) ($sale->total_selling_value ?? ($qty * $unitPrice));
-    $alreadyPaid = (float) ($sale->paid_amount ?? 0);
-    $remaining = max(0, $total - $alreadyPaid);
 @endphp
 <body>
     <div class="sheet">
-        <div class="head">
-            <h1>{{ $companyName }}</h1>
-            <div class="meta">{{ $companyAddr }}</div>
-            <div class="meta">{{ $companyPhone }}</div>
-            <div class="meta">{{ $companyLocation }}</div>
+        <table class="top-table">
+            <tr>
+                <td>
+                    <h1 class="title orange">INVOICE</h1>
+                    <div class="invoice-number">Invoice Number: {{ $invoiceNo }}</div>
+                </td>
+                <td class="right" style="width: 120px;">
+                    <div class="logo-box">
+                        <span class="logo-mark"></span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="bar">To:</div>
+
+        <div class="meta-lines">
+            <div><strong>Name</strong>: {{ $dealerName }}</div>
+            <div><strong>Date</strong>: {{ $formattedDate }}</div>
         </div>
 
-        <div class="title">Delivery Note</div>
-
-        <div class="content">
-            <div class="top-grid">
-                <div class="to-box">
-                    <div class="label">M/s</div>
-                    <div class="value">{{ $dealerName }}</div>
-                </div>
-                <div class="num-box">
-                    <div class="num-row">
-                        <span>No.</span>
-                        <span>{{ $invoiceNo }}</span>
-                    </div>
-                    <div class="num-row">
-                        <span>Date:</span>
-                        <span>{{ $formattedDate }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <table>
+        <div class="items-wrap">
+            <table class="items-table">
                 <thead>
-                    <tr>
-                        <th style="width: 90px;">Qty</th>
-                        <th>Particulars</th>
-                        <th style="width: 170px;" class="right">Amount (TZS)</th>
-                    </tr>
+                <tr>
+                    <th>Item Description</th>
+                    <th style="width: 130px;">Quantity</th>
+                    <th style="width: 200px;">Unit Price (TZS)</th>
+                    <th style="width: 180px;">Total (TZS)</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>{{ number_format($qty) }}</td>
-                        <td>{{ $productName }} @ {{ number_format($unitPrice, 2) }}</td>
-                        <td class="right">{{ number_format($total, 2) }}</td>
-                    </tr>
-                    <tr><td>&nbsp;</td><td></td><td></td></tr>
-                    <tr><td>&nbsp;</td><td></td><td></td></tr>
-                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                <tr>
+                    <td>{{ $productName }}</td>
+                    <td>{{ number_format($qty) }}</td>
+                    <td>{{ number_format($unitPrice, 2) }}</td>
+                    <td>{{ number_format($total, 2) }}</td>
+                </tr>
                 </tbody>
             </table>
+        </div>
 
-            <div class="summary">
-                <div class="summary-row">
-                    <span>Total value</span>
-                    <span>{{ number_format($total, 2) }} TZS</span>
-                </div>
-                <div class="summary-row">
-                    <span>Already paid</span>
-                    <span>{{ number_format($alreadyPaid, 2) }} TZS</span>
-                </div>
-                <div class="summary-row">
-                    <span>Balance due</span>
-                    <span>{{ number_format($remaining, 2) }} TZS</span>
-                </div>
-            </div>
+        <div class="total-row">
+            <span class="label">Total Amount</span>
+            <span>: {{ number_format($total, 2) }}</span>
+        </div>
 
-            <div class="foot">
-                <div>Name: <span class="line"></span></div>
-                <div>Signature: <span class="line"></span></div>
-            </div>
+        <div class="bar">From:</div>
+        <div class="from-block">
+            <div>{{ $companyName }}</div>
+            <div><strong>Address</strong>: Dar es Salaam, Sinza Makaburini</div>
+            <div><strong>Email</strong>: info@opticedgeafrica.net</div>
+            <div><strong>Phone</strong>: 0677 - 609929</div>
         </div>
     </div>
 </body>

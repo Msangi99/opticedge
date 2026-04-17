@@ -135,7 +135,7 @@
             </tr>
             @if(!empty($serial))
             <tr>
-                <td colspan="3" class="mono">SERIAL NUMBER: {{ $serial }}</td>
+                <td colspan="3" class="mono">Imei number: {{ $serial }}</td>
             </tr>
             @endif
         </tbody>
