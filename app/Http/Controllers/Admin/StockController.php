@@ -1027,7 +1027,7 @@ class StockController extends Controller
     {
         $sale = DistributionSale::with(['product.category', 'dealer', 'payments.paymentOption'])->findOrFail($id);
 
-        $invoiceNo = str_pad((string) $sale->id, 4, '0', STR_PAD_LEFT);
+        $invoiceNo = str_pad((string) $sale->id, 5, '0', STR_PAD_LEFT);
         $safeDate = ($sale->date ? Carbon::parse($sale->date)->format('Ymd') : now()->format('Ymd'));
         $filename = "distribution-invoice-{$invoiceNo}-{$safeDate}.pdf";
 
