@@ -21,6 +21,9 @@
             border: 1px solid #9ca3af;
             background: #ffffff;
             padding: 16px 16px 18px;
+            min-height: 281mm;
+            display: flex;
+            flex-direction: column;
         }
         .orange { color: #f08a00; }
         .top-table,
@@ -77,6 +80,7 @@
             margin-top: 12px;
             border: 1px solid #6b7280;
             min-height: 96px;
+            flex: 1 1 auto;
         }
         .items-table thead th {
             background: #f08a00;
@@ -105,12 +109,14 @@
             font-size: 18px;
             font-weight: 700;
             text-align: right;
+            flex-shrink: 0;
         }
         .total-row .label { margin-right: 18px; }
         .from-block {
             margin-top: 10px;
             font-size: 14px;
             line-height: 1.45;
+            flex-shrink: 0;
         }
         .from-block strong { display: inline-block; min-width: 95px; }
         .muted-colon {
