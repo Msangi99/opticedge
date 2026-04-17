@@ -16,6 +16,16 @@ $selcomPrefix = config('selcom.prefix', 'selcom');
 Route::post("{$selcomPrefix}/checkout-callback", SelcomWebhookController::class)->name('selcom.checkout-callback');
 Route::get('/product/{product}', [App\Http\Controllers\PublicProductController::class , 'show'])->name('product.show');
 Route::get('/category/{category}', [App\Http\Controllers\PublicCategoryController::class , 'show'])->name('category.show');
+Route::get('/assets/app-icon.png', function () {
+    $iconPath = public_path('assets/app_icon.png');
+    if (!is_file($iconPath) || !is_readable($iconPath)) {
+        abort(404);
+    }
+
+    return response()->file($iconPath, [
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->name('assets.app-icon');
 
 Route::get('dashboard', function () {
     if (auth()->user()->role === 'admin') {

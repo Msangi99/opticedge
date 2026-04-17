@@ -72,7 +72,7 @@
         .items-wrap {
             margin-top: 12px;
             border: 1px solid #6b7280;
-            min-height: 220px;
+            min-height: 140px;
         }
         .items-table thead th {
             background: #f08a00;
@@ -126,21 +126,17 @@
     $qty = (int) ($sale->quantity_sold ?? 0);
     $unitPrice = (float) ($sale->selling_price ?? 0);
     $total = (float) ($sale->total_selling_value ?? ($qty * $unitPrice));
-    $appIconPathCandidates = [
-        dirname(base_path()) . DIRECTORY_SEPARATOR . 'opticapp' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . 'app_icon.png',
-        base_path('..' . DIRECTORY_SEPARATOR . 'opticapp' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . 'app_icon.png'),
-        'C:\\wamp64\\www\\optic\\opticapp\\assets\\icons\\app_icon.png',
-    ];
+    $appIconUrl = url('/assets/app_icon.png');
+    $appIconPath = public_path('assets/app_icon.png');
+    $appIconExists = is_file($appIconPath) && is_readable($appIconPath);
     $appIconDataUri = null;
-    foreach ($appIconPathCandidates as $appIconPath) {
-        if (is_file($appIconPath) && is_readable($appIconPath)) {
-            $bytes = @file_get_contents($appIconPath);
-            if ($bytes !== false) {
-                $appIconDataUri = 'data:image/png;base64,' . base64_encode($bytes);
-                break;
-            }
+    if ($appIconExists) {
+        $bytes = @file_get_contents($appIconPath);
+        if ($bytes !== false) {
+            $appIconDataUri = 'data:image/png;base64,' . base64_encode($bytes);
         }
     }
+    $iconSrc = $appIconExists ? $appIconUrl : $appIconDataUri;
 @endphp
 <body>
     <div class="sheet">
@@ -152,8 +148,10 @@
                 </td>
                 <td class="right" style="width: 120px;">
                     <div class="logo-box">
-                        @if($appIconDataUri)
-                            <img src="{{ $appIconDataUri }}" alt="App Icon" class="logo-image">
+                        @if($iconSrc)
+                            <img src="{{ $iconSrc }}" alt="App Icon" class="logo-image">
+                        @else
+                            <div style="width:84px;height:84px;background:#f08a00;"></div>
                         @endif
                     </div>
                 </td>
