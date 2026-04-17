@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
 use App\Models\PaymentOption;
+use App\Support\PdfDownload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -172,19 +173,14 @@ class AgentCreditApiController extends Controller
 
         $invoiceNo = 'AC-' . str_pad((string) $credit->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $credit->paid_date ?? $credit->date ?? now();
-        $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';
         $title = 'RECEIPT';
 
-        $html = view('admin.stock.receipt-invoice', [
+        return PdfDownload::fromView('admin.stock.receipt-invoice', [
             'credit' => $credit,
             'invoiceNo' => $invoiceNo,
             'invoiceDate' => $invoiceDate,
             'title' => $title,
-        ])->render();
-
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        ], $filename);
     }
 }

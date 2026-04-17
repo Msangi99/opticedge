@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
 use App\Models\PaymentOption;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use App\Support\PdfDownload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -75,26 +74,12 @@ class AgentCreditController extends Controller
         $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';
         $title = 'RECEIPT';
 
-        $html = view('admin.stock.receipt-invoice', [
+        return PdfDownload::fromView('admin.stock.receipt-invoice', [
             'credit' => $credit,
             'invoiceNo' => $invoiceNo,
             'invoiceDate' => $invoiceDate,
             'title' => $title,
-        ])->render();
-
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'DejaVu Sans');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4');
-        $dompdf->render();
-
-        return response($dompdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        ], $filename);
     }
 
     /**

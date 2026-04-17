@@ -7,6 +7,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
 use App\Models\AgentSale;
 use App\Models\ProductListItem;
+use App\Support\PdfDownload;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -184,15 +185,10 @@ class AgentDashboardController extends Controller
 
         $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();
-        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.html';
+        $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';
         $title = 'RECEIPT';
 
-        $html = view('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))->render();
-
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        return PdfDownload::fromView('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'), $filename);
     }
 
     private function mapInventoryItem(?ProductListItem $item, array $extra = []): ?array
