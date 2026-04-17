@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-50">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
 
 <head>
     <meta charset="utf-8">
@@ -32,21 +32,35 @@
 
             --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
         }
+
+        /* Keep autofilled inputs visually aligned with the design */
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #0f172a;
+            transition: background-color 9999s ease-out;
+            box-shadow: inset 0 0 0 1000px #f8fafc;
+        }
+
+        .auth-input:focus:-webkit-autofill {
+            box-shadow: inset 0 0 0 1000px #ffffff;
+        }
     </style>
     @vite(['resources/js/app.js'])
 </head>
 
 <body
-    class="font-sans antialiased text-slate-900 bg-slate-50 h-full flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-lg text-center mb-6">
-        <a href="/" class="flex justify-center items-center gap-1 mb-6">
-            <span class="text-3xl font-bold tracking-tight text-[#232f3e]">opticedg<span
+    class="font-sans antialiased text-slate-900 min-h-full flex flex-col justify-center items-center py-10 sm:py-14 px-4 sm:px-6 bg-gradient-to-br from-slate-100 via-white to-orange-50/40">
+    <div class="w-full max-w-md text-center mb-8">
+        <a href="/" class="inline-flex justify-center group">
+            <span class="text-3xl sm:text-4xl font-bold tracking-tight text-[#232f3e] transition group-hover:text-[#19212c]">opticedg<span
                     class="text-[#fa8900]">eafrica</span></span>
         </a>
     </div>
 
-    <div class="sm:mx-auto sm:w-full sm:max-w-lg">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
+    <div class="w-full max-w-md">
+        <div
+            class="bg-white/90 backdrop-blur-sm py-9 px-5 sm:px-10 rounded-2xl shadow-[0_25px_50px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 border border-white/80">
             {{ $slot }}
         </div>
 
