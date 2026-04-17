@@ -17,8 +17,9 @@ use App\Models\Vendor;
 use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PurchaseInvoiceNumber;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -353,9 +354,9 @@ class StockController extends Controller
         $filename = 'agent-sale-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';
         $title = 'RECEIPT';
 
-        return Pdf::loadView('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))
-            ->setPaper('a4')
-            ->download($filename);
+        $html = view('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'))->render();
+
+        return $this->downloadPdfFromHtml($html, $filename);
     }
 
     public function shopRecords()
@@ -1033,9 +1034,26 @@ class StockController extends Controller
         $safeDate = ($sale->date ? Carbon::parse($sale->date)->format('Ymd') : now()->format('Ymd'));
         $filename = "distribution-invoice-{$invoiceNo}-{$safeDate}.pdf";
 
-        return Pdf::loadView('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'))
-            ->setPaper('a4')
-            ->download($filename);
+        $html = view('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'))->render();
+
+        return $this->downloadPdfFromHtml($html, $filename);
+    }
+
+    private function downloadPdfFromHtml(string $html, string $filename)
+    {
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4');
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function updateDistribution(Request $request, $id)
