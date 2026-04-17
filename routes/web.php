@@ -88,11 +88,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
                 ->limit(20)
                 ->get();
 
-            // Overdue payables: all payables ordered by date ascending
+            // Manual payables (separate from purchase payables), for optional detail modal
             $overduePayables = \App\Models\Payable::orderBy('date', 'asc')
                 ->orderBy('id', 'asc')
                 ->limit(20)
                 ->get();
+
+            $distributorReceivables = $financialService->getDistributorReceivableBreakdown();
             
             return view('admin.dashboard', compact(
                 'totalCustomers',
@@ -106,7 +108,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
                 'endDate',
                 'paymentOptions',
                 'overduePurchases',
-                'overduePayables'
+                'overduePayables',
+                'distributorReceivables'
             ));
         }
         )->name('dashboard');

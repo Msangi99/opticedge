@@ -74,9 +74,8 @@ class CommandCenterController extends Controller
             'seed' => 'nullable|boolean',
         ]);
 
-        $command = preg_replace('/:+/', ':', str_replace(['.', '_', '-'], ':', $validated['command']));
-
-        if (! in_array($command, ArtisanCommandController::allowedCommands(), true)) {
+        $command = ArtisanCommandController::resolveAllowedCommand($validated['command']);
+        if ($command === null) {
             return redirect()->back()->withInput()->withErrors(['command' => 'That command is not allowed.']);
         }
 

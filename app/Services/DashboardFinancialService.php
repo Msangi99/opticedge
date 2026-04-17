@@ -40,6 +40,57 @@ class DashboardFinancialService
     }
 
     /**
+     * Per-dealer (distributor) totals: billed, collected, outstanding — for dashboard receivables detail.
+     *
+     * @return list<array{dealer_name: string, dealer_id: int|null, total_billed: float, total_paid: float, outstanding: float}>
+     */
+    public function getDistributorReceivableBreakdown(): array
+    {
+        $sales = DistributionSale::query()
+            ->with(['dealer:id,name'])
+            ->get(['id', 'dealer_id', 'dealer_name', 'total_selling_value', 'paid_amount', 'balance']);
+
+        return $sales
+            ->groupBy(function (DistributionSale $s) {
+                if ($s->dealer_id) {
+                    return 'id:' . $s->dealer_id;
+                }
+
+                return 'name:' . md5(strtolower(trim((string) ($s->dealer_name ?? ''))));
+            })
+            ->map(function ($group) {
+                /** @var \Illuminate\Support\Collection<int, DistributionSale> $group */
+                $first = $group->first();
+                $name = $first->dealer?->name
+                    ?? (trim((string) ($first->dealer_name ?? '')) !== '' ? $first->dealer_name : 'Unknown dealer');
+
+                $totalBilled = (float) $group->sum(fn (DistributionSale $s) => (float) ($s->total_selling_value ?? 0));
+                $totalPaid = (float) $group->sum(fn (DistributionSale $s) => (float) ($s->paid_amount ?? 0));
+                $outstanding = (float) $group->sum(function (DistributionSale $s) {
+                    if ($s->balance !== null) {
+                        return (float) $s->balance;
+                    }
+                    $t = (float) ($s->total_selling_value ?? 0);
+                    $p = (float) ($s->paid_amount ?? 0);
+
+                    return max(0, $t - $p);
+                });
+
+                return [
+                    'dealer_name' => $name,
+                    'dealer_id' => $first->dealer_id,
+                    'total_billed' => $totalBilled,
+                    'total_paid' => $totalPaid,
+                    'outstanding' => $outstanding,
+                ];
+            })
+            ->values()
+            ->sortByDesc('outstanding')
+            ->values()
+            ->all();
+    }
+
+    /**
      * Total value of our stock (products.stock_quantity * cost per unit).
      */
     public function stockInHandValue(): float

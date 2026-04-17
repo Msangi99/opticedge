@@ -611,7 +611,7 @@
 
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
-        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, overduePayablesModalOpen: false }">
+        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, manualPayablesModalOpen: false, receivablesModalOpen: false }">
             <div class="admin-dash-section-head">
                 <h3 class="admin-dash-section-title">Financial Summary</h3>
                 <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
@@ -627,7 +627,7 @@
                     </button>
                     <button type="button"
                         class="admin-dash-metric admin-dash-metric--blue text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3b82f6]"
-                        @click="overduePayablesModalOpen = true">
+                        @click="receivablesModalOpen = true">
                         <p class="admin-dash-metric-label">Receivables</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['receivables'], 0) }} TZS</p>
                         <p class="admin-dash-metric-hint">Pending from Distribution Sales</p>
@@ -800,7 +800,12 @@
                             <h3 class="admin-dash-section-title">Overdue Purchases</h3>
                             <p class="admin-dash-section-desc">Purchases not fully paid yet, oldest first.</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-wrap justify-end">
+                            <button type="button"
+                                class="admin-dash-link text-xs shrink-0 border-0 bg-transparent cursor-pointer p-0"
+                                @click="overduePurchasesModalOpen = false; manualPayablesModalOpen = true">
+                                Manual payables
+                            </button>
                             <a href="{{ route('admin.stock.purchases') }}" class="admin-dash-link text-xs shrink-0">
                                 View all
                             </a>
@@ -884,8 +889,8 @@
                 </div>
             </div>
 
-            <!-- Overdue Payables Modal -->
-            <div x-show="overduePayablesModalOpen" x-cloak
+            <!-- Distribution receivables (dealers / distributors) -->
+            <div x-show="receivablesModalOpen" x-cloak
                 class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
                 x-transition:enter="transition ease-out duration-200"
                 x-transition:enter-start="opacity-0"
@@ -893,20 +898,110 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
-                @click.self="overduePayablesModalOpen = false">
+                @click.self="receivablesModalOpen = false">
+                <div
+                    class="w-full max-w-5xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                    <div class="admin-dash-section-head flex items-center justify-between">
+                        <div>
+                            <h3 class="admin-dash-section-title">Receivables — dealers</h3>
+                            <p class="admin-dash-section-desc">Amount billed to each dealer on distribution sales, how much they have paid, and what is still owed.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('admin.stock.distribution') }}" class="admin-dash-link text-xs shrink-0">
+                                Distribution sales
+                            </a>
+                            <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                                @click="receivablesModalOpen = false">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-dash-body">
+                        @php
+                            $recvRows = collect($distributorReceivables ?? []);
+                            $recvBilled = (float) $recvRows->sum('total_billed');
+                            $recvPaid = (float) $recvRows->sum('total_paid');
+                            $recvOutstanding = (float) $recvRows->sum('outstanding');
+                        @endphp
+                        <div class="admin-dash-table-wrap">
+                            <table class="w-full text-left border-collapse" aria-label="Dealer receivables">
+                                <thead>
+                                    <tr>
+                                        <th class="admin-dash-th">Dealer</th>
+                                        <th class="admin-dash-th">Total billed</th>
+                                        <th class="admin-dash-th">Paid</th>
+                                        <th class="admin-dash-th">Remaining</th>
+                                        <th class="admin-dash-th admin-dash-th--end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                    @forelse($recvRows as $row)
+                                        <tr>
+                                            <td class="px-4 py-2.5 font-semibold text-[#232f3e]">{{ $row['dealer_name'] }}</td>
+                                            <td class="px-4 py-2.5 text-slate-700 font-variant-numeric">{{ number_format($row['total_billed'], 0) }} TZS</td>
+                                            <td class="px-4 py-2.5 text-slate-700 font-variant-numeric">{{ number_format($row['total_paid'], 0) }} TZS</td>
+                                            <td class="px-4 py-2.5 font-bold text-blue-800 font-variant-numeric">{{ number_format($row['outstanding'], 0) }} TZS</td>
+                                            <td class="px-4 py-2.5 text-right">
+                                                @if(!empty($row['dealer_id']))
+                                                    <a href="{{ route('admin.dealers.show', $row['dealer_id']) }}" class="admin-dash-link text-xs py-1.5 px-3">Dealer</a>
+                                                @else
+                                                    <span class="text-xs text-slate-400">—</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                                No distribution sales found.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                                @if($recvRows->isNotEmpty())
+                                    <tfoot>
+                                        <tr class="bg-slate-50/90 font-semibold text-[#232f3e]">
+                                            <td class="px-4 py-3">Totals</td>
+                                            <td class="px-4 py-3 font-variant-numeric">{{ number_format($recvBilled, 0) }} TZS</td>
+                                            <td class="px-4 py-3 font-variant-numeric">{{ number_format($recvPaid, 0) }} TZS</td>
+                                            <td class="px-4 py-3 text-blue-900 font-variant-numeric">{{ number_format($recvOutstanding, 0) }} TZS</td>
+                                            <td class="px-4 py-3"></td>
+                                        </tr>
+                                    </tfoot>
+                                @endif
+                            </table>
+                        </div>
+                        <p class="mt-4 text-xs text-slate-500">The Receivables figure on the dashboard is the sum of <strong>remaining</strong> balances across all distribution sales (matches “Remaining” total when every sale is included).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual payables (other obligations) -->
+            <div x-show="manualPayablesModalOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click.self="manualPayablesModalOpen = false">
                 <div
                     class="w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
                     <div class="admin-dash-section-head flex items-center justify-between">
                         <div>
-                            <h3 class="admin-dash-section-title">Overdue Payables</h3>
-                            <p class="admin-dash-section-desc">Manual payables that are still outstanding.</p>
+                            <h3 class="admin-dash-section-title">Manual payables</h3>
+                            <p class="admin-dash-section-desc">Other recorded payables (not purchase invoices).</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <a href="{{ route('admin.stock.payables') }}" class="admin-dash-link text-xs shrink-0">
                                 View all
                             </a>
                             <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
-                                @click="overduePayablesModalOpen = false">
+                                @click="manualPayablesModalOpen = false">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

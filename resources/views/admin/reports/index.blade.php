@@ -260,21 +260,27 @@
                 <h2 class="admin-prod-form-title">Sales overview (last 7 days)</h2>
             </div>
             <div class="admin-prod-form-body !pt-6">
-                <div class="h-64 flex items-end justify-between gap-2 px-1">
+                @php
+                    $salesMax = max(1, (float) max(array_values($salesData)));
+                @endphp
+                <div class="h-64 flex gap-2 px-1 items-stretch">
                     @foreach($salesData as $date => $amount)
                         @php
-                            $max = max($salesData) > 0 ? max($salesData) : 1;
-                            $height = ($amount / $max) * 100;
+                            $amt = (float) $amount;
+                            $pct = $salesMax > 0 ? ($amt / $salesMax) * 100 : 0;
+                            $barPct = $amt > 0 ? max($pct, 0.35) : 0;
                         @endphp
-                        <div class="flex-1 flex flex-col items-center group min-w-0">
-                            <div class="w-full rounded-t-md bg-gradient-to-t from-[#e07800] to-[#fa8900] opacity-85 group-hover:opacity-100 transition-opacity relative shadow-inner"
-                                style="height: {{ $height > 0 ? $height : 1 }}%; min-height: 4px;">
-                                <div
-                                    class="absolute -top-9 left-1/2 -translate-x-1/2 bg-[#232f3e] text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
-                                    {{ number_format($amount) }} TZS
+                        <div class="flex-1 flex flex-col min-w-0 h-full min-h-0 group">
+                            <div class="flex-1 min-h-0 flex flex-col justify-end">
+                                <div class="w-full rounded-t-md bg-gradient-to-t from-[#e07800] to-[#fa8900] opacity-85 group-hover:opacity-100 transition-opacity relative shadow-inner"
+                                    style="height: {{ sprintf('%.4f', $barPct) }}%; min-height: {{ $amt > 0 ? '4px' : '2px' }};">
+                                    <div
+                                        class="absolute -top-9 left-1/2 -translate-x-1/2 bg-[#232f3e] text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                                        {{ number_format($amt, 0) }} TZS
+                                    </div>
                                 </div>
                             </div>
-                            <span class="text-[10px] sm:text-xs text-slate-500 mt-2 text-center leading-tight">
+                            <span class="text-[10px] sm:text-xs text-slate-500 mt-2 text-center leading-tight shrink-0">
                                 {{ \Carbon\Carbon::parse($date)->format('M j') }}
                             </span>
                         </div>

@@ -49,7 +49,7 @@
                             </label>
                             <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                                 <input type="checkbox" name="seed" value="1" class="rounded border-slate-300 text-[#fa8900] focus:ring-[#fa8900]" @checked(old('seed'))>
-                                <span>--seed (migrate:fresh / refresh)</span>
+                                <span>--seed (<code class="text-xs">migrate:fresh</code> / <code class="text-xs">migrate:refresh</code> only; <code class="text-xs">db:fresh-seed</code> always seeds)</span>
                             </label>
                         </div>
                         <button type="submit" class="rounded-lg bg-[#232f3e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#19212c]">

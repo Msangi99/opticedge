@@ -9,6 +9,26 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
+Artisan::command('db:fresh-seed {--force : Force the operation to run when in production}', function () {
+    $this->info('Running migrate:fresh with --seed...');
+
+    $params = ['--seed' => true];
+    if ($this->option('force')) {
+        $params['--force'] = true;
+    }
+
+    $code = $this->call('migrate:fresh', $params);
+    if ($code !== 0) {
+        $this->error('migrate:fresh exited with code '.$code);
+
+        return $code;
+    }
+
+    $this->info('Database refreshed and seeded.');
+
+    return 0;
+})->purpose('Drop all tables, re-run migrations, then run database seeders (migrate:fresh --seed)');
+
 Artisan::command('stock:recalc', function () {
     $this->info('Recalculating product stock from purchases, distribution sales, agent sales, and orders...');
     $products = \App\Models\Product::all();
