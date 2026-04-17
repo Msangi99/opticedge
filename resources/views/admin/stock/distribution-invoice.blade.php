@@ -8,18 +8,18 @@
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 18px;
+            padding: 14px;
             background: #f3f4f6;
             font-family: Arial, Helvetica, sans-serif;
             color: #111827;
         }
         .sheet {
             width: 100%;
-            max-width: 800px;
+            max-width: 780px;
             margin: 0 auto;
-            border: 1px solid #6b7280;
+            border: 1px solid #9ca3af;
             background: #ffffff;
-            padding: 22px 24px 26px;
+            padding: 16px 16px 18px;
         }
         .orange { color: #f08a00; }
         .top-table,
@@ -28,7 +28,7 @@
             border-collapse: collapse;
         }
         .title {
-            font-size: 62px;
+            font-size: 52px;
             font-weight: 800;
             line-height: 1;
             margin: 0;
@@ -36,83 +36,77 @@
         }
         .invoice-number {
             margin-top: 4px;
-            font-size: 34px;
+            font-size: 24px;
             font-weight: 700;
         }
         .logo-box {
-            width: 96px;
-            height: 82px;
+            width: 84px;
+            height: 84px;
             background: #f08a00;
             text-align: center;
             vertical-align: middle;
             border-radius: 2px;
+            overflow: hidden;
         }
-        .logo-mark {
-            display: inline-block;
-            margin-top: 24px;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: 7px solid #111827;
-            position: relative;
-        }
-        .logo-mark::after {
-            content: "";
-            position: absolute;
-            right: -18px;
-            top: 8px;
-            width: 18px;
-            height: 5px;
-            background: #ffffff;
-            box-shadow: 0 8px 0 #ffffff;
+        .logo-image {
+            width: 84px;
+            height: 84px;
+            object-fit: cover;
+            display: block;
         }
         .bar {
-            margin-top: 20px;
+            margin-top: 12px;
             background: #f08a00;
             color: #ffffff;
-            font-size: 26px;
+            font-size: 30px;
             font-weight: 700;
-            padding: 6px 14px;
+            padding: 5px 12px;
+            line-height: 1.2;
         }
         .meta-lines {
-            margin-top: 18px;
-            font-size: 23px;
-            line-height: 1.8;
+            margin-top: 10px;
+            font-size: 30px;
+            line-height: 1.45;
         }
         .meta-lines strong { display: inline-block; min-width: 90px; }
         .items-wrap {
-            margin-top: 24px;
-            border: 2px solid #6b7280;
-            min-height: 255px;
+            margin-top: 12px;
+            border: 1px solid #6b7280;
+            min-height: 220px;
         }
         .items-table thead th {
             background: #f08a00;
             color: #ffffff;
-            font-size: 22px;
+            font-size: 29px;
             font-weight: 700;
             text-align: left;
-            padding: 10px 12px;
+            padding: 8px 10px;
         }
         .items-table tbody td {
-            font-size: 21px;
-            padding: 12px;
+            font-size: 28px;
+            padding: 8px 10px;
             border-top: 1px solid #d1d5db;
             vertical-align: top;
         }
         .right { text-align: right; }
         .total-row {
-            margin-top: 30px;
-            font-size: 25px;
+            margin-top: 12px;
+            font-size: 35px;
             font-weight: 700;
             text-align: right;
         }
-        .total-row .label { margin-right: 26px; }
+        .total-row .label { margin-right: 18px; }
         .from-block {
-            margin-top: 26px;
-            font-size: 21px;
-            line-height: 1.7;
+            margin-top: 10px;
+            font-size: 28px;
+            line-height: 1.45;
         }
         .from-block strong { display: inline-block; min-width: 95px; }
+        .muted-colon {
+            display: inline-block;
+            min-width: 14px;
+            text-align: center;
+        }
     </style>
 </head>
 @php
@@ -125,6 +119,14 @@
     $qty = (int) ($sale->quantity_sold ?? 0);
     $unitPrice = (float) ($sale->selling_price ?? 0);
     $total = (float) ($sale->total_selling_value ?? ($qty * $unitPrice));
+    $appIconPath = base_path('../opticapp/assets/icons/app_icon.png');
+    $appIconDataUri = null;
+    if (is_file($appIconPath) && is_readable($appIconPath)) {
+        $bytes = @file_get_contents($appIconPath);
+        if ($bytes !== false) {
+            $appIconDataUri = 'data:image/png;base64,' . base64_encode($bytes);
+        }
+    }
 @endphp
 <body>
     <div class="sheet">
@@ -136,7 +138,9 @@
                 </td>
                 <td class="right" style="width: 120px;">
                     <div class="logo-box">
-                        <span class="logo-mark"></span>
+                        @if($appIconDataUri)
+                            <img src="{{ $appIconDataUri }}" alt="App Icon" class="logo-image">
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -145,8 +149,8 @@
         <div class="bar">To:</div>
 
         <div class="meta-lines">
-            <div><strong>Name</strong>: {{ $dealerName }}</div>
-            <div><strong>Date</strong>: {{ $formattedDate }}</div>
+            <div><strong>Name</strong> <span class="muted-colon">:</span> {{ $dealerName }}</div>
+            <div><strong>Date</strong> <span class="muted-colon">:</span> {{ $formattedDate }}</div>
         </div>
 
         <div class="items-wrap">
@@ -178,9 +182,9 @@
         <div class="bar">From:</div>
         <div class="from-block">
             <div>{{ $companyName }}</div>
-            <div><strong>Address</strong>: Dar es Salaam, Sinza Makaburini</div>
-            <div><strong>Email</strong>: info@opticedgeafrica.net</div>
-            <div><strong>Phone</strong>: 0677 - 609929</div>
+            <div><strong>Address</strong> <span class="muted-colon">:</span> Dar es Salaam, Sinza Makaburini</div>
+            <div><strong>Email</strong> <span class="muted-colon">:</span> info@opticedgeafrica.net</div>
+            <div><strong>Phone</strong> <span class="muted-colon">:</span> 0677 - 609929</div>
         </div>
     </div>
 </body>

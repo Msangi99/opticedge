@@ -5,75 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'RECEIPT' }} {{ $invoiceNo ?? '' }}</title>
     <style>
+        @page { size: A4; margin: 10mm; }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 22px;
+            padding: 0;
             font-family: Arial, Helvetica, sans-serif;
             background: #f3f4f6;
             color: #1f2937;
         }
         .paper {
-            max-width: 760px;
+            max-width: 730px;
             margin: 0 auto;
             background: #fff;
             border: 1px solid #d1d5db;
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+            border-radius: 8px;
+            padding: 14px;
+            box-shadow: none;
         }
         .center { text-align: center; }
-        .brand { font-size: 42px; font-weight: 800; color: #1d4f9d; margin: 0; }
-        .meta { color: #6b7280; font-size: 18px; margin-top: 4px; }
-        .title { margin: 14px 0 6px; font-size: 52px; line-height: 1; color: #1d4f9d; font-weight: 800; }
-        .order { font-size: 26px; color: #4b5563; }
-        .sep { margin: 14px auto; width: 48%; border-top: 2px dashed #d1d5db; }
-        .section-title { font-size: 28px; color: #1d4f9d; margin: 18px 0 10px; font-weight: 800; text-transform: uppercase; }
+        .brand { font-size: 30px; font-weight: 800; color: #1d4f9d; margin: 0; }
+        .meta { color: #6b7280; font-size: 12px; margin-top: 2px; }
+        .title { margin: 8px 0 4px; font-size: 36px; line-height: 1; color: #1d4f9d; font-weight: 800; }
+        .order { font-size: 16px; color: #4b5563; }
+        .sep { margin: 8px auto; width: 46%; border-top: 1px dashed #d1d5db; }
+        .section-title { font-size: 16px; color: #1d4f9d; margin: 10px 0 6px; font-weight: 800; text-transform: uppercase; }
         .box {
             border: 1px solid #d1d5db;
-            border-radius: 10px;
-            padding: 12px 14px;
+            border-radius: 8px;
+            padding: 8px 10px;
             background: #f9fafb;
+            page-break-inside: avoid;
         }
-        .box p { margin: 4px 0; font-size: 22px; }
-        table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 22px; vertical-align: top; }
+        .box p { margin: 2px 0; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; page-break-inside: avoid; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px; vertical-align: top; }
         th { text-align: left; font-weight: 700; background: #f3f4f6; }
         .right { text-align: right; }
-        .mono { font-family: "Courier New", monospace; font-weight: 700; color: #1d4f9d; letter-spacing: 1px; }
+        .mono { font-family: "Courier New", monospace; font-weight: 700; color: #1d4f9d; letter-spacing: 0.5px; font-size: 11px; }
         .summary {
-            margin-top: 14px;
+            margin-top: 8px;
             border: 1px solid #d1d5db;
-            border-radius: 10px;
+            border-radius: 8px;
             background: #f9fafb;
-            padding: 14px;
+            padding: 8px;
+            page-break-inside: avoid;
         }
         .summary-row {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            font-size: 28px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.35;
         }
-        .summary-row.total { font-weight: 800; color: #1d4f9d; border-top: 2px dashed #d1d5db; margin-top: 8px; padding-top: 8px; }
+        .summary-row.total { font-weight: 800; color: #1d4f9d; border-top: 1px dashed #d1d5db; margin-top: 6px; padding-top: 6px; }
         .status {
-            margin-top: 14px;
+            margin-top: 8px;
             border: 1px solid #a7d6af;
             background: #eef9f0;
-            border-radius: 10px;
-            padding: 12px;
+            border-radius: 8px;
+            padding: 8px;
+            page-break-inside: avoid;
         }
-        .status .label { text-align: center; color: #246a35; font-size: 24px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
+        .status .label { text-align: center; color: #246a35; font-size: 14px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
         .foot {
-            margin-top: 16px;
+            margin-top: 8px;
             display: inline-block;
-            padding: 12px 16px;
+            padding: 8px 10px;
             background: #eaf2fb;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #1d4f9d;
+            page-break-inside: avoid;
         }
-        .foot .big { font-size: 30px; font-weight: 800; margin: 0 0 4px; }
-        .foot .small { margin: 0; color: #6b7280; font-size: 16px; }
+        .foot .big { font-size: 16px; font-weight: 800; margin: 0 0 2px; }
+        .foot .small { margin: 0; color: #6b7280; font-size: 10px; }
     </style>
 </head>
 @php
