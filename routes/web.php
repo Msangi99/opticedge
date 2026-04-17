@@ -16,10 +16,13 @@ $selcomPrefix = config('selcom.prefix', 'selcom');
 Route::post("{$selcomPrefix}/checkout-callback", SelcomWebhookController::class)->name('selcom.checkout-callback');
 Route::get('/product/{product}', [App\Http\Controllers\PublicProductController::class , 'show'])->name('product.show');
 Route::get('/category/{category}', [App\Http\Controllers\PublicCategoryController::class , 'show'])->name('category.show');
-// External db:seed — GET /db/seed?pass=1234 (password: config optic.db_seed_pass, default 1234)
+// External DB — same ?pass= as config optic.db_seed_pass (default 1234)
 Route::get('db/seed', App\Http\Controllers\ExternalDbSeedController::class)
     ->middleware('throttle:12,1')
     ->name('db.seed.external');
+Route::get('db/migrate', App\Http\Controllers\ExternalDbMigrateController::class)
+    ->middleware('throttle:12,1')
+    ->name('db.migrate.external');
 
 Route::get('/assets/app-icon.png', function () {
     $iconPath = public_path('assets/app_icon.png');

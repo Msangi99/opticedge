@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ValidatesOpticDbPass;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -9,19 +10,15 @@ use Illuminate\Support\Facades\Artisan;
 
 class ExternalDbSeedController extends Controller
 {
+    use ValidatesOpticDbPass;
+
     /**
      * Run db:seed via GET for external callers when ?pass= matches config optic.db_seed_pass (default 1234).
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $expected = (string) config('optic.db_seed_pass', '1234');
-        $given = (string) $request->query('pass', '');
-
-        if (! hash_equals($expected, $given)) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Forbidden.',
-            ], 403);
+        if ($deny = $this->opticDbPassFailed($request)) {
+            return $deny;
         }
 
         $options = [
