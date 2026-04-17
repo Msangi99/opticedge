@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'RECEIPT' }} {{ $invoiceNo ?? '' }}</title>
     <style>
-        @page { size: A4; margin: 10mm; }
+        @page { size: A4; margin: 8mm; }
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -15,70 +15,70 @@
             color: #1f2937;
         }
         .paper {
-            max-width: 730px;
+            max-width: 760px;
             margin: 0 auto;
             background: #fff;
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            padding: 14px;
+            padding: 18px;
             box-shadow: none;
         }
         .center { text-align: center; }
-        .brand { font-size: 30px; font-weight: 800; color: #1d4f9d; margin: 0; }
-        .meta { color: #6b7280; font-size: 12px; margin-top: 2px; }
-        .title { margin: 8px 0 4px; font-size: 36px; line-height: 1; color: #1d4f9d; font-weight: 800; }
-        .order { font-size: 16px; color: #4b5563; }
-        .sep { margin: 8px auto; width: 46%; border-top: 1px dashed #d1d5db; }
-        .section-title { font-size: 16px; color: #1d4f9d; margin: 10px 0 6px; font-weight: 800; text-transform: uppercase; }
+        .brand { font-size: 38px; font-weight: 800; color: #1d4f9d; margin: 0; }
+        .meta { color: #6b7280; font-size: 14px; margin-top: 3px; }
+        .title { margin: 10px 0 5px; font-size: 44px; line-height: 1; color: #1d4f9d; font-weight: 800; }
+        .order { font-size: 21px; color: #4b5563; }
+        .sep { margin: 10px auto; width: 48%; border-top: 1px dashed #d1d5db; }
+        .section-title { font-size: 24px; color: #1d4f9d; margin: 14px 0 8px; font-weight: 800; text-transform: uppercase; }
         .box {
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            padding: 8px 10px;
+            padding: 10px 12px;
             background: #f9fafb;
             page-break-inside: avoid;
         }
-        .box p { margin: 2px 0; font-size: 12px; }
+        .box p { margin: 3px 0; font-size: 15px; }
         table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; page-break-inside: avoid; }
-        th, td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px; vertical-align: top; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 15px; vertical-align: top; }
         th { text-align: left; font-weight: 700; background: #f3f4f6; }
         .right { text-align: right; }
-        .mono { font-family: "Courier New", monospace; font-weight: 700; color: #1d4f9d; letter-spacing: 0.5px; font-size: 11px; }
+        .mono { font-family: "Courier New", monospace; font-weight: 700; color: #1d4f9d; letter-spacing: 0.5px; font-size: 13px; }
         .summary {
-            margin-top: 8px;
+            margin-top: 10px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             background: #f9fafb;
-            padding: 8px;
+            padding: 10px;
             page-break-inside: avoid;
         }
         .summary-row {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            font-size: 12px;
-            line-height: 1.35;
+            font-size: 16px;
+            line-height: 1.4;
         }
-        .summary-row.total { font-weight: 800; color: #1d4f9d; border-top: 1px dashed #d1d5db; margin-top: 6px; padding-top: 6px; }
+        .summary-row.total { font-weight: 800; color: #1d4f9d; border-top: 1px dashed #d1d5db; margin-top: 7px; padding-top: 7px; }
         .status {
-            margin-top: 8px;
+            margin-top: 10px;
             border: 1px solid #a7d6af;
             background: #eef9f0;
             border-radius: 8px;
-            padding: 8px;
+            padding: 10px;
             page-break-inside: avoid;
         }
-        .status .label { text-align: center; color: #246a35; font-size: 14px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+        .status .label { text-align: center; color: #246a35; font-size: 20px; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
         .foot {
-            margin-top: 8px;
+            margin-top: 10px;
             display: inline-block;
-            padding: 8px 10px;
+            padding: 10px 12px;
             background: #eaf2fb;
             border-radius: 8px;
             color: #1d4f9d;
             page-break-inside: avoid;
         }
-        .foot .big { font-size: 16px; font-weight: 800; margin: 0 0 2px; }
-        .foot .small { margin: 0; color: #6b7280; font-size: 10px; }
+        .foot .big { font-size: 22px; font-weight: 800; margin: 0 0 3px; }
+        .foot .small { margin: 0; color: #6b7280; font-size: 12px; }
     </style>
 </head>
 @php

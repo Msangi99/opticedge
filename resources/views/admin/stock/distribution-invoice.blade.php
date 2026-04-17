@@ -28,7 +28,7 @@
             border-collapse: collapse;
         }
         .title {
-            font-size: 52px;
+            font-size: 48px;
             font-weight: 800;
             line-height: 1;
             margin: 0;
@@ -36,7 +36,7 @@
         }
         .invoice-number {
             margin-top: 4px;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
         }
         .logo-box {
@@ -58,15 +58,15 @@
             margin-top: 12px;
             background: #f08a00;
             color: #ffffff;
-            font-size: 30px;
+            font-size: 18px;
             font-weight: 700;
             padding: 5px 12px;
             line-height: 1.2;
         }
         .meta-lines {
             margin-top: 10px;
-            font-size: 30px;
-            line-height: 1.45;
+            font-size: 15px;
+            line-height: 1.35;
         }
         .meta-lines strong { display: inline-block; min-width: 90px; }
         .items-wrap {
@@ -77,28 +77,35 @@
         .items-table thead th {
             background: #f08a00;
             color: #ffffff;
-            font-size: 29px;
+            font-size: 17px;
             font-weight: 700;
             text-align: left;
             padding: 8px 10px;
         }
         .items-table tbody td {
-            font-size: 28px;
+            font-size: 14px;
             padding: 8px 10px;
             border-top: 1px solid #d1d5db;
             vertical-align: top;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
+        .items-table { table-layout: fixed; }
+        .item-col { width: 28%; }
+        .qty-col { width: 14%; }
+        .unit-col { width: 29%; }
+        .total-col { width: 29%; }
         .right { text-align: right; }
         .total-row {
             margin-top: 12px;
-            font-size: 35px;
+            font-size: 18px;
             font-weight: 700;
             text-align: right;
         }
         .total-row .label { margin-right: 18px; }
         .from-block {
             margin-top: 10px;
-            font-size: 28px;
+            font-size: 14px;
             line-height: 1.45;
         }
         .from-block strong { display: inline-block; min-width: 95px; }
@@ -119,12 +126,19 @@
     $qty = (int) ($sale->quantity_sold ?? 0);
     $unitPrice = (float) ($sale->selling_price ?? 0);
     $total = (float) ($sale->total_selling_value ?? ($qty * $unitPrice));
-    $appIconPath = base_path('../opticapp/assets/icons/app_icon.png');
+    $appIconPathCandidates = [
+        dirname(base_path()) . DIRECTORY_SEPARATOR . 'opticapp' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . 'app_icon.png',
+        base_path('..' . DIRECTORY_SEPARATOR . 'opticapp' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . 'app_icon.png'),
+        'C:\\wamp64\\www\\optic\\opticapp\\assets\\icons\\app_icon.png',
+    ];
     $appIconDataUri = null;
-    if (is_file($appIconPath) && is_readable($appIconPath)) {
-        $bytes = @file_get_contents($appIconPath);
-        if ($bytes !== false) {
-            $appIconDataUri = 'data:image/png;base64,' . base64_encode($bytes);
+    foreach ($appIconPathCandidates as $appIconPath) {
+        if (is_file($appIconPath) && is_readable($appIconPath)) {
+            $bytes = @file_get_contents($appIconPath);
+            if ($bytes !== false) {
+                $appIconDataUri = 'data:image/png;base64,' . base64_encode($bytes);
+                break;
+            }
         }
     }
 @endphp
@@ -157,10 +171,10 @@
             <table class="items-table">
                 <thead>
                 <tr>
-                    <th>Item Description</th>
-                    <th style="width: 130px;">Quantity</th>
-                    <th style="width: 200px;">Unit Price (TZS)</th>
-                    <th style="width: 180px;">Total (TZS)</th>
+                    <th class="item-col">Item Description</th>
+                    <th class="qty-col">Quantity</th>
+                    <th class="unit-col">Unit Price (TZS)</th>
+                    <th class="total-col">Total (TZS)</th>
                 </tr>
                 </thead>
                 <tbody>
