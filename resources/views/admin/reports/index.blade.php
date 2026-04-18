@@ -64,10 +64,9 @@
                     <div>
                         <h2 class="admin-prod-form-title">Agent opening stock &amp; sales (by product)</h2>
                         <p class="admin-prod-form-hint max-w-3xl">
-                            <strong>Opening</strong> = stock you <strong>start</strong> the report date with: same as <strong>closing</strong> at the end of the <strong>previous</strong> calendar day (it does not change with later edits unless history in the database changes).
-                            <strong>Sales</strong> = units <strong>sold that day</strong> (<code class="text-xs bg-slate-100 px-1 rounded">sold_at</code> on the report date).
-                            <strong>Closing</strong> = units <strong>still there</strong> at the end of that day (snapshot). <strong>Shop</strong> is unassigned devices; each <strong>agent</strong> column is that agent’s assigned devices.
-                            <strong>Transfer</strong> (shop) is net branch moves that day for unassigned items. <strong>Purchased today</strong> is new device rows scanned in that day.
+                            <strong>Opening</strong> = previous day’s <strong>closing</strong> (rollover). <strong>Sales</strong> = units sold that day.
+                            <strong>Closing</strong> = what’s left after sales: <strong>opening − sales</strong> for each agent; <strong>shop</strong> = opening − sales + net transfer.
+                            <strong>Shop</strong> counts unassigned devices; each <strong>agent</strong> counts assigned IMEIs. <strong>Purchased today</strong> is new device rows added that date.
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -166,7 +165,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Closing is an end-of-day count (what remains). Opening for the next day equals today’s closing. Sales stay the day’s sold units; opening − sales + transfers may differ from closing when stock is received or assignments change during the day.</p>
+                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>closing</strong> = opening − sales (not below 0). Shop: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
                 @endif
             </div>
         </div>

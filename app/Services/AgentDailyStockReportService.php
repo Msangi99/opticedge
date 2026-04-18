@@ -58,10 +58,6 @@ class AgentDailyStockReportService
         $prevClosingShop = $this->closingShopByProduct($prevEnd, $branchId, $productIds);
         $prevClosingAgents = $this->closingByAgentProduct($prevEnd, $branchId, $productIds);
 
-        // End-of-report-day stock (what actually remains). Next day’s opening uses this same measure at its prior end.
-        $closingShopToday = $this->closingShopByProduct($dayEnd, $branchId, $productIds);
-        $closingAgentsToday = $this->closingByAgentProduct($dayEnd, $branchId, $productIds);
-
         $salesShop = $this->salesShopByProduct($dayStart, $dayEnd, $branchId, $productIds);
         $salesAgents = $this->salesByAgentProduct($dayStart, $dayEnd, $branchId, $productIds);
 
@@ -74,7 +70,7 @@ class AgentDailyStockReportService
             $openingShop = (int) ($prevClosingShop[$pid] ?? 0);
             $sShop = (int) ($salesShop[$pid] ?? 0);
             $tShop = (int) ($transferNetShop[$pid] ?? 0);
-            $closingShop = (int) ($closingShopToday[$pid] ?? 0);
+            $closingShop = max(0, $openingShop - $sShop + $tShop);
             $recv = (int) ($receivedToday[$pid] ?? 0);
 
             $rowHasActivity = $sShop > 0 || $tShop !== 0 || $recv > 0 || $openingShop > 0 || $closingShop > 0;
@@ -82,7 +78,7 @@ class AgentDailyStockReportService
                 $aid = (int) $agent->id;
                 $openingA = (int) ($prevClosingAgents[$aid][$pid] ?? 0);
                 $sA = (int) ($salesAgents[$aid][$pid] ?? 0);
-                $closingA = (int) ($closingAgentsToday[$aid][$pid] ?? 0);
+                $closingA = max(0, $openingA - $sA);
                 if ($openingA > 0 || $sA > 0 || $closingA > 0) {
                     $rowHasActivity = true;
                     break;
@@ -103,14 +99,14 @@ class AgentDailyStockReportService
             $openingShop = (int) ($prevClosingShop[$pid] ?? 0);
             $sShop = (int) ($salesShop[$pid] ?? 0);
             $tShop = (int) ($transferNetShop[$pid] ?? 0);
-            $closingShop = (int) ($closingShopToday[$pid] ?? 0);
+            $closingShop = max(0, $openingShop - $sShop + $tShop);
 
             $agentCells = [];
             foreach ($agents as $agent) {
                 $aid = (int) $agent->id;
                 $openingA = (int) ($prevClosingAgents[$aid][$pid] ?? 0);
                 $sA = (int) ($salesAgents[$aid][$pid] ?? 0);
-                $closingA = (int) ($closingAgentsToday[$aid][$pid] ?? 0);
+                $closingA = max(0, $openingA - $sA);
                 $agentCells[$aid] = [
                     'opening' => $openingA,
                     'sales' => $sA,
