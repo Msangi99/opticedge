@@ -13,24 +13,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasTable('product_list')) {
+        if (! Schema::hasTable('product_list') || ! Schema::hasColumn('product_list', 'stock_id')) {
             return;
         }
 
-        Schema::table('product_list', function (Blueprint $table) {
-            $table->dropForeign(['stock_id']);
-        });
+        $this->dropForeignKeysReferencingColumn('product_list', 'stock_id');
 
         DB::statement('ALTER TABLE product_list MODIFY stock_id BIGINT UNSIGNED NULL');
 
-        Schema::table('product_list', function (Blueprint $table) {
-            $table->foreign('stock_id')->references('id')->on('stocks')->nullOnDelete();
-        });
+        if (! $this->tableHasForeignKeyTo('product_list', 'stock_id', 'stocks')) {
+            Schema::table('product_list', function (Blueprint $table) {
+                $table->foreign('stock_id')->references('id')->on('stocks')->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
-        if (! Schema::hasTable('product_list')) {
+        if (! Schema::hasTable('product_list') || ! Schema::hasColumn('product_list', 'stock_id')) {
             return;
         }
 
@@ -39,14 +39,47 @@ return new class extends Migration
             DB::table('product_list')->whereNull('stock_id')->update(['stock_id' => $fallbackStockId]);
         }
 
-        Schema::table('product_list', function (Blueprint $table) {
-            $table->dropForeign(['stock_id']);
-        });
+        $this->dropForeignKeysReferencingColumn('product_list', 'stock_id');
 
         DB::statement('ALTER TABLE product_list MODIFY stock_id BIGINT UNSIGNED NOT NULL');
 
-        Schema::table('product_list', function (Blueprint $table) {
-            $table->foreign('stock_id')->references('id')->on('stocks')->cascadeOnDelete();
-        });
+        if (! $this->tableHasForeignKeyTo('product_list', 'stock_id', 'stocks')) {
+            Schema::table('product_list', function (Blueprint $table) {
+                $table->foreign('stock_id')->references('id')->on('stocks')->cascadeOnDelete();
+            });
+        }
+    }
+
+    /**
+     * Drop every FK on $table.$column (names differ across installs / Laravel versions).
+     */
+    private function dropForeignKeysReferencingColumn(string $table, string $column): void
+    {
+        $db = Schema::getConnection()->getDatabaseName();
+
+        $names = DB::table('information_schema.KEY_COLUMN_USAGE')
+            ->where('TABLE_SCHEMA', $db)
+            ->where('TABLE_NAME', $table)
+            ->where('COLUMN_NAME', $column)
+            ->whereNotNull('REFERENCED_TABLE_NAME')
+            ->pluck('CONSTRAINT_NAME')
+            ->unique();
+
+        foreach ($names as $name) {
+            $safe = str_replace('`', '``', (string) $name);
+            DB::statement("ALTER TABLE `{$table}` DROP FOREIGN KEY `{$safe}`");
+        }
+    }
+
+    private function tableHasForeignKeyTo(string $table, string $column, string $referencedTable): bool
+    {
+        $db = Schema::getConnection()->getDatabaseName();
+
+        return DB::table('information_schema.KEY_COLUMN_USAGE')
+            ->where('TABLE_SCHEMA', $db)
+            ->where('TABLE_NAME', $table)
+            ->where('COLUMN_NAME', $column)
+            ->where('REFERENCED_TABLE_NAME', $referencedTable)
+            ->exists();
     }
 };
