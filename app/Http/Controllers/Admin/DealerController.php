@@ -14,6 +14,35 @@ class DealerController extends Controller
         return view('admin.dealers.index', compact('dealers'));
     }
 
+    public function create()
+    {
+        return view('admin.dealers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:100',
+            'business_name' => 'required|string|max:255',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'phone' => $validated['phone'] ?? null,
+            'business_name' => $validated['business_name'],
+            'role' => 'dealer',
+            'status' => 'active',
+        ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        return redirect()->route('admin.dealers.index')->with('success', 'Dealer created. They can sign in with the email and password you set.');
+    }
+
     public function approve(User $user)
     {
         if ($user->role !== 'dealer') {

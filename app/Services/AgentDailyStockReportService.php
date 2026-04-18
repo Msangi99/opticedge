@@ -343,11 +343,19 @@ class AgentDailyStockReportService
             return [];
         }
 
+        // Shop = sold from stock not attributed to an agent. Agent sales clear the assignment row, so we
+        // must exclude rows linked to agent_sales (with agent), pending_sales (with seller_id), or agent_credits.
         $q = $this->baseListQuery($branchId)
             ->whereIn('product_id', $productIds->all())
-            ->whereDoesntHave('agentProductListAssignment')
             ->whereBetween('sold_at', [$dayStart, $dayEnd])
-            ->selectRaw('product_id, COUNT(*) as c')
+            ->where(function ($w) {
+                $w->whereDoesntHave('agentSale', fn ($a) => $a->whereNotNull('agent_id'))
+                    ->whereDoesntHave('pendingSale', fn ($p) => $p->whereNotNull('seller_id'));
+            });
+        if (Schema::hasColumn('product_list', 'agent_credit_id')) {
+            $q->whereNull('agent_credit_id');
+        }
+        $q->selectRaw('product_id, COUNT(*) as c')
             ->groupBy('product_id');
 
         return $this->mapCounts($q->get());
@@ -363,34 +371,104 @@ class AgentDailyStockReportService
             return [];
         }
 
-        $rows = DB::table('product_list as pl')
-            ->join('agent_product_list_assignments as a', 'a.product_list_id', '=', 'pl.id')
-            ->whereIn('pl.product_id', $productIds->all())
-            ->whereBetween('pl.sold_at', [$dayStart, $dayEnd])
-            ->when($branchId !== null, function ($q) use ($branchId) {
-                $q->where(function ($w) use ($branchId) {
-                    $w->where('pl.branch_id', $branchId)
-                        ->orWhere(function ($inner) use ($branchId) {
-                            $inner->whereNull('pl.branch_id')
-                                ->whereExists(function ($sub) use ($branchId) {
-                                    $sub->selectRaw('1')
-                                        ->from('purchases as pu')
-                                        ->whereColumn('pu.id', 'pl.purchase_id')
-                                        ->where('pu.branch_id', $branchId);
-                                });
-                        });
-                });
-            })
-            ->groupBy('a.agent_id', 'pl.product_id')
-            ->selectRaw('a.agent_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
-            ->get();
+        $pids = $productIds->all();
+        $applyBranchOnPl = $this->branchFilterOnProductListSql($branchId);
 
         $out = [];
-        foreach ($rows as $r) {
-            $out[(int) $r->agent_id][(int) $r->product_id] = (int) $r->c;
+
+        $accumulate = function ($rows) use (&$out) {
+            foreach ($rows as $r) {
+                $aid = (int) $r->agent_id;
+                $pid = (int) $r->product_id;
+                $out[$aid][$pid] = ($out[$aid][$pid] ?? 0) + (int) $r->c;
+            }
+        };
+
+        // Finalised agent sales (assignment row is removed on sell).
+        $accumulate(
+            DB::table('product_list as pl')
+                ->join('agent_sales as ag', 'ag.id', '=', 'pl.agent_sale_id')
+                ->whereIn('pl.product_id', $pids)
+                ->whereNotNull('ag.agent_id')
+                ->whereBetween('pl.sold_at', [$dayStart, $dayEnd])
+                ->when($branchId !== null, $applyBranchOnPl)
+                ->groupBy('ag.agent_id', 'pl.product_id')
+                ->selectRaw('ag.agent_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
+                ->get()
+        );
+
+        // Cash/card flow: pending sale with seller until converted to agent_sales.
+        if (Schema::hasColumn('pending_sales', 'seller_id')) {
+            $accumulate(
+                DB::table('product_list as pl')
+                    ->join('pending_sales as ps', 'ps.id', '=', 'pl.pending_sale_id')
+                    ->whereIn('pl.product_id', $pids)
+                    ->whereNotNull('ps.seller_id')
+                    ->whereBetween('pl.sold_at', [$dayStart, $dayEnd])
+                    ->when($branchId !== null, $applyBranchOnPl)
+                    ->groupBy('ps.seller_id', 'pl.product_id')
+                    ->selectRaw('ps.seller_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
+                    ->get()
+            );
         }
 
+        // Credit sale path (assignment removed on sell).
+        if (Schema::hasTable('agent_credits') && Schema::hasColumn('product_list', 'agent_credit_id')) {
+            $accumulate(
+                DB::table('product_list as pl')
+                    ->join('agent_credits as ac', 'ac.id', '=', 'pl.agent_credit_id')
+                    ->whereIn('pl.product_id', $pids)
+                    ->whereBetween('pl.sold_at', [$dayStart, $dayEnd])
+                    ->when($branchId !== null, $applyBranchOnPl)
+                    ->groupBy('ac.agent_id', 'pl.product_id')
+                    ->selectRaw('ac.agent_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
+                    ->get()
+            );
+        }
+
+        // Legacy rows that still have an assignment after sale (should be rare). Skip if already counted above.
+        $legacyAssign = DB::table('product_list as pl')
+            ->join('agent_product_list_assignments as a', 'a.product_list_id', '=', 'pl.id')
+            ->whereIn('pl.product_id', $pids)
+            ->whereBetween('pl.sold_at', [$dayStart, $dayEnd])
+            ->whereNull('pl.agent_sale_id')
+            ->whereNull('pl.pending_sale_id');
+        if (Schema::hasColumn('product_list', 'agent_credit_id')) {
+            $legacyAssign->whereNull('pl.agent_credit_id');
+        }
+        $accumulate(
+            $legacyAssign
+                ->when($branchId !== null, $applyBranchOnPl)
+                ->groupBy('a.agent_id', 'pl.product_id')
+                ->selectRaw('a.agent_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
+                ->get()
+        );
+
         return $out;
+    }
+
+    /**
+     * @return \Closure(\Illuminate\Database\Query\Builder): void
+     */
+    private function branchFilterOnProductListSql(?int $branchId): \Closure
+    {
+        return function ($q) use ($branchId) {
+            if ($branchId === null) {
+                return;
+            }
+            $q->where(function ($w) use ($branchId) {
+                $w->where('pl.branch_id', $branchId)
+                    ->orWhere(function ($inner) use ($branchId) {
+                        $inner->whereNull('pl.branch_id')
+                            ->whereExists(function ($sub) use ($branchId) {
+                                $sub->selectRaw('1')
+                                    ->from('purchases as pu')
+                                    ->whereColumn('pu.id', 'pl.purchase_id')
+                                    ->where('pu.branch_id', $branchId);
+                            });
+                    });
+            });
+        };
     }
 
     /**

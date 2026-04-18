@@ -129,6 +129,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Dealers Management
         Route::get('dealers', [App\Http\Controllers\Admin\DealerController::class , 'index'])->name('dealers.index');
+        Route::get('dealers/create', [App\Http\Controllers\Admin\DealerController::class, 'create'])->name('dealers.create');
+        Route::post('dealers', [App\Http\Controllers\Admin\DealerController::class, 'store'])->name('dealers.store');
         Route::get('dealers/{user}', [App\Http\Controllers\Admin\DealerController::class , 'show'])->name('dealers.show');
         Route::patch('dealers/{user}/approve', [App\Http\Controllers\Admin\DealerController::class , 'approve'])->name('dealers.approve');
         Route::patch('dealers/{user}/reject', [App\Http\Controllers\Admin\DealerController::class , 'reject'])->name('dealers.reject');
