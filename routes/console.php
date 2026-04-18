@@ -29,6 +29,51 @@ Artisan::command('db:fresh-seed {--force : Force the operation to run when in pr
     return 0;
 })->purpose('Drop all tables, re-run migrations, then run database seeders (migrate:fresh --seed)');
 
+Artisan::command('db:export-schema-sql {--path= : Output file path (default: database/sql/full_schema_<driver>.sql)}', function () {
+    $connection = DB::connection();
+    $driver = $connection->getDriverName();
+
+    if (! in_array($driver, ['mysql', 'mariadb', 'sqlite'], true)) {
+        $this->error('Unsupported driver for schema export: '.$driver.'. Use mysql, mariadb, or sqlite.');
+
+        return 1;
+    }
+
+    $defaultName = $driver === 'sqlite' ? 'full_schema_sqlite.sql' : 'full_schema_mysql.sql';
+    $target = $this->option('path') ?: database_path('sql/'.$defaultName);
+    $dir = dirname($target);
+    if (! is_dir($dir)) {
+        if (! @mkdir($dir, 0755, true) && ! is_dir($dir)) {
+            $this->error('Could not create directory: '.$dir);
+
+            return 1;
+        }
+    }
+
+    $this->info('Exporting schema from connection ['.$connection->getName().'] driver ['.$driver.']...');
+
+    try {
+        $exit = Artisan::call('schema:dump', [
+            '--path' => $target,
+        ]);
+        if ($exit !== 0) {
+            $this->error('schema:dump exited with code '.$exit);
+
+            return $exit;
+        }
+        $this->info('Schema written to: '.$target);
+        if ($driver === 'sqlite') {
+            $this->warn('This file is SQLite DDL. For MySQL manual import, run the same command against a MySQL .env connection.');
+        }
+
+        return 0;
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+
+        return 1;
+    }
+})->purpose('Dump ALL tables (structure + migrations rows) to database/sql for manual import (uses mysqldump on MySQL)');
+
 Artisan::command('stock:recalc', function () {
     $this->info('Recalculating product stock from purchases, distribution sales, agent sales, and orders...');
     $products = \App\Models\Product::all();

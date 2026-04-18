@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('orders', function (Blueprint $table) {
             $table->foreignId('payment_option_id')
                 ->nullable()
-                ->after('payment_status')
+                ->after('payment_method')
                 ->constrained('payment_options')
                 ->nullOnDelete();
         });
