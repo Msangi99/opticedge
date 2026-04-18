@@ -21,7 +21,7 @@
                 <p class="admin-prod-eyebrow">Sales team</p>
                 <h1 class="admin-prod-title">Assign products to agent</h1>
                 <p class="admin-prod-subtitle">Select an agent and product, then choose one or more IMEIs (unsold units from
-                    paid purchases). The agent will only see those devices on the sell screen in the app.</p>
+                    eligible purchases: paid, partial, unpaid, or purchase still has IMEI limit remaining). The agent will only see those devices on the sell screen in the app.</p>
             </div>
             <a href="{{ route('admin.agents.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -79,7 +79,7 @@
                 </div>
                 <div id="imei-wrap" class="hidden">
                     <label for="imei_select" class="admin-prod-label">IMEIs to assign</label>
-                    <p class="text-xs text-slate-500 mt-0.5 mb-2">Only unsold devices from purchases marked paid are listed.</p>
+                    <p class="text-xs text-slate-500 mt-0.5 mb-2">Only unsold devices from eligible purchases are listed (paid, partial, unpaid, or purchase still has IMEI slots left; matched by catalog product or linked purchase).</p>
                     <select id="imei_select" name="product_list_ids[]" multiple="multiple" class="w-full"></select>
                     @error('product_list_ids')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>

@@ -40,7 +40,7 @@ class AgentController extends Controller
     }
 
     /**
-     * JSON for Select2: unsold, paid purchase, not yet assigned to any agent.
+     * JSON for Select2: unsold, eligible purchase (paid / partial / unpaid or limit remaining), not yet assigned.
      */
     public function assignableImeis(Request $request)
     {
@@ -95,7 +95,7 @@ class AgentController extends Controller
                 foreach ($ids as $listId) {
                     $item = ProductListItem::lockForUpdate()->find($listId);
 
-                    if (! $item || (int) $item->product_id !== $productId) {
+                    if (! $item || ! $item->isCatalogProduct($productId)) {
                         throw new \InvalidArgumentException('One or more IMEIs do not belong to the selected product.');
                     }
 
@@ -104,7 +104,7 @@ class AgentController extends Controller
                     }
 
                     if (! $item->isPurchasePaid()) {
-                        throw new \InvalidArgumentException('One or more devices are not from a paid purchase.');
+                        throw new \InvalidArgumentException('One or more devices are not from an eligible purchase (paid, partial, unpaid, or purchase still has IMEI limit remaining).');
                     }
 
                     if ($item->agentProductListAssignment) {

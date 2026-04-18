@@ -104,38 +104,78 @@ class ProductListItem extends Model
     }
 
     /**
-     * Unsold IMEIs for a product that are paid-for and not yet assigned to any agent.
+     * Whether this row is the given catalog product (by id on row or on linked purchase).
+     */
+    public function isCatalogProduct(int $productId): bool
+    {
+        if ((int) $this->product_id === $productId) {
+            return true;
+        }
+        $this->loadMissing('purchase');
+
+        return $this->purchase !== null && (int) $this->purchase->product_id === $productId;
+    }
+
+    /**
+     * Purchase row is allowed for agent IMEI assignment: paid, partial, unpaid (pending),
+     * or quantity cap not yet reached (more IMEIs can still be added).
+     */
+    public static function purchaseQualifiesForAgentAssignment(?Purchase $purchase): bool
+    {
+        if ($purchase === null) {
+            return false;
+        }
+
+        $status = (string) ($purchase->payment_status ?? '');
+
+        return in_array($status, ['paid', 'partial', 'pending'], true)
+            || (int) ($purchase->limit_remaining ?? 0) > 0;
+    }
+
+    /**
+     * Unsold IMEIs for a product, not yet assigned to any agent, from an eligible purchase.
      */
     public function scopeAssignableToAgent($query, int $productId)
     {
+        $purchaseOk = function ($p) {
+            $p->where(function ($p2) {
+                $p2->whereIn('payment_status', ['paid', 'partial', 'pending'])
+                    ->orWhere('limit_remaining', '>', 0);
+            });
+        };
+
         return $query
-            ->where('product_id', $productId)
+            ->where(function ($q) use ($productId) {
+                $q->where('product_id', $productId)
+                    ->orWhereHas('purchase', fn ($p) => $p->where('product_id', $productId));
+            })
             ->whereNull('sold_at')
             ->whereDoesntHave('agentProductListAssignment')
-            ->where(function ($q) {
-                $q->whereHas('purchase', fn ($p) => $p->where('payment_status', 'paid'))
-                    ->orWhere(function ($q2) {
+            ->where(function ($q) use ($purchaseOk) {
+                $q->whereHas('purchase', $purchaseOk)
+                    ->orWhere(function ($q2) use ($purchaseOk) {
                         $q2->whereNull('purchase_id')
-                            ->whereExists(function ($sub) {
+                            ->whereNotNull('product_list.stock_id')
+                            ->whereExists(function ($sub) use ($purchaseOk) {
                                 $sub->selectRaw('1')
                                     ->from('purchases')
                                     ->whereColumn('purchases.stock_id', 'product_list.stock_id')
                                     ->whereColumn('purchases.product_id', 'product_list.product_id')
-                                    ->where('purchases.payment_status', 'paid');
+                                    ->where($purchaseOk);
                             });
                     });
             });
     }
 
     /**
-     * Whether the linked purchase (or stock+product purchase) is fully paid.
+     * Whether the linked purchase (or stock+product purchase) allows agent assignment.
      */
     public function isPurchasePaid(): bool
     {
         if ($this->purchase_id) {
             $this->loadMissing('purchase');
 
-            return $this->purchase && $this->purchase->payment_status === 'paid';
+            return self::purchaseQualifiesForAgentAssignment($this->purchase);
         }
 
         if ($this->stock_id && $this->product_id) {
@@ -144,7 +184,7 @@ class ProductListItem extends Model
                 ->latest('date')
                 ->first();
 
-            return $p && $p->payment_status === 'paid';
+            return self::purchaseQualifiesForAgentAssignment($p);
         }
 
         return false;
