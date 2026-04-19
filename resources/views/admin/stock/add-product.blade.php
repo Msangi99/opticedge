@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Inventory</p>
                 <h1 class="admin-prod-title">Add product (IMEI)</h1>
-                <p class="admin-prod-subtitle">From photos (QR) or paste many codes. Pick stock and model.</p>
+                    <p class="admin-prod-subtitle">From barcode photos or paste many codes. Pick stock and model.</p>
             </div>
             <a href="{{ route('admin.stock.stocks') }}" class="admin-prod-back shrink-0">Back to stocks</a>
         </div>
@@ -116,15 +116,27 @@
 
         (function() {
             var token = document.querySelector('meta[name="csrf-token"]');
-            var serverDecodeUrl = @json(route('admin.stock.decode-barcodes'));
             var fileInput = document.getElementById('barcode_photos');
             var btn = document.getElementById('btn_decode_photos');
             var statusEl = document.getElementById('decode_status');
             var ta = document.getElementById('imei_numbers');
 
-            /**
-             * Merge newly found codes into the textarea, return count added.
-             */
+            // ZXing UMD is loaded lazily on first use (pure JS, works in all browsers).
+            var _zxingReady = false;
+            var _zxingLoadPromise = null;
+            function loadZXing() {
+                if (_zxingReady) return Promise.resolve();
+                if (_zxingLoadPromise) return _zxingLoadPromise;
+                _zxingLoadPromise = new Promise(function(resolve, reject) {
+                    var s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+                    s.onload = function() { _zxingReady = true; resolve(); };
+                    s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+                return _zxingLoadPromise;
+            }
+
             function mergeCodes(codes) {
                 var existing = ta.value.replace(/\r\n/g, '\n').split('\n')
                     .map(function(s) { return s.trim(); }).filter(Boolean);
@@ -132,7 +144,7 @@
                 existing.forEach(function(c) { seen[c] = true; });
                 var added = [];
                 codes.forEach(function(c) {
-                    c = c.trim();
+                    c = (c || '').trim();
                     if (c && !seen[c]) { seen[c] = true; existing.push(c); added.push(c); }
                 });
                 ta.value = existing.join('\n');
@@ -140,47 +152,72 @@
             }
 
             /**
-             * Decode a single File using the browser-native BarcodeDetector API.
-             * Supports Code128, QR, EAN-13, EAN-8, and more in Chrome/Edge 83+.
-             * Returns an array of code strings (may be empty).
+             * Decode all barcodes from a single File using ZXing JS.
+             *
+             * Strategy: decode the full image first, then try a grid of crops
+             * so that sheets with many barcodes (e.g. 3×4 IMEI label pages)
+             * are fully extracted.
              */
-            async function decodeFileNative(detector, file) {
-                return new Promise(function(resolve) {
-                    var img = new Image();
-                    var url = URL.createObjectURL(file);
-                    img.onload = function() {
-                        detector.detect(img)
-                            .then(function(results) {
-                                URL.revokeObjectURL(url);
-                                resolve(results.map(function(r) { return r.rawValue || ''; }).filter(Boolean));
-                            })
-                            .catch(function() { URL.revokeObjectURL(url); resolve([]); });
-                    };
-                    img.onerror = function() { URL.revokeObjectURL(url); resolve([]); };
-                    img.src = url;
-                });
-            }
+            async function decodeFileZXing(reader, file) {
+                var found = new Set();
 
-            /**
-             * Fallback: POST images to server (QR only via PHP GD).
-             */
-            function decodeViaServer(files, callback) {
-                var fd = new FormData();
-                for (var i = 0; i < files.length; i++) fd.append('images[]', files[i]);
-                if (token) fd.append('_token', token.getAttribute('content'));
-                fetch(serverDecodeUrl, {
-                    method: 'POST',
-                    body: fd,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': token ? token.getAttribute('content') : ''
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
-                .then(function(res) { callback(null, res.j.codes || [], res.j.message); })
-                .catch(function(err) { callback(err, [], null); });
+                // Load image into a canvas so we can crop sub-regions.
+                var imgUrl = URL.createObjectURL(file);
+                var img = await new Promise(function(res, rej) {
+                    var i = new Image();
+                    i.onload = function() { res(i); };
+                    i.onerror = rej;
+                    i.src = imgUrl;
+                });
+
+                var W = img.naturalWidth;
+                var H = img.naturalHeight;
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+
+                /**
+                 * Attempt to decode a rectangular sub-region of the image.
+                 * sx/sy = source top-left; sw/sh = source width/height.
+                 */
+                async function tryRegion(sx, sy, sw, sh) {
+                    if (sw < 10 || sh < 10) return;
+                    canvas.width = sw;
+                    canvas.height = sh;
+                    ctx.clearRect(0, 0, sw, sh);
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                    // toDataURL is synchronous – ZXing accepts data: URLs via an <img> element.
+                    var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                    try {
+                        var result = await reader.decodeFromImageUrl(dataUrl);
+                        var text = (result && (result.text || (result.getText && result.getText()))) || '';
+                        if (text.trim()) found.add(text.trim());
+                    } catch(e) { /* no barcode in this region */ }
+                }
+
+                // 1. Full image
+                await tryRegion(0, 0, W, H);
+
+                // 2. Grid crops – try multiple grid sizes to cover common label sheets.
+                //    We try rows × cols combinations most likely for printed IMEI sheets.
+                var grids = [[4,3],[3,3],[4,2],[3,2],[4,1],[3,1],[2,1]];
+                for (var g = 0; g < grids.length; g++) {
+                    var rows = grids[g][0], cols = grids[g][1];
+                    // Skip grids that would make cells smaller than 30px – unreliable.
+                    if (Math.floor(W / cols) < 30 || Math.floor(H / rows) < 30) continue;
+                    var cellW = Math.floor(W / cols);
+                    var cellH = Math.floor(H / rows);
+                    for (var r = 0; r < rows; r++) {
+                        for (var c = 0; c < cols; c++) {
+                            await tryRegion(c * cellW, r * cellH, cellW, cellH);
+                        }
+                    }
+                    // Stop once we have found codes from a grid pass
+                    // (avoid redundant work for simple single-barcode images)
+                    if (found.size > 0 && g >= 1) break;
+                }
+
+                URL.revokeObjectURL(imgUrl);
+                return Array.from(found);
             }
 
             btn.addEventListener('click', async function() {
@@ -190,51 +227,46 @@
                     return;
                 }
                 btn.disabled = true;
-                statusEl.textContent = 'Reading barcodes…';
+                statusEl.textContent = 'Loading decoder…';
 
-                var allCodes = [];
-
-                // ── Native BarcodeDetector (Chrome/Edge, Android Chrome) ──
-                if ('BarcodeDetector' in window) {
-                    try {
-                        var formats = ['code_128', 'qr_code', 'ean_13', 'ean_8', 'code_39', 'codabar', 'itf', 'data_matrix', 'pdf417', 'aztec'];
-                        // Only use formats supported by this browser
-                        var supported = await BarcodeDetector.getSupportedFormats();
-                        var useFormats = formats.filter(function(f) { return supported.includes(f); });
-                        if (!useFormats.length) useFormats = supported;
-                        var detector = new BarcodeDetector({ formats: useFormats });
-                        for (var i = 0; i < files.length; i++) {
-                            var found = await decodeFileNative(detector, files[i]);
-                            allCodes = allCodes.concat(found);
-                        }
-                    } catch(e) {
-                        // BarcodeDetector may not be available on HTTPS-only or other restriction
-                        allCodes = [];
-                    }
-                }
-
-                if (allCodes.length) {
-                    var added = mergeCodes(allCodes);
-                    statusEl.textContent = 'Added ' + added + ' code(s) from photos.' +
-                        (added < allCodes.length ? ' (some were already in the list.)' : '');
+                try {
+                    await loadZXing();
+                } catch(e) {
+                    statusEl.textContent = 'Could not load barcode library. Check your internet connection and try again.';
                     btn.disabled = false;
                     return;
                 }
 
-                // ── Server fallback (QR via PHP GD) ──────────────────────
-                statusEl.textContent = 'Trying server QR decode (fallback)…';
-                decodeViaServer(Array.from(files), function(err, codes, msg) {
-                    btn.disabled = false;
-                    if (err) { statusEl.textContent = 'Network error.'; return; }
-                    if (!codes.length) {
-                        statusEl.textContent = msg ||
-                            'No barcode found. Tip: For IMEI labels (Code 128), use the OpticApp admin "Camera (scan live)" button for reliable results.';
-                        return;
+                statusEl.textContent = 'Reading barcodes from ' + files.length + ' photo(s)…';
+
+                var allCodes = [];
+                try {
+                    // ZXing.BrowserMultiFormatReader handles Code128, QR, EAN, and all common formats.
+                    var reader = new ZXing.BrowserMultiFormatReader();
+                    for (var i = 0; i < files.length; i++) {
+                        if (files.length > 1) {
+                            statusEl.textContent = 'Reading photo ' + (i + 1) + ' of ' + files.length + '…';
+                        }
+                        var codes = await decodeFileZXing(reader, files[i]);
+                        allCodes = allCodes.concat(codes);
                     }
-                    var added = mergeCodes(codes);
-                    statusEl.textContent = 'Added ' + added + ' code(s) from photos (QR server decode).' +
-                        (added < codes.length ? ' (some were already in the list.)' : '');
-                });
+                } catch(e) {
+                    statusEl.textContent = 'Decode error: ' + (e.message || e);
+                    btn.disabled = false;
+                    return;
+                }
+
+                btn.disabled = false;
+
+                if (allCodes.length) {
+                    var added = mergeCodes(allCodes);
+                    statusEl.textContent = 'Found ' + allCodes.length + ' barcode(s). Added ' + added + ' new code(s).' +
+                        (added < allCodes.length ? ' (duplicates skipped)' : '');
+                } else {
+                    statusEl.textContent =
+                        'No barcode found. Make sure the photo is clear and the barcode is not blurry. ' +
+                        'You can also type or paste IMEIs manually below.';
+                }
             });
         })();
     </script>
