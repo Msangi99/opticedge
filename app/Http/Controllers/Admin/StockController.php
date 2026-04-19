@@ -1207,6 +1207,9 @@ class StockController extends Controller
         if (Schema::hasColumn('agent_sales', 'agent_id') && $pendingSale->seller_id) {
             $agentSaleAttrs['agent_id'] = $pendingSale->seller_id;
         }
+        if (Schema::hasColumn('agent_sales', 'payment_option_id') && $pendingSale->payment_option_id) {
+            $agentSaleAttrs['payment_option_id'] = $pendingSale->payment_option_id;
+        }
         $agentSale = AgentSale::create($agentSaleAttrs);
 
         // Update product_list items linked to this pending sale
@@ -1219,7 +1222,7 @@ class StockController extends Controller
         // Delete from pending sales
         $pendingSale->delete();
 
-        return redirect()->route('admin.stock.pending-sales')->with('success', 'Sale saved successfully. Amount added to payment option balance.');
+        return redirect()->route('admin.stock.agent-sales')->with('success', 'Sale saved successfully. Amount added to payment option balance.');
     }
 
     /**

@@ -11,8 +11,6 @@
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <a href="{{ route('admin.stock.create-distribution') }}"
                     class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add</a>
-                <a href="{{ route('admin.stock.create-distribution') }}"
-                    class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Add also</a>
             </div>
         </div>
 
