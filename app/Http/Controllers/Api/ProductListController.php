@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
+use App\Models\AgentSale;
 use App\Models\ProductListItem;
 use App\Models\Product;
 use App\Models\User;
@@ -408,14 +409,21 @@ class ProductListController extends Controller
 
     /**
      * Agent: Record sale for one device (by product_list id), enter customer info. Deducts from stock.
+     *
+     * If payment_option_id is supplied and is NOT a Watu channel, an AgentSale is created immediately
+     * (visible to both admin and agent without any pending/admin step).
+     * If no payment_option_id is supplied, a PendingSale is created for admin to assign a channel.
      */
     public function sell(Request $request)
     {
-        $validated = $request->validate([
-            'product_list_id' => 'required|exists:product_list,id',
-            'customer_name' => 'required|string|max:255',
-            'selling_price' => 'required|numeric|min:0',
-        ]);
+        $rules = [
+            'product_list_id'   => 'required|exists:product_list,id',
+            'customer_name'     => 'required|string|max:255',
+            'selling_price'     => 'required|numeric|min:0',
+            'payment_option_id' => 'nullable|exists:payment_options,id',
+        ];
+
+        $validated = $request->validate($rules);
 
         $item = ProductListItem::with(['category', 'product'])->findOrFail($validated['product_list_id']);
 
@@ -440,27 +448,39 @@ class ProductListController extends Controller
         }
 
         $product = $item->product;
-        if (!$product) {
+        if (! $product) {
             $product = Product::firstOrCreate(
-                [
-                    'category_id' => $item->category_id,
-                    'name' => $item->model,
-                ],
-                [
-                    'price' => 0,
-                    'stock_quantity' => 0,
-                    'rating' => 5.0,
-                    'description' => 'From product list',
-                    'images' => [],
-                ]
+                ['category_id' => $item->category_id, 'name' => $item->model],
+                ['price' => 0, 'stock_quantity' => 0, 'rating' => 5.0, 'description' => 'From product list', 'images' => []]
             );
             $item->update(['product_id' => $product->id]);
         }
 
+        $paymentOptId = isset($validated['payment_option_id']) ? (int) $validated['payment_option_id'] : null;
+        $paymentOpt   = $paymentOptId ? PaymentOption::find($paymentOptId) : null;
+
+        // Non-Watu channel selected → create AgentSale directly, immediately visible
+        if ($paymentOpt && ! $paymentOpt->isWatuAgentCreditChannel()) {
+            $sale = $this->createDirectAgentSale(
+                $item, $product, $agent,
+                $validated['customer_name'],
+                (float) $validated['selling_price'],
+                $paymentOpt
+            );
+
+            return response()->json([
+                'message' => 'Sale recorded successfully.',
+                'data' => [
+                    'agent_sale_id' => $sale->id,
+                    'customer_name' => $sale->customer_name,
+                    'selling_price' => $sale->selling_price,
+                ],
+            ], 201);
+        }
+
+        // No payment option → PendingSale (admin selects channel and finalises)
         $sale = $this->createPendingAgentSaleForDevice(
-            $item,
-            $product,
-            $agent,
+            $item, $product, $agent,
             $validated['customer_name'],
             (float) $validated['selling_price']
         );
@@ -469,8 +489,8 @@ class ProductListController extends Controller
             'message' => 'Sale recorded. Waiting for payment option selection.',
             'data' => [
                 'pending_sale_id' => $sale->id,
-                'customer_name' => $sale->customer_name,
-                'selling_price' => $sale->selling_price,
+                'customer_name'   => $sale->customer_name,
+                'selling_price'   => $sale->selling_price,
             ],
         ], 201);
     }
@@ -562,10 +582,28 @@ class ProductListController extends Controller
         $paymentOpt = $paymentOptionId ? PaymentOption::find($paymentOptionId) : null;
 
         if (! $this->shouldCreateAgentCredit($paymentOpt, $totalCredit, $down, $validated)) {
+            // Non-Watu channel (cash / mobile / bank): create AgentSale immediately.
+            // No channel and full payment: create PendingSale for admin to assign channel.
+            if ($paymentOpt) {
+                $sale = $this->createDirectAgentSale(
+                    $item, $product, $agent,
+                    $validated['customer_name'],
+                    $totalCredit,
+                    $paymentOpt
+                );
+
+                return response()->json([
+                    'message' => 'Sale recorded successfully.',
+                    'data' => [
+                        'agent_sale_id' => $sale->id,
+                        'customer_name' => $sale->customer_name,
+                        'selling_price' => $sale->selling_price,
+                    ],
+                ], 201);
+            }
+
             $sale = $this->createPendingAgentSaleForDevice(
-                $item,
-                $product,
-                $agent,
+                $item, $product, $agent,
                 $validated['customer_name'],
                 $totalCredit
             );
@@ -574,8 +612,8 @@ class ProductListController extends Controller
                 'message' => 'Sale recorded. Waiting for payment option selection.',
                 'data' => [
                     'pending_sale_id' => $sale->id,
-                    'customer_name' => $sale->customer_name,
-                    'selling_price' => $sale->selling_price,
+                    'customer_name'   => $sale->customer_name,
+                    'selling_price'   => $sale->selling_price,
                 ],
             ], 201);
         }
@@ -666,8 +704,11 @@ class ProductListController extends Controller
     }
 
     /**
-     * Agent credits (Watu / loans) vs normal sales: only Watu-named payment channels use agent_credits.
-     * Loans with no channel selected still use agent_credits (installments or balance after down payment).
+     * Routing decision for sell-credit:
+     *  - Watu channel                           → AgentCredit (loan with Watu)
+     *  - No channel + installments or partial   → AgentCredit (unfinanced loan)
+     *  - Non-Watu channel                       → AgentSale directly (handled by caller)
+     *  - No channel + fully paid                → PendingSale (admin assigns channel)
      */
     private function shouldCreateAgentCredit(?PaymentOption $opt, float $totalCredit, float $down, array $validated): bool
     {
@@ -675,8 +716,9 @@ class ProductListController extends Controller
             return true;
         }
 
-        $eps = 0.0001;
+        $eps          = 0.0001;
         $installments = (int) ($validated['installment_count'] ?? 0);
+
         if ($opt === null && ($installments > 0 || $down + $eps < $totalCredit)) {
             return true;
         }
@@ -685,7 +727,68 @@ class ProductListController extends Controller
     }
 
     /**
-     * Cash / non-Watu sale: pending_sales row + product_list link (admin completes channel → agent_sales).
+     * Non-Watu channel: create an AgentSale record immediately.
+     * The payment option balance is incremented (income from sale).
+     * The product_list item gets agent_sale_id so the inventory endpoint classifies it as a sale.
+     */
+    private function createDirectAgentSale(
+        ProductListItem $item,
+        Product         $product,
+        User            $agent,
+        string          $customerName,
+        float           $sellingPrice,
+        PaymentOption   $paymentOpt
+    ): AgentSale {
+        $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
+        $profit   = $sellingPrice - $buyPrice;
+
+        return DB::transaction(function () use ($item, $product, $agent, $customerName, $sellingPrice, $buyPrice, $profit, $paymentOpt) {
+            $attrs = [
+                'customer_name'        => $customerName,
+                'seller_name'          => $agent->name,
+                'product_id'           => $product->id,
+                'quantity_sold'        => 1,
+                'purchase_price'       => $buyPrice,
+                'selling_price'        => $sellingPrice,
+                'total_purchase_value' => $buyPrice,
+                'total_selling_value'  => $sellingPrice,
+                'profit'               => $profit,
+                'balance'              => 0,
+                'date'                 => now()->toDateString(),
+            ];
+
+            if (Schema::hasColumn('agent_sales', 'agent_id')) {
+                $attrs['agent_id'] = $agent->id;
+            }
+            if (Schema::hasColumn('agent_sales', 'payment_option_id')) {
+                $attrs['payment_option_id'] = $paymentOpt->id;
+            }
+
+            $sale = AgentSale::create($attrs);
+
+            // Record the incoming cash/channel amount
+            $paymentOpt->increment('balance', $sellingPrice);
+
+            $item->update([
+                'sold_at'         => now(),
+                'agent_sale_id'   => $sale->id,
+                'pending_sale_id' => null,
+                'agent_credit_id' => null,
+            ]);
+
+            $product->decrement('stock_quantity');
+
+            AgentProductListAssignment::where('product_list_id', $item->id)->delete();
+            AgentAssignment::where('agent_id', $agent->id)
+                ->where('product_id', $product->id)
+                ->increment('quantity_sold');
+
+            return $sale;
+        });
+    }
+
+    /**
+     * No channel selected: create a pending_sales row (admin assigns channel → moves to agent_sales).
      */
     private function createPendingAgentSaleForDevice(
         ProductListItem $item,

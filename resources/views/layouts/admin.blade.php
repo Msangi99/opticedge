@@ -448,6 +448,10 @@
                     'admin.stock.distribution-update-status',
                     'admin.stock.distribution-save-channel',
                 ]);
+                $navStockPendingSales = request()->routeIs([
+                    'admin.stock.pending-sales',
+                    'admin.stock.save-pending-sale',
+                ]);
                 $navStockAgentSales = request()->routeIs([
                     'admin.stock.agent-sales',
                     'admin.stock.create-agent-sale',
@@ -599,6 +603,9 @@
                                 <a href="{{ route('admin.stock.distribution') }}"
                                     @if ($navStockDistribution) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockDistribution ? 'admin-sidebar-sublink-active' : '' }}">Distribution</a>
+                                <a href="{{ route('admin.stock.pending-sales') }}"
+                                    @if ($navStockPendingSales) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ $navStockPendingSales ? 'admin-sidebar-sublink-active' : '' }}">Pending Sales</a>
                                 <a href="{{ route('admin.stock.agent-sales') }}"
                                     @if ($navStockAgentSales) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockAgentSales ? 'admin-sidebar-sublink-active' : '' }}">Agent Sales</a>

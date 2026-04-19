@@ -39,4 +39,9 @@ class PendingSale extends Model
     {
         return $this->belongsTo(PaymentOption::class);
     }
+
+    public function productListItem()
+    {
+        return $this->hasOne(ProductListItem::class, 'pending_sale_id');
+    }
 }

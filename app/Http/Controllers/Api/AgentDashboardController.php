@@ -47,28 +47,23 @@ class AgentDashboardController extends Controller
         $totalSold = AgentAssignment::where('agent_id', $agentId)->sum('quantity_sold');
         $totalRemaining = $totalAssigned - $totalSold;
 
-        // Recent finalized agent sales + in-app cash sales still on pending_sales (seller_id)
+        // Recent sales: finalized AgentSale rows (payment channel selected) come first.
+        // Pending sales (no channel yet, older flow) are merged so the agent still sees them;
+        // a pending sale whose product_list item now has an agent_sale_id is excluded to avoid duplicates.
         $recentAgentSales = AgentSale::where('agent_id', $agentId)
             ->with(['product.category'])
             ->latest('date')
-            ->take(10)
-            ->get()
-            ->map(function ($sale) {
-                return [
-                    'record_type' => 'agent_sale',
-                    'id' => $sale->id,
-                    'customer_name' => $sale->customer_name ?? '–',
-                    'product_name' => $sale->product?->name ?? '–',
-                    'category_name' => $sale->product?->category?->name ?? '–',
-                    'quantity_sold' => (int) ($sale->quantity_sold ?? 0),
-                    'selling_price' => (float) ($sale->selling_price ?? 0),
-                    'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
-                    'profit' => (float) ($sale->profit ?? 0),
-                    'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
-                ];
-            });
+            ->take(20)
+            ->get();
 
-        $recentPendingQuery = PendingSale::query()->with(['product.category']);
+        // product_list ids already covered by an agent_sale
+        $coveredProductListIds = $recentAgentSales
+            ->map(fn ($s) => optional($s->productListItem)->id)
+            ->filter()
+            ->values()
+            ->all();
+
+        $recentPendingQuery = PendingSale::query()->with(['product.category', 'productListItem']);
         if (Schema::hasColumn('pending_sales', 'seller_id')) {
             $recentPendingQuery->where('seller_id', $agentId);
         } else {
@@ -76,28 +71,47 @@ class AgentDashboardController extends Controller
         }
         $recentPending = $recentPendingQuery
             ->latest('date')
-            ->take(10)
+            ->take(20)
             ->get()
-            ->map(function ($sale) {
-                return [
-                    'record_type' => 'pending_sale',
-                    'id' => $sale->id,
-                    'customer_name' => $sale->customer_name ?? '–',
-                    'product_name' => $sale->product?->name ?? '–',
-                    'category_name' => $sale->product?->category?->name ?? '–',
-                    'quantity_sold' => (int) ($sale->quantity_sold ?? 0),
-                    'selling_price' => (float) ($sale->selling_price ?? 0),
-                    'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
-                    'profit' => (float) ($sale->profit ?? 0),
-                    'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
-                ];
+            ->filter(function ($ps) use ($coveredProductListIds) {
+                // Exclude pending rows that have already been moved to agent_sale
+                $plItem = $ps->productListItem ?? null;
+                if ($plItem && $plItem->agent_sale_id) {
+                    return false;
+                }
+                return true;
             });
 
         $recentSales = $recentAgentSales
-            ->concat($recentPending)
-            ->sortByDesc(function ($row) {
-                return $row['date'] ?? '';
-            })
+            ->map(fn ($sale) => [
+                'record_type'         => 'agent_sale',
+                'id'                  => $sale->id,
+                'customer_name'       => $sale->customer_name ?? '–',
+                'product_name'        => $sale->product?->name ?? '–',
+                'category_name'       => $sale->product?->category?->name ?? '–',
+                'quantity_sold'       => (int) ($sale->quantity_sold ?? 0),
+                'selling_price'       => (float) ($sale->selling_price ?? 0),
+                'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
+                'profit'              => (float) ($sale->profit ?? 0),
+                'payment_option_id'   => $sale->payment_option_id,
+                'date'                => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
+            ])
+            ->concat(
+                $recentPending->map(fn ($sale) => [
+                    'record_type'         => 'pending_sale',
+                    'id'                  => $sale->id,
+                    'customer_name'       => $sale->customer_name ?? '–',
+                    'product_name'        => $sale->product?->name ?? '–',
+                    'category_name'       => $sale->product?->category?->name ?? '–',
+                    'quantity_sold'       => (int) ($sale->quantity_sold ?? 0),
+                    'selling_price'       => (float) ($sale->selling_price ?? 0),
+                    'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
+                    'profit'              => (float) ($sale->profit ?? 0),
+                    'payment_option_id'   => null,
+                    'date'                => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
+                ])
+            )
+            ->sortByDesc(fn ($row) => $row['date'] ?? '')
             ->take(10)
             ->values()
             ->all();
