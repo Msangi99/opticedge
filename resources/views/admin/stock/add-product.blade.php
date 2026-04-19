@@ -22,7 +22,7 @@
             <div class="admin-prod-form-body space-y-6">
                 <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
                     <h2 class="text-sm font-semibold text-slate-900 mb-2">From barcode photos</h2>
-                    <p class="text-xs text-slate-600 mb-3">Choose one or more images (camera or gallery). QR codes on labels are read here; dense 1D barcodes work best in the OpticApp admin screen.</p>
+                    <p class="text-xs text-slate-600 mb-3">Choose one or more images containing IMEI barcodes (Code 128, QR, EAN). Codes are read directly in your browser — no upload needed.</p>
                     <input type="file" id="barcode_photos" accept="image/*" multiple class="admin-prod-file">
                     <button type="button" id="btn_decode_photos" class="mt-3 bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700">Read codes from photos</button>
                     <p id="decode_status" class="text-xs text-slate-500 mt-2 min-h-[1rem]"></p>
@@ -116,23 +116,59 @@
 
         (function() {
             var token = document.querySelector('meta[name="csrf-token"]');
-            var decodeUrl = @json(route('admin.stock.decode-barcodes'));
+            var serverDecodeUrl = @json(route('admin.stock.decode-barcodes'));
             var fileInput = document.getElementById('barcode_photos');
             var btn = document.getElementById('btn_decode_photos');
             var statusEl = document.getElementById('decode_status');
             var ta = document.getElementById('imei_numbers');
-            btn.addEventListener('click', function() {
-                if (!fileInput.files || !fileInput.files.length) {
-                    statusEl.textContent = 'Choose one or more photos first.';
-                    return;
-                }
-                statusEl.textContent = 'Reading…';
+
+            /**
+             * Merge newly found codes into the textarea, return count added.
+             */
+            function mergeCodes(codes) {
+                var existing = ta.value.replace(/\r\n/g, '\n').split('\n')
+                    .map(function(s) { return s.trim(); }).filter(Boolean);
+                var seen = {};
+                existing.forEach(function(c) { seen[c] = true; });
+                var added = [];
+                codes.forEach(function(c) {
+                    c = c.trim();
+                    if (c && !seen[c]) { seen[c] = true; existing.push(c); added.push(c); }
+                });
+                ta.value = existing.join('\n');
+                return added.length;
+            }
+
+            /**
+             * Decode a single File using the browser-native BarcodeDetector API.
+             * Supports Code128, QR, EAN-13, EAN-8, and more in Chrome/Edge 83+.
+             * Returns an array of code strings (may be empty).
+             */
+            async function decodeFileNative(detector, file) {
+                return new Promise(function(resolve) {
+                    var img = new Image();
+                    var url = URL.createObjectURL(file);
+                    img.onload = function() {
+                        detector.detect(img)
+                            .then(function(results) {
+                                URL.revokeObjectURL(url);
+                                resolve(results.map(function(r) { return r.rawValue || ''; }).filter(Boolean));
+                            })
+                            .catch(function() { URL.revokeObjectURL(url); resolve([]); });
+                    };
+                    img.onerror = function() { URL.revokeObjectURL(url); resolve([]); };
+                    img.src = url;
+                });
+            }
+
+            /**
+             * Fallback: POST images to server (QR only via PHP GD).
+             */
+            function decodeViaServer(files, callback) {
                 var fd = new FormData();
-                for (var i = 0; i < fileInput.files.length; i++) {
-                    fd.append('images[]', fileInput.files[i]);
-                }
+                for (var i = 0; i < files.length; i++) fd.append('images[]', files[i]);
                 if (token) fd.append('_token', token.getAttribute('content'));
-                fetch(decodeUrl, {
+                fetch(serverDecodeUrl, {
                     method: 'POST',
                     body: fd,
                     headers: {
@@ -141,28 +177,63 @@
                         'X-CSRF-TOKEN': token ? token.getAttribute('content') : ''
                     },
                     credentials: 'same-origin'
-                }).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
-                .then(function(res) {
-                    var codes = res.j.codes || [];
-                    if (!res.ok) {
-                        statusEl.textContent = res.j.message || 'Decode failed.';
-                        return;
+                })
+                .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+                .then(function(res) { callback(null, res.j.codes || [], res.j.message); })
+                .catch(function(err) { callback(err, [], null); });
+            }
+
+            btn.addEventListener('click', async function() {
+                var files = fileInput.files;
+                if (!files || !files.length) {
+                    statusEl.textContent = 'Choose one or more photos first.';
+                    return;
+                }
+                btn.disabled = true;
+                statusEl.textContent = 'Reading barcodes…';
+
+                var allCodes = [];
+
+                // ── Native BarcodeDetector (Chrome/Edge, Android Chrome) ──
+                if ('BarcodeDetector' in window) {
+                    try {
+                        var formats = ['code_128', 'qr_code', 'ean_13', 'ean_8', 'code_39', 'codabar', 'itf', 'data_matrix', 'pdf417', 'aztec'];
+                        // Only use formats supported by this browser
+                        var supported = await BarcodeDetector.getSupportedFormats();
+                        var useFormats = formats.filter(function(f) { return supported.includes(f); });
+                        if (!useFormats.length) useFormats = supported;
+                        var detector = new BarcodeDetector({ formats: useFormats });
+                        for (var i = 0; i < files.length; i++) {
+                            var found = await decodeFileNative(detector, files[i]);
+                            allCodes = allCodes.concat(found);
+                        }
+                    } catch(e) {
+                        // BarcodeDetector may not be available on HTTPS-only or other restriction
+                        allCodes = [];
                     }
+                }
+
+                if (allCodes.length) {
+                    var added = mergeCodes(allCodes);
+                    statusEl.textContent = 'Added ' + added + ' code(s) from photos.' +
+                        (added < allCodes.length ? ' (some were already in the list.)' : '');
+                    btn.disabled = false;
+                    return;
+                }
+
+                // ── Server fallback (QR via PHP GD) ──────────────────────
+                statusEl.textContent = 'Trying server QR decode (fallback)…';
+                decodeViaServer(Array.from(files), function(err, codes, msg) {
+                    btn.disabled = false;
+                    if (err) { statusEl.textContent = 'Network error.'; return; }
                     if (!codes.length) {
-                        statusEl.textContent = res.j.message || 'No codes found.';
+                        statusEl.textContent = msg ||
+                            'No barcode found. Tip: For IMEI labels (Code 128), use the OpticApp admin "Camera (scan live)" button for reliable results.';
                         return;
                     }
-                    var existing = ta.value.replace(/\r\n/g, '\n').split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
-                    var seen = {};
-                    existing.forEach(function(c) { seen[c] = true; });
-                    var added = [];
-                    codes.forEach(function(c) {
-                        if (!seen[c]) { seen[c] = true; existing.push(c); added.push(c); }
-                    });
-                    ta.value = existing.join('\n');
-                    statusEl.textContent = 'Added ' + added.length + ' code(s) from photos.' + (added.length < codes.length ? ' (some were already in the list.)' : '');
-                }).catch(function() {
-                    statusEl.textContent = 'Network error.';
+                    var added = mergeCodes(codes);
+                    statusEl.textContent = 'Added ' + added + ' code(s) from photos (QR server decode).' +
+                        (added < codes.length ? ' (some were already in the list.)' : '');
                 });
             });
         })();
