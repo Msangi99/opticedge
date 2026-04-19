@@ -40,6 +40,17 @@ class PaymentOption extends Model
     public const TYPE_BANK = 'bank';
     public const TYPE_CASH = 'cash';
 
+    /**
+     * Watu-named channels are recorded as agent_credits (installment / loan) in the app.
+     * Other payment options from the same flow should become normal agent sales (pending → admin finalizes).
+     */
+    public function isWatuAgentCreditChannel(): bool
+    {
+        $name = mb_strtolower(trim((string) ($this->name ?? '')), 'UTF-8');
+
+        return $name !== '' && str_contains($name, 'watu');
+    }
+
     public static function types(): array
     {
         return [

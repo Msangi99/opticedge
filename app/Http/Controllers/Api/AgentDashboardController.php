@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
 use App\Models\AgentSale;
+use App\Models\PendingSale;
 use App\Models\ProductListItem;
 use App\Support\PdfDownload;
 use Carbon\Carbon;
@@ -20,7 +21,8 @@ class AgentDashboardController extends Controller
     public function index()
     {
         $agentId = Auth::id();
-        
+        $agentName = Auth::user()?->name ?? '';
+
         // Get assignments
         $assignments = AgentAssignment::where('agent_id', $agentId)
             ->with('product.category')
@@ -45,14 +47,15 @@ class AgentDashboardController extends Controller
         $totalSold = AgentAssignment::where('agent_id', $agentId)->sum('quantity_sold');
         $totalRemaining = $totalAssigned - $totalSold;
 
-        // Get recent sales
-        $recentSales = AgentSale::where('agent_id', $agentId)
+        // Recent finalized agent sales + in-app cash sales still on pending_sales (seller_id)
+        $recentAgentSales = AgentSale::where('agent_id', $agentId)
             ->with(['product.category'])
             ->latest('date')
             ->take(10)
             ->get()
             ->map(function ($sale) {
                 return [
+                    'record_type' => 'agent_sale',
                     'id' => $sale->id,
                     'customer_name' => $sale->customer_name ?? '–',
                     'product_name' => $sale->product?->name ?? '–',
@@ -63,7 +66,39 @@ class AgentDashboardController extends Controller
                     'profit' => (float) ($sale->profit ?? 0),
                     'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
                 ];
+            });
+
+        $recentPendingQuery = PendingSale::query()->with(['product.category']);
+        if (Schema::hasColumn('pending_sales', 'seller_id')) {
+            $recentPendingQuery->where('seller_id', $agentId);
+        } else {
+            $recentPendingQuery->where('seller_name', $agentName);
+        }
+        $recentPending = $recentPendingQuery
+            ->latest('date')
+            ->take(10)
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'record_type' => 'pending_sale',
+                    'id' => $sale->id,
+                    'customer_name' => $sale->customer_name ?? '–',
+                    'product_name' => $sale->product?->name ?? '–',
+                    'category_name' => $sale->product?->category?->name ?? '–',
+                    'quantity_sold' => (int) ($sale->quantity_sold ?? 0),
+                    'selling_price' => (float) ($sale->selling_price ?? 0),
+                    'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
+                    'profit' => (float) ($sale->profit ?? 0),
+                    'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
+                ];
+            });
+
+        $recentSales = $recentAgentSales
+            ->concat($recentPending)
+            ->sortByDesc(function ($row) {
+                return $row['date'] ?? '';
             })
+            ->take(10)
             ->values()
             ->all();
 
@@ -135,6 +170,10 @@ class AgentDashboardController extends Controller
                 $agentSale = $item->agentSale;
                 $creditPaid = $agentCredit && ($agentCredit->payment_status ?? '') === 'paid';
                 $salePaid = $agentSale && max(0, (float) ($agentSale->balance ?? 0)) <= 0.0001;
+                $hasPendingSale = (bool) $item->pending_sale_id;
+                $invoiceType = $agentCredit
+                    ? 'credit'
+                    : (($agentSale || $hasPendingSale) ? 'sale' : null);
 
                 return $this->mapInventoryItem($item, [
                     'state' => 'sold',
@@ -144,7 +183,8 @@ class AgentDashboardController extends Controller
                         ?? $agentSale?->customer_name,
                     'agent_credit_id' => $agentCredit?->id,
                     'agent_sale_id' => $agentSale?->id,
-                    'invoice_type' => $agentCredit ? 'credit' : ($agentSale ? 'sale' : null),
+                    'pending_sale_id' => $hasPendingSale ? $item->pending_sale_id : null,
+                    'invoice_type' => $invoiceType,
                     'invoice_available' => $creditPaid || $salePaid,
                     'invoice_endpoint' => $agentCredit
                         ? '/agent/credits/' . $agentCredit->id . '/invoice'

@@ -7,6 +7,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
 use App\Models\ProductListItem;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
 use App\Models\PendingSale;
@@ -456,44 +457,13 @@ class ProductListController extends Controller
             $item->update(['product_id' => $product->id]);
         }
 
-        $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
-        $totalSell = (float) $validated['selling_price'];
-        $totalBuy = $buyPrice * 1;
-        $profit = $totalSell - $totalBuy;
-
-        $sale = DB::transaction(function () use ($item, $product, $validated, $buyPrice, $totalSell, $totalBuy, $profit, $agent) {
-            // Save to pending sales instead of agent_sales
-            $pendingAttrs = [
-                'customer_name' => $validated['customer_name'],
-                'seller_name' => $agent->name,
-                'product_id' => $product->id,
-                'quantity_sold' => 1,
-                'purchase_price' => $buyPrice,
-                'selling_price' => (float) $validated['selling_price'],
-                'total_purchase_value' => $totalBuy,
-                'total_selling_value' => $totalSell,
-                'profit' => $profit,
-                'date' => now()->toDateString(),
-            ];
-            if (Schema::hasColumn('pending_sales', 'seller_id')) {
-                $pendingAttrs['seller_id'] = $agent->id;
-            }
-            $sale = PendingSale::create($pendingAttrs);
-
-            $item->update([
-                'sold_at' => now(),
-                'pending_sale_id' => $sale->id,
-            ]);
-
-            $product->decrement('stock_quantity'); // keep product.stock_quantity in sync if used elsewhere
-
-            AgentProductListAssignment::where('product_list_id', $item->id)->delete();
-            AgentAssignment::where('agent_id', $agent->id)
-                ->where('product_id', $product->id)
-                ->increment('quantity_sold');
-
-            return $sale;
-        });
+        $sale = $this->createPendingAgentSaleForDevice(
+            $item,
+            $product,
+            $agent,
+            $validated['customer_name'],
+            (float) $validated['selling_price']
+        );
 
         return response()->json([
             'message' => 'Sale recorded. Waiting for payment option selection.',
@@ -589,6 +559,27 @@ class ProductListController extends Controller
             $paymentOptionId = $paymentOptionId !== null ? (int) $paymentOptionId : null;
         }
 
+        $paymentOpt = $paymentOptionId ? PaymentOption::find($paymentOptionId) : null;
+
+        if (! $this->shouldCreateAgentCredit($paymentOpt, $totalCredit, $down, $validated)) {
+            $sale = $this->createPendingAgentSaleForDevice(
+                $item,
+                $product,
+                $agent,
+                $validated['customer_name'],
+                $totalCredit
+            );
+
+            return response()->json([
+                'message' => 'Sale recorded. Waiting for payment option selection.',
+                'data' => [
+                    'pending_sale_id' => $sale->id,
+                    'customer_name' => $sale->customer_name,
+                    'selling_price' => $sale->selling_price,
+                ],
+            ], 201);
+        }
+
         if ($down > $eps && $paymentOptionId) {
             $opt = PaymentOption::find($paymentOptionId);
             if (!$opt || $opt->balance + $eps < $down) {
@@ -672,5 +663,74 @@ class ProductListController extends Controller
                 'payment_status' => $credit->payment_status,
             ],
         ], 201);
+    }
+
+    /**
+     * Agent credits (Watu / loans) vs normal sales: only Watu-named payment channels use agent_credits.
+     * Loans with no channel selected still use agent_credits (installments or balance after down payment).
+     */
+    private function shouldCreateAgentCredit(?PaymentOption $opt, float $totalCredit, float $down, array $validated): bool
+    {
+        if ($opt !== null && $opt->isWatuAgentCreditChannel()) {
+            return true;
+        }
+
+        $eps = 0.0001;
+        $installments = (int) ($validated['installment_count'] ?? 0);
+        if ($opt === null && ($installments > 0 || $down + $eps < $totalCredit)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Cash / non-Watu sale: pending_sales row + product_list link (admin completes channel → agent_sales).
+     */
+    private function createPendingAgentSaleForDevice(
+        ProductListItem $item,
+        Product $product,
+        User $agent,
+        string $customerName,
+        float $sellingPrice
+    ): PendingSale {
+        $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
+        $totalSell = $sellingPrice;
+        $totalBuy = $buyPrice * 1;
+        $profit = $totalSell - $totalBuy;
+
+        return DB::transaction(function () use ($item, $product, $agent, $customerName, $sellingPrice, $buyPrice, $totalSell, $totalBuy, $profit) {
+            $pendingAttrs = [
+                'customer_name' => $customerName,
+                'seller_name' => $agent->name,
+                'product_id' => $product->id,
+                'quantity_sold' => 1,
+                'purchase_price' => $buyPrice,
+                'selling_price' => $sellingPrice,
+                'total_purchase_value' => $totalBuy,
+                'total_selling_value' => $totalSell,
+                'profit' => $profit,
+                'date' => now()->toDateString(),
+            ];
+            if (Schema::hasColumn('pending_sales', 'seller_id')) {
+                $pendingAttrs['seller_id'] = $agent->id;
+            }
+            $sale = PendingSale::create($pendingAttrs);
+
+            $item->update([
+                'sold_at' => now(),
+                'pending_sale_id' => $sale->id,
+                'agent_credit_id' => null,
+            ]);
+
+            $product->decrement('stock_quantity');
+
+            AgentProductListAssignment::where('product_list_id', $item->id)->delete();
+            AgentAssignment::where('agent_id', $agent->id)
+                ->where('product_id', $product->id)
+                ->increment('quantity_sold');
+
+            return $sale;
+        });
     }
 }
