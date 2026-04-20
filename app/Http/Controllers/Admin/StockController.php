@@ -491,9 +491,13 @@ class StockController extends Controller
         }
 
         $failed = [];
+        $failureReasons = [
+            'duplicates' => [],
+            'limit_exhausted' => [],
+        ];
         $created = 0;
 
-        DB::transaction(function () use ($purchase, $stock, $validated, $imeis, &$failed, &$created) {
+        DB::transaction(function () use ($purchase, $stock, $validated, $imeis, &$failed, &$failureReasons, &$created) {
             $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
             $product = Product::firstOrCreate(
                 [
@@ -516,14 +520,14 @@ class StockController extends Controller
             foreach ($imeis as $imei) {
                 if (ProductListItem::where('imei_number', $imei)->exists()) {
                     $failed[] = $imei.' (already in list)';
-
+                    $failureReasons['duplicates'][] = $imei;
                     continue;
                 }
 
                 $purchase->refresh();
                 if ($purchase->limit_remaining <= 0) {
                     $failed[] = $imei.' (purchase limit exhausted)';
-
+                    $failureReasons['limit_exhausted'][] = $imei;
                     break;
                 }
 
@@ -553,14 +557,9 @@ class StockController extends Controller
             return redirect()->route('admin.stock.add-product')->with('success', $msg);
         }
 
-        $msg = 'No devices added. ';
-        if ($failed !== []) {
-            $msg .= 'Reasons: '.implode('; ', array_slice($failed, 0, 15)).(count($failed) > 15 ? '…' : '');
-        } else {
-            $msg .= 'Check IMEI list and purchase limit.';
-        }
-
-        return redirect()->route('admin.stock.add-product')->with('error', $msg);
+        return redirect()->route('admin.stock.add-product')
+            ->withInput()
+            ->withErrors(['imei_numbers' => $this->buildDetailedErrorMessage($imeis, $failureReasons)]);
     }
 
     public function createPurchase(Request $request)
@@ -1295,5 +1294,47 @@ class StockController extends Controller
         ]);
 
         return view('admin.stock.imei-detail', compact('item'));
+    }
+
+    /**
+     * Build a detailed error message categorized by failure reason.
+     */
+    private function buildDetailedErrorMessage(array $imeis, array $failureReasons): string
+    {
+        $duplicateCount = count($failureReasons['duplicates'] ?? []);
+        $limitExhaustedCount = count($failureReasons['limit_exhausted'] ?? []);
+        $totalParsed = count($imeis);
+        $totalFailed = $duplicateCount + $limitExhaustedCount;
+
+        $messages = [];
+        $messages[] = "❌ No devices added. Parsed $totalParsed IMEI(s), but all failed.";
+
+        if ($duplicateCount > 0) {
+            $samples = array_slice($failureReasons['duplicates'], 0, 3);
+            $sampleList = implode(', ', $samples);
+            $more = $duplicateCount > 3 ? " (+ " . ($duplicateCount - 3) . " more)" : '';
+            $messages[] = "• All duplicates: $duplicateCount IMEI(s) already exist in the system. Examples: $sampleList$more";
+        }
+
+        if ($limitExhaustedCount > 0) {
+            $samples = array_slice($failureReasons['limit_exhausted'], 0, 3);
+            $sampleList = implode(', ', $samples);
+            $more = $limitExhaustedCount > 3 ? " (+ " . ($limitExhaustedCount - 3) . " more)" : '';
+            $messages[] = "• Purchase limit exhausted: $limitExhaustedCount IMEI(s) could not be added because the purchase limit has been reached. Examples: $sampleList$more";
+        }
+
+        $messages[] = "\n💡 Solutions:";
+        if ($duplicateCount > 0) {
+            $messages[] = "  • Check if these IMEIs have already been added to the system";
+        }
+        if ($limitExhaustedCount > 0) {
+            $messages[] = "  • Create a new purchase with additional quantity for this stock";
+        }
+        if ($duplicateCount === 0 && $limitExhaustedCount === 0) {
+            $messages[] = "  • Verify you selected the correct stock and model";
+            $messages[] = "  • Check that all IMEIs are properly formatted";
+        }
+
+        return implode("\n", $messages);
     }
 }

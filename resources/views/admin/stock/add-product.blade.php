@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Inventory</p>
                 <h1 class="admin-prod-title">Add product (IMEI)</h1>
-                    <p class="admin-prod-subtitle">From barcode photos or paste many codes. Pick stock and model.</p>
+                    <p class="admin-prod-subtitle">Capture barcode photos or paste many codes. Pick stock and model.</p>
             </div>
             <a href="{{ route('admin.stock.stocks') }}" class="admin-prod-back shrink-0">Back to stocks</a>
         </div>
@@ -21,10 +21,10 @@
         <div class="admin-clay-panel admin-prod-form-shell overflow-hidden space-y-0">
             <div class="admin-prod-form-body space-y-6">
                 <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-                    <h2 class="text-sm font-semibold text-slate-900 mb-2">From barcode photos</h2>
-                    <p class="text-xs text-slate-600 mb-3">Choose one or more images containing IMEI barcodes (Code 128, QR, EAN). Codes are read directly in your browser — no upload needed.</p>
-                    <input type="file" id="barcode_photos" accept="image/*" multiple class="admin-prod-file">
-                    <button type="button" id="btn_decode_photos" class="mt-3 bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700">Read codes from photos</button>
+                    <h2 class="text-sm font-semibold text-slate-900 mb-2">Capture & Scan barcodes</h2>
+                    <p class="text-xs text-slate-600 mb-3">Capture a photo of the IMEI barcode (Code 128, QR, EAN), and the codes will be read directly in your browser.</p>
+                    <input type="file" id="barcode_photos" accept="image/*" class="admin-prod-file">
+                    <button type="button" id="btn_decode_photos" class="mt-3 bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700">Capture & Scan</button>
                     <p id="decode_status" class="text-xs text-slate-500 mt-2 min-h-[1rem]"></p>
                 </div>
 
@@ -36,8 +36,10 @@
                             <p class="text-xs text-slate-500 mb-1">Put <strong>one code per line</strong>, or separate with <strong>spaces</strong>, <strong>commas</strong>, or <strong>semicolons</strong>. Long runs of digits-only text are split every 15 digits (IMEI length) when needed.</p>
                             <textarea name="imei_numbers" id="imei_numbers" rows="8" required
                                 class="admin-prod-textarea font-mono text-sm"
-                                placeholder="Example:&#10;352123456789012&#10;352123456789013&#10;Or: 352123456789012, 352123456789013&#10;Or from photos: use “Read codes from photos” above">{{ old('imei_numbers') }}</textarea>
-                            @error('imei_numbers') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                placeholder="Example:&#10;352123456789012&#10;352123456789013&#10;Or: 352123456789012, 352123456789013&#10;Or from Capture & Scan: use button above">{{ old('imei_numbers') }}</textarea>
+                            @error('imei_numbers') 
+                                <div class="text-red-500 text-xs mt-1 p-2 bg-red-50 rounded whitespace-pre-wrap">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div>
                             <label for="stock_id" class="admin-prod-label">Stock</label>
@@ -223,7 +225,7 @@
             btn.addEventListener('click', async function() {
                 var files = fileInput.files;
                 if (!files || !files.length) {
-                    statusEl.textContent = 'Choose one or more photos first.';
+                    statusEl.textContent = 'Choose a photo first.';
                     return;
                 }
                 btn.disabled = true;
@@ -237,16 +239,13 @@
                     return;
                 }
 
-                statusEl.textContent = 'Reading barcodes from ' + files.length + ' photo(s)…';
+                statusEl.textContent = 'Scanning barcode from photo…';
 
                 var allCodes = [];
                 try {
                     // ZXing.BrowserMultiFormatReader handles Code128, QR, EAN, and all common formats.
                     var reader = new ZXing.BrowserMultiFormatReader();
                     for (var i = 0; i < files.length; i++) {
-                        if (files.length > 1) {
-                            statusEl.textContent = 'Reading photo ' + (i + 1) + ' of ' + files.length + '…';
-                        }
                         var codes = await decodeFileZXing(reader, files[i]);
                         allCodes = allCodes.concat(codes);
                     }
