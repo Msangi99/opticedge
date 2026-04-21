@@ -118,12 +118,12 @@
                 </div>
 
                 <div>
-                    <label for="paid_amount" class="admin-prod-label">Paid amount <span class="text-red-500">*</span></label>
-                    <input id="paid_amount" type="number" step="0.01" name="paid_amount" value="{{ old('paid_amount', 0) }}" required min="0" class="admin-prod-input">
+                    <label for="paid_amount" class="admin-prod-label">Paid amount</label>
+                    <input id="paid_amount" type="number" step="0.01" name="paid_amount" value="{{ old('paid_amount') }}" min="0" class="admin-prod-input">
                     @error('paid_amount')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
-                    <p class="helper-text" id="payment-status"></p>
+                    <p class="helper-text" id="payment-status">Optional. Leave empty if unpaid.</p>
                 </div>
 
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
