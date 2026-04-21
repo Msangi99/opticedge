@@ -34,16 +34,15 @@
         .logo-box {
             width: 88px;
             height: 88px;
-            background: #E68A19;
-            text-align: center;
+            text-align: left;
             vertical-align: middle;
         }
         .logo-box img {
-            width: 72px;
-            height: 72px;
+            width: 88px;
+            height: 88px;
             object-fit: contain;
             display: block;
-            margin: 8px auto 0;
+            margin: 0;
         }
         .title-block {
             text-align: right;
