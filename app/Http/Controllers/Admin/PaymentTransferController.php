@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentOption;
+use App\Models\PaymentTransfer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -45,15 +46,13 @@ class PaymentTransferController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create transfer record
-            $transfer = DB::table('payment_transfers')->insert([
+            // Create transfer record using Eloquent model
+            PaymentTransfer::create([
                 'from_channel_id' => $validated['from_channel_id'],
                 'to_channel_id' => $validated['to_channel_id'],
                 'amount' => $validated['amount'],
                 'description' => $validated['description'] ?? null,
                 'user_id' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
             ]);
 
             // Update channel balances
@@ -77,8 +76,7 @@ class PaymentTransferController extends Controller
      */
     public function history(Request $request)
     {
-        $query = DB::table('payment_transfers')
-            ->with('fromChannel', 'toChannel', 'user')
+        $query = PaymentTransfer::with('fromChannel', 'toChannel', 'user')
             ->latest('created_at');
 
         // Filter by date range
@@ -92,7 +90,7 @@ class PaymentTransferController extends Controller
         $transfers = $query->paginate(20);
 
         // Calculate statistics
-        $totalTransferred = DB::table('payment_transfers')
+        $totalTransferred = PaymentTransfer::query()
             ->when($request->filled('from_date'), function ($q) use ($request) {
                 return $q->whereDate('created_at', '>=', $request->from_date);
             })
@@ -101,7 +99,7 @@ class PaymentTransferController extends Controller
             })
             ->sum('amount');
 
-        $totalCount = DB::table('payment_transfers')
+        $totalCount = PaymentTransfer::query()
             ->when($request->filled('from_date'), function ($q) use ($request) {
                 return $q->whereDate('created_at', '>=', $request->from_date);
             })
