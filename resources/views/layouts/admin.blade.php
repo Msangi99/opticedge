@@ -407,8 +407,12 @@
                     'admin.customers.*',
                     'admin.dealers.*',
                     'admin.agents.*',
+                    'admin.subadmins.*',
                     'admin.vendors.*',
                 ]);
+                $pendingAgentTransfersCount = \App\Models\AgentProductTransfer::query()
+                    ->where('status', \App\Models\AgentProductTransfer::STATUS_PENDING)
+                    ->count();
                 $sidebarStockActive = request()->routeIs([
                     'admin.stock.*',
                     'admin.branches.*',
@@ -520,37 +524,6 @@
                             </svg>
                             Categories
                         </a>
-                        <a href="{{ route('admin.agents.index') }}"
-                            @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
-                            class="admin-sidebar-item {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-item-active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM8 11c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4zM8 13c-2.761 0-5 2.239-5 5v1h10v-1c0-2.761-2.239-5-5-5zM16 13c-.656 0-1.286.126-1.864.356A6.98 6.98 0 0117 18v1h4v-1c0-2.761-2.239-5-5-5z" />
-                            </svg>
-                            Agents
-                        </a>
-                        <a href="{{ route('admin.dealers.index') }}"
-                            @if (request()->routeIs('admin.dealers.*')) aria-current="page" @endif
-                            class="admin-sidebar-item {{ request()->routeIs('admin.dealers.*') ? 'admin-sidebar-item-active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3 7l9-4 9 4-9 4-9-4zm0 5l9 4 9-4m-18 5l9 4 9-4" />
-                            </svg>
-                            Dealers
-                        </a>
-                        <a href="{{ route('admin.subadmins.index') }}"
-                            @if (request()->routeIs('admin.subadmins.*')) aria-current="page" @endif
-                            class="admin-sidebar-item {{ request()->routeIs('admin.subadmins.*') ? 'admin-sidebar-item-active' : '' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-3.314 0-6 2.239-6 5v1h12v-1c0-2.761-2.686-5-6-5z" />
-                            </svg>
-                            Subadmins
-                        </a>
-
                         <div x-data="{ open: {{ $sidebarUsersActive ? 'true' : 'false' }} }">
                             <button type="button" @click="open = !open"
                                 class="admin-sidebar-item admin-sidebar-group-btn {{ $sidebarUsersActive ? 'admin-sidebar-item-active' : '' }}">
@@ -575,7 +548,10 @@
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.customers.*') ? 'admin-sidebar-sublink-active' : '' }}">Customers</a>
                                 <a href="{{ route('admin.agents.index') }}"
                                     @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
-                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Users</a>
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
+                                <a href="{{ route('admin.subadmins.index') }}"
+                                    @if (request()->routeIs('admin.subadmins.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.subadmins.*') ? 'admin-sidebar-sublink-active' : '' }}">Subadmins</a>
                                 <a href="{{ route('admin.dealers.index') }}"
                                     @if (request()->routeIs('admin.dealers.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.dealers.*') ? 'admin-sidebar-sublink-active' : '' }}">Dealers</a>
@@ -637,7 +613,12 @@
                                     class="admin-sidebar-sublink {{ $navStockAgentCredits ? 'admin-sidebar-sublink-active' : '' }}">Agent Credit</a>
                                 <a href="{{ route('admin.stock.agent-transfers') }}"
                                     @if ($navStockAgentTransfers) aria-current="page" @endif
-                                    class="admin-sidebar-sublink {{ $navStockAgentTransfers ? 'admin-sidebar-sublink-active' : '' }}">Agent transfers</a>
+                                    class="admin-sidebar-sublink {{ $navStockAgentTransfers ? 'admin-sidebar-sublink-active' : '' }} flex items-center justify-between gap-2">
+                                    <span>Agent transfers</span>
+                                    @if($pendingAgentTransfersCount > 0)
+                                        <span class="inline-flex min-w-[1.25rem] h-5 px-1.5 shrink-0 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none" title="Pending requests">{{ $pendingAgentTransfersCount }}</span>
+                                    @endif
+                                </a>
                                 <a href="{{ route('admin.stock.branch-transfer') }}"
                                     @if ($navStockBranchTransfer) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockBranchTransfer ? 'admin-sidebar-sublink-active' : '' }}">Branch transfer</a>

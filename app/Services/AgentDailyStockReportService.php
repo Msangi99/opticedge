@@ -34,7 +34,6 @@ class AgentDailyStockReportService
 
         $dayStart = $reportDate->copy()->startOfDay();
         $dayEnd = $reportDate->copy()->endOfDay();
-        // Get previous day's end to lock opening stock for today
         $prevEnd = $reportDate->copy()->subDay()->endOfDay();
 
         $agents = User::query()
@@ -56,14 +55,21 @@ class AgentDailyStockReportService
             ];
         }
 
-        // OPENING STOCK: Fixed from previous day's closing (locked at start of day)
-        // This means opening stock does NOT change throughout today
+        // Shop opening = closing at previous calendar day end (unassigned stock; assignment not removed on sale).
         $prevClosingShop = $this->closingShopByProduct($prevEnd, $branchId, $productIds);
-        $prevClosingAgents = $this->closingByAgentProduct($prevEnd, $branchId, $productIds);
 
-        // TODAY'S ACTIVITY: Sales, transfers, and receipts for TODAY ONLY
+        // TODAY'S ACTIVITY: Sales, transfers, and receipts for the report date only
         $salesShop = $this->salesShopByProduct($dayStart, $dayEnd, $branchId, $productIds);
         $salesAgents = $this->salesByAgentProduct($dayStart, $dayEnd, $branchId, $productIds);
+
+        // Agent opening = previous day's closing. For **today's** report date, assignments are removed on sale,
+        // so "yesterday closing" cannot be re-read from joins alone — use stable identity:
+        // opening = (unsold assigned now) + (sales on report date) for that agent/product.
+        // For past report dates, use closing snapshot at previous day end (join + sold_at OR).
+        $unsoldAssignedAgents = $this->unsoldAssignedByAgentProduct($branchId, $productIds);
+        $prevClosingAgents = $reportDate->isSameDay(Carbon::today())
+            ? []
+            : $this->closingByAgentProduct($prevEnd, $branchId, $productIds);
 
         $transferNetShop = $this->shopTransferNetByProduct($reportDate, $branchId, $productIds);
         $receivedToday = $this->receivedTodayByProduct($reportDate, $branchId, $productIds);
@@ -80,8 +86,10 @@ class AgentDailyStockReportService
             $rowHasActivity = $sShop > 0 || $tShop !== 0 || $recv > 0 || $openingShop > 0 || $closingShop > 0;
             foreach ($agents as $agent) {
                 $aid = (int) $agent->id;
-                $openingA = (int) ($prevClosingAgents[$aid][$pid] ?? 0);
                 $sA = (int) ($salesAgents[$aid][$pid] ?? 0);
+                $openingA = $reportDate->isSameDay(Carbon::today())
+                    ? (int) ($unsoldAssignedAgents[$aid][$pid] ?? 0) + $sA
+                    : (int) ($prevClosingAgents[$aid][$pid] ?? 0);
                 $closingA = max(0, $openingA - $sA);
                 if ($openingA > 0 || $sA > 0 || $closingA > 0) {
                     $rowHasActivity = true;
@@ -112,11 +120,12 @@ class AgentDailyStockReportService
             $agentCells = [];
             foreach ($agents as $agent) {
                 $aid = (int) $agent->id;
-                // AGENT OPENING: Locked from previous day's closing
-                $openingA = (int) ($prevClosingAgents[$aid][$pid] ?? 0);
-                // AGENT SALES: Only transactions TODAY
                 $sA = (int) ($salesAgents[$aid][$pid] ?? 0);
-                // AGENT CLOSING: Opening - Sales (no transfers for agents)
+                $openingA = $reportDate->isSameDay(Carbon::today())
+                    ? (int) ($unsoldAssignedAgents[$aid][$pid] ?? 0) + $sA
+                    : (int) ($prevClosingAgents[$aid][$pid] ?? 0);
+                // AGENT SALES: Only transactions on report date
+                // AGENT CLOSING: Opening − Sales
                 $closingA = max(0, $openingA - $sA);
                 $agentCells[$aid] = [
                     'opening' => $openingA,
@@ -299,6 +308,55 @@ class AgentDailyStockReportService
     }
 
     /**
+     * IMEIs currently assigned to an agent and not sold (sold_at IS NULL).
+     * Used with same-day sales to derive a stable per-day opening: unsold + sales(today) = opening at day start.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>|array<int>  $productIds
+     * @return array<int, array<int, int>> agent_id => [product_id => count]
+     */
+    private function unsoldAssignedByAgentProduct(?int $branchId, $productIds): array
+    {
+        if ($productIds->isEmpty()) {
+            return [];
+        }
+
+        $ids = $productIds->all();
+        $rows = DB::table('product_list as pl')
+            ->join('agent_product_list_assignments as a', 'a.product_list_id', '=', 'pl.id')
+            ->whereIn('pl.product_id', $ids)
+            ->whereNull('pl.sold_at')
+            ->when($branchId !== null, function ($q) use ($branchId) {
+                $q->where(function ($w) use ($branchId) {
+                    $w->where('pl.branch_id', $branchId)
+                        ->orWhere(function ($inner) use ($branchId) {
+                            $inner->whereNull('pl.branch_id')
+                                ->whereExists(function ($sub) use ($branchId) {
+                                    $sub->selectRaw('1')
+                                        ->from('purchases as pu')
+                                        ->whereColumn('pu.id', 'pl.purchase_id')
+                                        ->where('pu.branch_id', $branchId);
+                                });
+                        });
+                });
+            })
+            ->groupBy('a.agent_id', 'pl.product_id')
+            ->selectRaw('a.agent_id as agent_id, pl.product_id as product_id, COUNT(*) as c')
+            ->get();
+
+        $out = [];
+        foreach ($rows as $r) {
+            $aid = (int) $r->agent_id;
+            $pid = (int) $r->product_id;
+            $out[$aid][$pid] = (int) $r->c;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Agent closing inventory at instant $at (end of previous day): assignment join with
+     * sold_at null OR sold after $at. Used for **past** report dates only (see build()).
+     *
      * @param  \Illuminate\Support\Collection<int, int>|array<int>  $productIds
      * @return array<int, array<int, int>> agent_id => [product_id => count]
      */

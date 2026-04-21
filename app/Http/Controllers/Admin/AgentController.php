@@ -162,10 +162,10 @@ class AgentController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
             'branch_id' => 'nullable|exists:branches,id',
-            'ability' => 'required|in:view,fullaccess',
         ]);
         $validated['password'] = Hash::make($validated['password']);
         $validated['role'] = 'agent';
+        $validated['ability'] = 'fullaccess';
         $validated['status'] = 'active';
         if (empty($validated['branch_id'])) {
             $validated['branch_id'] = null;

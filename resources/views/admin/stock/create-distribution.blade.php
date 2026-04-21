@@ -14,6 +14,16 @@
             color: #64748b;
             margin-top: 0.375rem;
         }
+        /* No spinner arrows on number inputs (quantity etc.) */
+        .no-number-spin::-webkit-outer-spin-button,
+        .no-number-spin::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .no-number-spin {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
     </style>
 
     <div class="admin-prod-page admin-prod-form-wide">
@@ -82,7 +92,7 @@
 
                 <div>
                     <label for="quantity_sold" class="admin-prod-label">Quantity sold <span class="text-red-500">*</span></label>
-                    <input id="quantity_sold" type="number" name="quantity_sold" value="{{ old('quantity_sold') }}" required min="1" class="admin-prod-input">
+                    <input id="quantity_sold" type="number" name="quantity_sold" value="{{ old('quantity_sold') }}" required min="1" class="admin-prod-input no-number-spin">
                     @error('quantity_sold')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
@@ -91,7 +101,7 @@
 
                 <div>
                     <label for="selling_price" class="admin-prod-label">Selling price per unit <span class="text-red-500">*</span></label>
-                    <input id="selling_price" type="number" step="0.01" name="selling_price" value="{{ old('selling_price') }}" required min="0" class="admin-prod-input">
+                    <input id="selling_price" type="text" name="selling_price" value="{{ old('selling_price') }}" required inputmode="decimal" autocomplete="off" placeholder="0.00" class="admin-prod-input">
                     @error('selling_price')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
@@ -101,7 +111,7 @@
                 <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
                     <div class="flex justify-between items-center">
                         <span class="font-semibold text-slate-900">Total amount:</span>
-                        <span class="text-2xl font-bold text-slate-900">0.00 TZS</span>
+                        <span id="dist-total-display" class="text-2xl font-bold text-slate-900">0.00 TZS</span>
                     </div>
                     <input type="hidden" id="total-amount" name="total_amount" value="0">
                     <p class="text-xs text-slate-600 mt-2">Calculated as: Quantity × Selling Price per Unit</p>
@@ -126,58 +136,61 @@
 
     <script>
         function validateDistForm() {
-            const form = document.getElementById('dist-form');
             const dealerId = document.getElementById('dealer_id').value;
             const productId = document.getElementById('product_id').value;
             const quantity = parseFloat(document.getElementById('quantity_sold').value) || 0;
-            const price = parseFloat(document.getElementById('selling_price').value) || 0;
-            const paid = parseFloat(document.getElementById('paid_amount').value) || 0;
+            const price = parseFloat(String(document.getElementById('selling_price').value).replace(/,/g, '')) || 0;
+            const paid = parseFloat(String(document.getElementById('paid_amount').value).replace(/,/g, '')) || 0;
             const total = quantity * price;
-            
+
             if (!dealerId) {
                 alert('❌ Please select a dealer');
                 document.getElementById('dealer_id').focus();
                 return false;
             }
-            
+
             if (!productId) {
                 alert('❌ Please select a product');
                 document.getElementById('product_id').focus();
                 return false;
             }
-            
+
             if (quantity <= 0) {
                 alert('❌ Quantity must be greater than 0');
                 document.getElementById('quantity_sold').focus();
                 return false;
             }
-            
+
             if (price <= 0) {
                 alert('❌ Selling price must be greater than 0');
                 document.getElementById('selling_price').focus();
                 return false;
             }
-            
+
             if (paid < 0 || paid > total * 1.1) {
                 alert('❌ Payment amount invalid (cannot exceed 10% overpayment)');
                 document.getElementById('paid_amount').focus();
                 return false;
             }
-            
+
             const dealerName = document.getElementById('dealer_id').options[document.getElementById('dealer_id').selectedIndex].text;
             return confirm('✓ Confirm record sale?\n\nDealer: ' + dealerName + '\nQuantity: ' + quantity + '\nPrice: ' + price.toFixed(2) + ' TZS\nTotal: ' + total.toFixed(2) + ' TZS\nPaid: ' + paid.toFixed(2) + ' TZS');
         }
 
-    <script>
         const quantityInput = document.getElementById('quantity_sold');
         const priceInput = document.getElementById('selling_price');
         const paidAmountInput = document.getElementById('paid_amount');
-        const totalAmountDisplay = document.querySelector('.bg-slate-50 .text-2xl');
+        const totalAmountDisplay = document.getElementById('dist-total-display');
         const totalAmountInput = document.getElementById('total-amount');
         const submitBtn = document.getElementById('submit-btn');
         const paymentStatus = document.getElementById('payment-status');
         const dealerSelect = document.getElementById('dealer_id');
         const productSelect = document.getElementById('product_id');
+
+        function parseMoney(el) {
+            if (!el || el.value === undefined || el.value === '') return 0;
+            return parseFloat(String(el.value).replace(/,/g, '').trim()) || 0;
+        }
 
         function formatCurrency(value) {
             return new Intl.NumberFormat('en-US', {
@@ -189,19 +202,19 @@
 
         function calculateTotal() {
             const quantity = parseFloat(quantityInput.value) || 0;
-            const price = parseFloat(priceInput.value) || 0;
+            const price = parseMoney(priceInput);
             const total = quantity * price;
-            
+
             totalAmountDisplay.textContent = formatCurrency(total) + ' TZS';
             totalAmountInput.value = total;
-            
+
             updatePaymentStatus();
             validateSubmit();
         }
 
         function updatePaymentStatus() {
             const total = parseFloat(totalAmountInput.value) || 0;
-            const paid = parseFloat(paidAmountInput.value) || 0;
+            const paid = parseMoney(paidAmountInput);
             const remaining = total - paid;
 
             if (total === 0) {
@@ -224,9 +237,9 @@
 
         function validateSubmit() {
             const quantity = parseFloat(quantityInput.value) || 0;
-            const price = parseFloat(priceInput.value) || 0;
+            const price = parseMoney(priceInput);
             const total = parseFloat(totalAmountInput.value) || 0;
-            const paid = parseFloat(paidAmountInput.value) || 0;
+            const paid = parseMoney(paidAmountInput);
             const dealerSelected = dealerSelect.value !== '';
             const productSelected = productSelect.value !== '';
 
@@ -241,18 +254,16 @@
 
         quantityInput.addEventListener('input', calculateTotal);
         priceInput.addEventListener('input', calculateTotal);
-        paidAmountInput.addEventListener('change', function() {
+        paidAmountInput.addEventListener('input', function() {
             updatePaymentStatus();
             validateSubmit();
         });
         dealerSelect.addEventListener('change', validateSubmit);
         productSelect.addEventListener('change', validateSubmit);
 
-        // Initial calculation and validation
         calculateTotal();
         validateSubmit();
 
-        // Form submission
         document.getElementById('dist-form').addEventListener('submit', function(e) {
             if (!submitBtn.disabled) {
                 return true;

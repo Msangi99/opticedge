@@ -64,9 +64,10 @@
                     <div>
                         <h2 class="admin-prod-form-title">Agent opening stock &amp; sales (by product)</h2>
                         <p class="admin-prod-form-hint max-w-3xl">
-                            <strong>Opening</strong> = previous day’s <strong>closing</strong> (rollover). <strong>Sales</strong> = units sold that day.
-                            <strong>Closing</strong> = what’s left after sales: <strong>opening − sales</strong> for each agent; <strong>shop</strong> = opening − sales + net transfer.
-                            <strong>Shop</strong> counts unassigned devices; each <strong>agent</strong> counts assigned IMEIs. <strong>Purchased today</strong> is new device rows added that date.
+                            <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
+                            <strong>Sales</strong> = units sold on the <strong>report date</strong> only.
+                            <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
+                            <strong>Shop</strong> = opening − sales + net transfer (unassigned stock). <strong>Purchased today</strong> = new device rows created on the report date.
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -204,7 +205,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>closing</strong> = opening − sales (not below 0). Shop: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
+                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>opening</strong> = yesterday’s <strong>closing</strong> (fixed until the day rolls over). <strong>Sales</strong> = today’s sale count on the report date. <strong>Closing</strong> = opening − sales (not below 0). Shop: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
                 @endif
             </div>
         </div>

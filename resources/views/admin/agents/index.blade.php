@@ -29,7 +29,6 @@
                             <th scope="col" class="admin-prod-th">Name</th>
                             <th scope="col" class="admin-prod-th">Email</th>
                             <th scope="col" class="admin-prod-th">Phone</th>
-                            <th scope="col" class="admin-prod-th">Ability</th>
                             <th scope="col" class="admin-prod-th">Branch</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
@@ -41,7 +40,6 @@
                                 <td class="font-semibold text-[#232f3e]">{{ $agent->name }}</td>
                                 <td class="text-slate-600">{{ $agent->email }}</td>
                                 <td class="text-slate-600">{{ $agent->phone ?? '—' }}</td>
-                                <td class="text-slate-600">{{ ($agent->ability ?? 'fullaccess') === 'view' ? 'View only' : 'Full access' }}</td>
                                 <td class="text-slate-600">{{ $agent->branch?->name ?? '—' }}</td>
                                 <td>
                                     @php
@@ -59,7 +57,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-slate-500 py-10">
+                                <td colspan="6" class="text-center text-slate-500 py-10">
                                     No agents yet.
                                     <a href="{{ route('admin.agents.create') }}" class="admin-prod-link">Add an agent</a>.
                                 </td>
