@@ -4,26 +4,26 @@
     <div class="admin-prod-page admin-prod-page--narrow">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
             <div>
-                <p class="admin-prod-eyebrow">Sales team</p>
-                <h1 class="admin-prod-title">Add agent</h1>
-                <p class="admin-prod-subtitle">Create a new agent. They get a dashboard and can sell products you assign.</p>
+                <p class="admin-prod-eyebrow">Administration</p>
+                <h1 class="admin-prod-title">Add subadmin</h1>
+                <p class="admin-prod-subtitle">Create a subadmin with fullaccess or view-only access.</p>
             </div>
-            <a href="{{ route('admin.agents.index') }}" class="admin-prod-back shrink-0">
+            <a href="{{ route('admin.subadmins.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to agents
+                Back to subadmins
             </a>
         </div>
 
         <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Account</h2>
-                <p class="admin-prod-form-hint">Name, email, phone, branch, password, and ability for sign-in.</p>
+                <p class="admin-prod-form-hint">Name, email, phone, password, and ability for sign-in.</p>
             </div>
-            <form method="POST" action="{{ route('admin.agents.store') }}" class="admin-prod-form-body space-y-6">
+            <form method="POST" action="{{ route('admin.subadmins.store') }}" class="admin-prod-form-body space-y-6">
                 @csrf
                 <div>
                     <label for="name" class="admin-prod-label">Name</label>
@@ -46,20 +46,6 @@
                     <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
                         class="admin-prod-input" autocomplete="tel" placeholder="e.g. +255 …">
                     @error('phone')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="branch_id" class="admin-prod-label">Branch</label>
-                    <select name="branch_id" id="branch_id" class="admin-prod-select w-full max-w-xl">
-                        <option value="">— No branch —</option>
-                        @foreach($branches ?? [] as $branch)
-                            <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>
-                                {{ $branch->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('branch_id')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>
@@ -87,8 +73,8 @@
                         class="admin-prod-input" autocomplete="new-password">
                 </div>
                 <div class="admin-prod-form-footer">
-                    <a href="{{ route('admin.agents.index') }}" class="admin-prod-btn-ghost">Cancel</a>
-                    <button type="submit" class="admin-prod-btn-primary px-8">Create agent</button>
+                    <a href="{{ route('admin.subadmins.index') }}" class="admin-prod-btn-ghost">Cancel</a>
+                    <button type="submit" class="admin-prod-btn-primary px-8">Create subadmin</button>
                 </div>
             </form>
         </div>

@@ -15,19 +15,16 @@ use Illuminate\Support\Facades\Hash;
 
 class AgentController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $roleFilter = $request->query('role');
-        $query = User::query()->with('branch')->orderBy('name');
+        $agents = User::where('role', 'agent')->with('branch')->orderBy('name')->get();
+        return view('admin.agents.index', compact('agents'));
+    }
 
-        if ($roleFilter === 'subadmin') {
-            $query->where('role', 'subadmin');
-        } else {
-            $query->whereIn('role', ['agent', 'subadmin']);
-        }
-
-        $agents = $query->get();
-        return view('admin.agents.index', compact('agents', 'roleFilter'));
+    public function subadminsIndex()
+    {
+        $subadmins = User::where('role', 'subadmin')->orderBy('name')->get();
+        return view('admin.subadmins.index', compact('subadmins'));
     }
 
     public function show(User $agent)
@@ -152,6 +149,11 @@ class AgentController extends Controller
         return view('admin.agents.create', compact('branches'));
     }
 
+    public function createSubadmin()
+    {
+        return view('admin.subadmins.create');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -160,10 +162,10 @@ class AgentController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
             'branch_id' => 'nullable|exists:branches,id',
-            'role' => 'required|in:agent,subadmin',
             'ability' => 'required|in:view,fullaccess',
         ]);
         $validated['password'] = Hash::make($validated['password']);
+        $validated['role'] = 'agent';
         $validated['status'] = 'active';
         if (empty($validated['branch_id'])) {
             $validated['branch_id'] = null;
@@ -171,5 +173,26 @@ class AgentController extends Controller
         $user = User::create($validated);
         $user->forceFill(['email_verified_at' => now()])->save();
         return redirect()->route('admin.agents.index')->with('success', 'Agent created. They can log in and will see their dashboard.');
+    }
+
+    public function storeSubadmin(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:100',
+            'ability' => 'required|in:view,fullaccess',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['role'] = 'subadmin';
+        $validated['status'] = 'active';
+        $validated['branch_id'] = null;
+
+        $user = User::create($validated);
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        return redirect()->route('admin.subadmins.index')->with('success', 'Subadmin created successfully.');
     }
 }

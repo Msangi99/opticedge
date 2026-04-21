@@ -5,14 +5,11 @@
         <div class="admin-prod-toolbar">
             <div>
                 <p class="admin-prod-eyebrow">Sales team</p>
-                <h1 class="admin-prod-title">Users</h1>
-                <p class="admin-prod-subtitle">Manage users (agents and subadmins) and assign products for agents to sell.</p>
+                <h1 class="admin-prod-title">Agents</h1>
+                <p class="admin-prod-subtitle">Manage agents and assign products for them to sell.</p>
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
-                <a href="{{ route('admin.agents.create') }}" class="admin-prod-btn-ghost">Add user</a>
-                @if(($roleFilter ?? null) === 'subadmin')
-                    <a href="{{ route('admin.agents.index') }}" class="admin-prod-btn-ghost">Show all users</a>
-                @endif
+                <a href="{{ route('admin.agents.create') }}" class="admin-prod-btn-ghost">Add agent</a>
                 <a href="{{ route('admin.agents.assign-products') }}" class="admin-prod-btn-primary">Assign products</a>
             </div>
         </div>
@@ -32,7 +29,6 @@
                             <th scope="col" class="admin-prod-th">Name</th>
                             <th scope="col" class="admin-prod-th">Email</th>
                             <th scope="col" class="admin-prod-th">Phone</th>
-                            <th scope="col" class="admin-prod-th">Role</th>
                             <th scope="col" class="admin-prod-th">Ability</th>
                             <th scope="col" class="admin-prod-th">Branch</th>
                             <th scope="col" class="admin-prod-th">Status</th>
@@ -45,7 +41,6 @@
                                 <td class="font-semibold text-[#232f3e]">{{ $agent->name }}</td>
                                 <td class="text-slate-600">{{ $agent->email }}</td>
                                 <td class="text-slate-600">{{ $agent->phone ?? '—' }}</td>
-                                <td class="text-slate-600">{{ ucfirst($agent->role ?? 'agent') }}</td>
                                 <td class="text-slate-600">{{ ($agent->ability ?? 'fullaccess') === 'view' ? 'View only' : 'Full access' }}</td>
                                 <td class="text-slate-600">{{ $agent->branch?->name ?? '—' }}</td>
                                 <td>
@@ -64,9 +59,9 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-slate-500 py-10">
-                                    No {{ ($roleFilter ?? null) === 'subadmin' ? 'subadmins' : 'users' }} yet.
-                                    <a href="{{ route('admin.agents.create') }}" class="admin-prod-link">Add a user</a>.
+                                <td colspan="7" class="text-center text-slate-500 py-10">
+                                    No agents yet.
+                                    <a href="{{ route('admin.agents.create') }}" class="admin-prod-link">Add an agent</a>.
                                 </td>
                             </tr>
                         @endforelse

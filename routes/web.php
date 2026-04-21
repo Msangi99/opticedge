@@ -139,6 +139,9 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::get('agents', [App\Http\Controllers\Admin\AgentController::class, 'index'])->name('agents.index');
         Route::get('agents/create', [App\Http\Controllers\Admin\AgentController::class, 'create'])->name('agents.create');
         Route::post('agents', [App\Http\Controllers\Admin\AgentController::class, 'store'])->name('agents.store');
+        Route::get('subadmins', [App\Http\Controllers\Admin\AgentController::class, 'subadminsIndex'])->name('subadmins.index');
+        Route::get('subadmins/create', [App\Http\Controllers\Admin\AgentController::class, 'createSubadmin'])->name('subadmins.create');
+        Route::post('subadmins', [App\Http\Controllers\Admin\AgentController::class, 'storeSubadmin'])->name('subadmins.store');
         Route::get('agents/assign-products', [App\Http\Controllers\Admin\AgentController::class, 'assignProductsForm'])->name('agents.assign-products');
         Route::post('agents/assign-products', [App\Http\Controllers\Admin\AgentController::class, 'storeAssignment'])->name('agents.store-assignment');
         Route::get('agents/assignable-imeis', [App\Http\Controllers\Admin\AgentController::class, 'assignableImeis'])->name('agents.assignable-imeis');
