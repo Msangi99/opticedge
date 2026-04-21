@@ -128,6 +128,10 @@
                             left: 0;
                             z-index: 5;
                             background-color: white;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            min-width: 150px;
                         }
                         
                         .admin-report-table-container tbody tr.totals-row td:first-child {

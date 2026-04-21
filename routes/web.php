@@ -177,6 +177,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::patch('payment-options/{payment_option}/toggle-visibility', [App\Http\Controllers\Admin\PaymentOptionController::class, 'toggleVisibility'])->name('payment-options.toggle-visibility');
         Route::resource('payment-options', App\Http\Controllers\Admin\PaymentOptionController::class)->except(['show']);
 
+        // Payment Transfers
+        Route::prefix('payment-transfer')->name('payment-transfer.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\PaymentTransferController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\PaymentTransferController::class, 'store'])->name('store');
+            Route::get('history', [App\Http\Controllers\Admin\PaymentTransferController::class, 'history'])->name('history');
+        });
+
         // Stock Management
         Route::prefix('stock')->name('stock.')->group(function () {
             Route::get('imei-search', [App\Http\Controllers\Admin\StockController::class, 'imeiSearch'])->name('imei-search');
@@ -209,10 +216,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::patch('distribution/{id}/status', [App\Http\Controllers\Admin\StockController::class, 'updateDistributionStatus'])->name('distribution-update-status');
             Route::post('distribution/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveDistributionChannel'])->name('distribution-save-channel');
 
-            // Pending Sales
-            Route::get('pending-sales', [App\Http\Controllers\Admin\StockController::class, 'pendingSales'])->name('pending-sales');
-            Route::post('pending-sales/{id}/save', [App\Http\Controllers\Admin\StockController::class, 'savePendingSale'])->name('save-pending-sale');
-            
             // Agent Sales
             Route::get('agent-sales', [App\Http\Controllers\Admin\StockController::class , 'agentSales'])->name('agent-sales');
             Route::get('agent-sales/create', [App\Http\Controllers\Admin\StockController::class, 'createAgentSale'])->name('create-agent-sale');

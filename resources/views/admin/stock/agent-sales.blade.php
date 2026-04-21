@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Agents</p>
                 <h1 class="admin-prod-title">Agent sales</h1>
-                <p class="admin-prod-subtitle">Sales by agents; edit commission as needed.</p>
+                <p class="admin-prod-subtitle">All sales by agents, including pending; set payment channel as needed.</p>
             </div>
             <a href="{{ route('admin.stock.create-agent-sale') }}"
                 class="shrink-0 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record manual sale</a>
