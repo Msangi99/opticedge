@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Purchase Invoice {{ $invoiceNo }}</title>
+    <title>Distribution Invoice {{ $invoiceNo }}</title>
     <style>
         @page { size: A4; margin: 10mm; }
         * { box-sizing: border-box; }
@@ -157,15 +157,19 @@
 </head>
 @php
     $companyName = 'OPTIC EDGE AFRICA';
-    $formattedDate = $purchase->date ? \Carbon\Carbon::parse($purchase->date)->format('d M Y') : '';
-    $distributorName = $purchase->distributor_name ?? $purchase->vendor?->name ?? 'N/A';
-    $branchName = $purchase->branch?->name ?? 'Main Branch';
-    $productName = $purchase->product
-        ? (($purchase->product->category?->name ?? 'N/A') . ' - ' . $purchase->product->name)
+    $formattedDate = $sale->date ? \Carbon\Carbon::parse($sale->date)->format('d M Y') : '';
+    $dealerName = $sale->dealer_name
+        ?? $sale->dealer?->name
+        ?? $sale->dealer?->business_name
+        ?? 'N/A';
+    $productName = $sale->product
+        ? (($sale->product->category?->name ?? 'N/A') . ' - ' . $sale->product->name)
         : 'N/A';
-    $qty = (int) ($purchase->quantity ?? 0);
-    $unitPrice = (float) ($purchase->unit_price ?? 0);
-    $total = (float) ($purchase->total_amount ?? ($qty * $unitPrice));
+    $qty = (int) ($sale->quantity_sold ?? 0);
+    $unitPrice = (float) ($sale->selling_price ?? 0);
+    $total = (float) ($sale->total_selling_value ?? ($qty * $unitPrice));
+    $paid = (float) ($sale->paid_amount ?? 0);
+    $balance = (float) ($sale->balance ?? max(0, $total - $paid));
 @endphp
 <body>
     <div class="sheet">
@@ -177,7 +181,7 @@
             </div>
             <div class="header-text">
                 <h1>INVOICE</h1>
-                <p>Purchase Order Invoice</p>
+                <p>Distribution sale (dealer)</p>
             </div>
         </div>
 
@@ -186,7 +190,7 @@
         <div class="content-row">
             <div class="block">
                 <div class="block-title">Bill To</div>
-                <div class="block-line"><strong>Name</strong> {{ $distributorName }}</div>
+                <div class="block-line"><strong>Dealer</strong> {{ $dealerName }}</div>
                 <div class="block-line"><strong>Date</strong> {{ $formattedDate }}</div>
             </div>
             <div class="block">
@@ -221,7 +225,9 @@
         </div>
 
         <div class="total-section">
-            <div class="total-line"><span>Total Amount</span> <strong>: {{ number_format($total, 2) }}</strong></div>
+            <div class="total-line"><span>Total (TZS)</span> <strong>: {{ number_format($total, 2) }}</strong></div>
+            <div class="total-line"><span>Paid (TZS)</span> <strong>: {{ number_format($paid, 2) }}</strong></div>
+            <div class="total-line"><span>Balance (TZS)</span> <strong>: {{ number_format($balance, 2) }}</strong></div>
         </div>
 
         <div class="thank-you">Thank you!</div>

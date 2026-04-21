@@ -980,6 +980,10 @@ class StockController extends Controller
 
     public function storeDistribution(Request $request)
     {
+        if ($request->filled('paid_amount') === false || trim((string) $request->input('paid_amount', '')) === '') {
+            $request->merge(['paid_amount' => null]);
+        }
+
         $validated = $request->validate([
             'date' => 'required|date',
             'dealer_id' => 'nullable|exists:users,id',
