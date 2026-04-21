@@ -10,6 +10,9 @@
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
                 <a href="{{ route('admin.agents.create') }}" class="admin-prod-btn-ghost">Add user</a>
+                @if(($roleFilter ?? null) === 'subadmin')
+                    <a href="{{ route('admin.agents.index') }}" class="admin-prod-btn-ghost">Show all users</a>
+                @endif
                 <a href="{{ route('admin.agents.assign-products') }}" class="admin-prod-btn-primary">Assign products</a>
             </div>
         </div>
@@ -62,7 +65,7 @@
                         @empty
                             <tr>
                                 <td colspan="8" class="text-center text-slate-500 py-10">
-                                    No users yet.
+                                    No {{ ($roleFilter ?? null) === 'subadmin' ? 'subadmins' : 'users' }} yet.
                                     <a href="{{ route('admin.agents.create') }}" class="admin-prod-link">Add a user</a>.
                                 </td>
                             </tr>

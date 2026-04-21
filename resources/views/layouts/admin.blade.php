@@ -540,6 +540,16 @@
                             </svg>
                             Dealers
                         </a>
+                        <a href="{{ route('admin.agents.index', ['role' => 'subadmin']) }}"
+                            @if (request()->routeIs('admin.agents.*') && request('role') === 'subadmin') aria-current="page" @endif
+                            class="admin-sidebar-item {{ request()->routeIs('admin.agents.*') && request('role') === 'subadmin' ? 'admin-sidebar-item-active' : '' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-3.314 0-6 2.239-6 5v1h12v-1c0-2.761-2.686-5-6-5z" />
+                            </svg>
+                            Subadmins
+                        </a>
 
                         <div x-data="{ open: {{ $sidebarUsersActive ? 'true' : 'false' }} }">
                             <button type="button" @click="open = !open"

@@ -15,10 +15,19 @@ use Illuminate\Support\Facades\Hash;
 
 class AgentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $agents = User::whereIn('role', ['agent', 'subadmin'])->with('branch')->orderBy('name')->get();
-        return view('admin.agents.index', compact('agents'));
+        $roleFilter = $request->query('role');
+        $query = User::query()->with('branch')->orderBy('name');
+
+        if ($roleFilter === 'subadmin') {
+            $query->where('role', 'subadmin');
+        } else {
+            $query->whereIn('role', ['agent', 'subadmin']);
+        }
+
+        $agents = $query->get();
+        return view('admin.agents.index', compact('agents', 'roleFilter'));
     }
 
     public function show(User $agent)
