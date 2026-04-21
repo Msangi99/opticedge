@@ -185,12 +185,13 @@
 
         <div class="content-row">
             <div class="block">
-                <div class="block-title">Bill To</div>
-                <div class="block-line"><strong>Name</strong> {{ $distributorName }}</div>
+                <div class="block-title">Bill From</div>
+                <div class="block-line"><strong>Supplier</strong> {{ $distributorName }}</div>
                 <div class="block-line"><strong>Date</strong> {{ $formattedDate }}</div>
+                <div class="block-line"><strong>Branch</strong> {{ $branchName }}</div>
             </div>
             <div class="block">
-                <div class="block-title">From</div>
+                <div class="block-title">Bill To</div>
                 <div class="block-line"><strong>{{ $companyName }}</strong></div>
                 <div class="block-line">Dar es Salaam, Sinza Makaburini</div>
                 <div class="block-line">info@opticedgeafrica.net</div>

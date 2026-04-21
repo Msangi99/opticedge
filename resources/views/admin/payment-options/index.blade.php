@@ -8,12 +8,26 @@
                 <h1 class="admin-prod-title">Channels</h1>
                 <p class="admin-prod-subtitle">Payment channels: mobile, bank, and cash. Balances update from sales and expenses.</p>
             </div>
-            <a href="{{ route('admin.payment-options.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add channel
-            </a>
+            <div class="flex gap-2 shrink-0">
+                <a href="{{ route('admin.payment-transfer.history') }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Transfer history
+                </a>
+                <a href="{{ route('admin.payment-transfer.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4" />
+                    </svg>
+                    Transfer
+                </a>
+                <a href="{{ route('admin.payment-options.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add channel
+                </a>
+            </div>
         </div>
 
         @if(session('success'))

@@ -34,6 +34,7 @@ class AgentDailyStockReportService
 
         $dayStart = $reportDate->copy()->startOfDay();
         $dayEnd = $reportDate->copy()->endOfDay();
+        // Get previous day's end to lock opening stock for today
         $prevEnd = $reportDate->copy()->subDay()->endOfDay();
 
         $agents = User::query()
@@ -55,9 +56,12 @@ class AgentDailyStockReportService
             ];
         }
 
+        // OPENING STOCK: Fixed from previous day's closing (locked at start of day)
+        // This means opening stock does NOT change throughout today
         $prevClosingShop = $this->closingShopByProduct($prevEnd, $branchId, $productIds);
         $prevClosingAgents = $this->closingByAgentProduct($prevEnd, $branchId, $productIds);
 
+        // TODAY'S ACTIVITY: Sales, transfers, and receipts for TODAY ONLY
         $salesShop = $this->salesShopByProduct($dayStart, $dayEnd, $branchId, $productIds);
         $salesAgents = $this->salesByAgentProduct($dayStart, $dayEnd, $branchId, $productIds);
 
@@ -96,16 +100,23 @@ class AgentDailyStockReportService
         $rows = [];
         foreach ($products as $product) {
             $pid = (int) $product->id;
+            // OPENING: Locked from previous day's closing, does not change today
             $openingShop = (int) ($prevClosingShop[$pid] ?? 0);
+            // SALES: Only transactions TODAY (from $dayStart to $dayEnd)
             $sShop = (int) ($salesShop[$pid] ?? 0);
+            // TRANSFER: Net transfers TODAY
             $tShop = (int) ($transferNetShop[$pid] ?? 0);
+            // CLOSING: Calculated as Opening - Sales + Transfers
             $closingShop = max(0, $openingShop - $sShop + $tShop);
 
             $agentCells = [];
             foreach ($agents as $agent) {
                 $aid = (int) $agent->id;
+                // AGENT OPENING: Locked from previous day's closing
                 $openingA = (int) ($prevClosingAgents[$aid][$pid] ?? 0);
+                // AGENT SALES: Only transactions TODAY
                 $sA = (int) ($salesAgents[$aid][$pid] ?? 0);
+                // AGENT CLOSING: Opening - Sales (no transfers for agents)
                 $closingA = max(0, $openingA - $sA);
                 $agentCells[$aid] = [
                     'opening' => $openingA,

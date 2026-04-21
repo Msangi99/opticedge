@@ -49,15 +49,16 @@
 
                         <!-- Date -->
                         <div class="col-span-1">
-                            <label for="date" class="admin-prod-label">Date of Purchase</label>
-                            <input type="date" name="date" id="date" value="{{ old('date', date('Y-m-d')) }}" required class="admin-prod-input">
+                            <label for="date" class="admin-prod-label">Date of Purchase <span class="text-red-500">*</span></label>
+                            <input type="date" name="date" id="date" value="{{ old('date', date('Y-m-d')) }}" required max="{{ date('Y-m-d') }}" class="admin-prod-input">
                             @error('date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1">Date cannot be in the future</p>
                         </div>
 
                         <!-- Distributor -->
                         <div class="col-span-1">
-                            <label for="distributor_name" class="admin-prod-label">Distributor Name</label>
-                            <select name="distributor_name" id="distributor_name" class="admin-prod-select">
+                            <label for="distributor_name" class="admin-prod-label">Distributor Name <span class="text-red-500">*</span></label>
+                            <select name="distributor_name" id="distributor_name" required class="admin-prod-select">
                                 <option value="">{{ __('Select vendor…') }}</option>
                                 @foreach($vendors as $vendor)
                                     <option value="{{ $vendor->name }}" {{ old('distributor_name') === $vendor->name ? 'selected' : '' }}>
@@ -96,7 +97,7 @@
                             </div>
                         @else
                             <div class="col-span-2">
-                                <label for="product_id" class="admin-prod-label">Model (product name)</label>
+                                <label for="product_id" class="admin-prod-label">Model (product name) <span class="text-red-500">*</span></label>
                                 <select name="product_id" id="product_id" required class="admin-prod-select">
                                     <option value="">Search or select…</option>
                                     @foreach($productsForSelect as $p)
@@ -112,7 +113,7 @@
 
                         <!-- Quantity: from stock limit (read-only) or editable -->
                         <div class="col-span-1">
-                            <label for="quantity" class="admin-prod-label">Quantity</label>
+                            <label for="quantity" class="admin-prod-label">Quantity <span class="text-red-500">*</span></label>
                             @if($fromStock)
                                 <div class="admin-prod-readonly-box">{{ $fromStock->purchase_quantity }}</div>
                                 <input type="hidden" name="quantity" id="quantity" value="{{ $fromStock->purchase_quantity }}">
@@ -124,32 +125,63 @@
 
                         <!-- Unit Price -->
                         <div class="col-span-1">
-                            <label for="unit_price" class="admin-prod-label">Unit Price</label>
-                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price') }}" required min="0" class="admin-prod-input" oninput="calculateTotal()">
+                            <label for="unit_price" class="admin-prod-label">Unit Price <span class="text-red-500">*</span></label>
+                            <input type="number" step="0.01" name="unit_price" id="unit_price" value="{{ old('unit_price') }}" required min="0.01" class="admin-prod-input" oninput="calculateTotal()">
                             @error('unit_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1">Must be greater than 0</p>
                         </div>
 
                         <!-- Sell Price -->
                         <div class="col-span-1">
-                            <label for="sell_price" class="admin-prod-label">Sell Price</label>
+                            <label for="sell_price" class="admin-prod-label">Sell Price (optional)</label>
                             <input type="number" step="0.01" name="sell_price" id="sell_price" value="{{ old('sell_price') }}" min="0" placeholder="Optional" class="admin-prod-input">
                             @error('sell_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1">Resale price if different from cost</p>
                         </div>
 
                         <!-- Total Value (Read Only) -->
                         <div class="col-span-2">
                             <label for="total_amount" class="admin-prod-label">Total Purchase Value</label>
-                            <input type="text" id="total_amount" readonly class="admin-prod-input font-bold cursor-not-allowed">
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-600">Total:</span>
+                                    <input type="text" id="total_amount" readonly class="text-2xl font-bold text-slate-900 bg-transparent border-0 p-0 text-right cursor-not-allowed" value="0.00">
+                                </div>
+                                <p class="text-xs text-slate-500 mt-2">Calculated as: Quantity × Unit Price</p>
+                            </div>
+                            <input type="hidden" id="total_value" name="total_value">
                         </div>
 
                     </div>
 
                     <div class="admin-prod-form-footer !mt-6">
-                        <button type="submit" class="admin-prod-btn-primary px-8">Save purchase</button>
+                        <a href="{{ route('admin.stock.purchases') }}" class="admin-prod-btn-ghost">Cancel</a>
+                        <button type="submit" class="admin-prod-btn-primary px-8" onclick="return validatePurchaseForm()">Save purchase</button>
                     </div>
                 </form>
         </div>
     </div>
+    
+    <script>
+        function validatePurchaseForm() {
+            const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
+            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
+            
+            if (quantity <= 0) {
+                alert('❌ Quantity must be greater than 0');
+                document.getElementById('quantity')?.focus();
+                return false;
+            }
+            
+            if (price <= 0) {
+                alert('❌ Unit price must be greater than 0');
+                document.getElementById('unit_price')?.focus();
+                return false;
+            }
+            
+            const total = (quantity * price).toFixed(2);
+            return confirm('✓ Confirm purchase?\n\nQuantity: ' + quantity + '\nUnit Price: ' + price.toFixed(2) + ' TZS\nTotal: ' + total + ' TZS');
+        }
 
     @push('scripts')
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -160,7 +192,23 @@
                 const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
                 const total = qty * price;
                 const el = document.getElementById('total_amount');
-                if (el) el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                const hiddenEl = document.getElementById('total_value');
+                if (el) {
+                    el.value = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TZS';
+                }
+                if (hiddenEl) {
+                    hiddenEl.value = total;
+                }
+                
+                // Add validation styling
+                const submitBtn = document.querySelector('[type="submit"]');
+                if (submitBtn && qty > 0 && price > 0) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             }
 
             document.addEventListener('DOMContentLoaded', function() {

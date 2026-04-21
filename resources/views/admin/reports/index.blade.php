@@ -100,8 +100,43 @@
                 @if(count($asr['rows']) === 0)
                     <p class="text-sm text-slate-500 py-6">No stock movement for this date and branch filter.</p>
                 @else
-                    <div class="admin-prod-table-wrap overflow-x-auto rounded-xl">
-                        <table class="min-w-[720px] text-sm">
+                    <style>
+                        .admin-report-table-container {
+                            overflow-x: auto;
+                            border-radius: 0.75rem;
+                            max-height: 600px;
+                            overflow-y: auto;
+                        }
+                        
+                        .admin-report-table-container table {
+                            min-width: 720px;
+                        }
+                        
+                        .admin-report-table-container thead tr th {
+                            position: sticky;
+                            top: 0;
+                            z-index: 10;
+                            background-color: inherit;
+                        }
+                        
+                        .admin-report-table-wrap-sticky {
+                            position: relative;
+                        }
+                        
+                        .admin-report-table-container tbody tr td:first-child {
+                            position: sticky;
+                            left: 0;
+                            z-index: 5;
+                            background-color: white;
+                        }
+                        
+                        .admin-report-table-container tbody tr.totals-row td:first-child {
+                            background-color: #f1f5f9;
+                        }
+                    </style>
+                    
+                    <div class="admin-report-table-container rounded-xl">
+                        <table class="text-sm">
                             <thead>
                                 <tr>
                                     <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
@@ -129,7 +164,7 @@
                             <tbody>
                                 @foreach($asr['rows'] as $row)
                                     <tr>
-                                        <td class="font-medium text-[#232f3e]">{{ $row['name'] }}</td>
+                                        <td class="font-medium text-[#232f3e] bg-white">{{ $row['name'] }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['price'], 0) }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['purchased_today']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['opening']) }}</td>
@@ -146,10 +181,10 @@
                                     </tr>
                                 @endforeach
                                 @php $tot = $asr['totals']; @endphp
-                                <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e]">
-                                    <td>Totals</td>
-                                    <td class="text-right">—</td>
-                                    <td class="text-right font-variant-numeric">{{ number_format($tot['purchased_today']) }}</td>
+                                <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row">
+                                    <td class="bg-slate-100">Totals</td>
+                                    <td class="text-right bg-slate-100">—</td>
+                                    <td class="text-right font-variant-numeric bg-slate-100">{{ number_format($tot['purchased_today']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['opening']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['sales']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['transfer']) }}</td>
