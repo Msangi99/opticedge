@@ -543,12 +543,12 @@
                                 <a href="{{ route('admin.customers.index') }}"
                                     @if (request()->routeIs('admin.customers.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.customers.*') ? 'admin-sidebar-sublink-active' : '' }}">Customers</a>
+                                <a href="{{ route('admin.agents.index') }}"
+                                    @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Users</a>
                                 <a href="{{ route('admin.dealers.index') }}"
                                     @if (request()->routeIs('admin.dealers.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.dealers.*') ? 'admin-sidebar-sublink-active' : '' }}">Dealers</a>
-                                <a href="{{ route('admin.agents.index') }}"
-                                    @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
-                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
                                 <a href="{{ route('admin.vendors.index') }}"
                                     @if (request()->routeIs('admin.vendors.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.vendors.*') ? 'admin-sidebar-sublink-active' : '' }}">Vendors</a>

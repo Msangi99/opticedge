@@ -27,6 +27,7 @@ class DealerController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
             'business_name' => 'required|string|max:255',
+            'ability' => 'required|in:view,fullaccess',
         ]);
 
         $user = User::create([
@@ -37,6 +38,7 @@ class DealerController extends Controller
             'business_name' => $validated['business_name'],
             'role' => 'dealer',
             'status' => 'active',
+            'ability' => $validated['ability'],
         ]);
         $user->forceFill(['email_verified_at' => now()])->save();
 

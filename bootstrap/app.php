@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'agent' => \App\Http\Middleware\AgentMiddleware::class,
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'subadmin.ability' => \App\Http\Middleware\SubadminAbilityMiddleware::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'selcom/checkout-callback',

@@ -17,7 +17,7 @@ class AgentController extends Controller
 {
     public function index()
     {
-        $agents = User::where('role', 'agent')->with('branch')->orderBy('name')->get();
+        $agents = User::whereIn('role', ['agent', 'subadmin'])->with('branch')->orderBy('name')->get();
         return view('admin.agents.index', compact('agents'));
     }
 
@@ -151,9 +151,10 @@ class AgentController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
             'branch_id' => 'nullable|exists:branches,id',
+            'role' => 'required|in:agent,subadmin',
+            'ability' => 'required|in:view,fullaccess',
         ]);
         $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] = 'agent';
         $validated['status'] = 'active';
         if (empty($validated['branch_id'])) {
             $validated['branch_id'] = null;

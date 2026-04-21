@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
+        'ability',
         'business_name',
         'phone',
         'branch_id',

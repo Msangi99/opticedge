@@ -21,7 +21,7 @@
         <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Account</h2>
-                <p class="admin-prod-form-hint">Business name, contact, email, and password for sign-in.</p>
+                <p class="admin-prod-form-hint">Business name, contact, email, password, and ability for sign-in.</p>
             </div>
             <form method="POST" action="{{ route('admin.dealers.store') }}" class="admin-prod-form-body space-y-6">
                 @csrf
@@ -54,6 +54,16 @@
                     <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
                         class="admin-prod-input" autocomplete="tel" placeholder="e.g. +255 …">
                     @error('phone')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="ability" class="admin-prod-label">Ability</label>
+                    <select name="ability" id="ability" class="admin-prod-select w-full max-w-xl" required>
+                        <option value="fullaccess" @selected(old('ability', 'fullaccess') === 'fullaccess')>Full access</option>
+                        <option value="view" @selected(old('ability') === 'view')>View only (can print invoices/reports)</option>
+                    </select>
+                    @error('ability')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>

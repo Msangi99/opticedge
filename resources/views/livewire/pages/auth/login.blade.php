@@ -19,7 +19,7 @@ new #[Layout('layouts.guest')] class extends Component {
 
         Session::regenerate();
 
-        $url = auth()->user()->role === 'admin'
+        $url = in_array(auth()->user()->role, ['admin', 'subadmin'], true)
             ? route('admin.dashboard', absolute: false)
             : route('dashboard', absolute: false);
 

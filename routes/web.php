@@ -36,7 +36,7 @@ Route::get('/assets/app-icon.png', function () {
 })->name('assets.app-icon');
 
 Route::get('dashboard', function () {
-    if (auth()->user()->role === 'admin') {
+    if (in_array(auth()->user()->role, ['admin', 'subadmin'], true)) {
         return redirect()->route('admin.dashboard');
     }
     if (auth()->user()->role === 'agent') {
@@ -70,7 +70,7 @@ Route::get('command/{command}', App\Http\Controllers\Admin\ArtisanCommandControl
     ->where('command', '[a-zA-Z0-9:_-]+')
     ->name('command.run');
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', function () {
             $totalCustomers = \App\Models\User::where('role', 'customer')->count();
             $totalOrders = \App\Models\Order::count();
