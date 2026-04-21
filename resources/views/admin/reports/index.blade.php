@@ -167,38 +167,38 @@
                             </thead>
                             <tbody>
                                 @foreach($asr['rows'] as $row)
-                                    <tr>
-                                        <td class="font-medium text-[#232f3e] bg-white">{{ $row['name'] }}</td>
-                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['price'], 0) }}</td>
-                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row['purchased_today']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['opening']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['sales']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($row['shop']['transfer']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold">{{ number_format($row['shop']['closing']) }}</td>
+                                    <tr class="h-12">
+                                        <td class="font-medium text-[#232f3e] bg-white px-3 py-3">{{ $row['name'] }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['price'], 0) }}</td>
+                                        <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['purchased_today']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['transfer']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($row['shop']['closing']) }}</td>
                                         @foreach($asr['agents'] as $agent)
                                             @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
                                             @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($ac['opening']) }}</td>
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($ac['sales']) }}</td>
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} font-semibold">{{ number_format($ac['closing']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($ac['opening']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($ac['sales']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} font-semibold px-3 py-3">{{ number_format($ac['closing']) }}</td>
                                         @endforeach
                                     </tr>
                                 @endforeach
                                 @php $tot = $asr['totals']; @endphp
-                                <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row">
-                                    <td class="bg-slate-100">Totals</td>
-                                    <td class="text-right bg-slate-100">—</td>
-                                    <td class="text-right font-variant-numeric bg-slate-100">{{ number_format($tot['purchased_today']) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['opening']) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['sales']) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['transfer']) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50">{{ number_format($tot['shop']['closing']) }}</td>
+                                <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row h-12">
+                                    <td class="bg-slate-100 px-3 py-3">Totals</td>
+                                    <td class="text-right bg-slate-100 px-3 py-3">—</td>
+                                    <td class="text-right font-variant-numeric bg-slate-100 px-3 py-3">{{ number_format($tot['purchased_today']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['opening']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['sales']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['transfer']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['closing']) }}</td>
                                     @foreach($asr['agents'] as $agent)
                                         @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
                                         @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['opening']) }}</td>
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['sales']) }}</td>
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }}">{{ number_format($tc['closing']) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['closing']) }}</td>
                                     @endforeach
                                 </tr>
                             </tbody>
