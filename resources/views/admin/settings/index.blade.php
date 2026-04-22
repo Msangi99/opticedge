@@ -124,12 +124,6 @@
                             </div>
                         </div>
 
-                        @if(in_array($selectedRole->system_key, ['fullaccess', 'view'], true))
-                            <div class="admin-prod-alert admin-prod-alert--success mb-4">
-                                This is a system role ({{ $selectedRole->name }}). Create a custom role to edit permissions.
-                            </div>
-                        @endif
-
                         <form action="{{ route('admin.settings.subadmin-roles.update', $selectedRole) }}" method="POST">
                             @csrf
                             @method('PUT')
@@ -157,8 +151,7 @@
                                                             name="permissions[]"
                                                             value="{{ $key }}"
                                                             @checked($isChecked)
-                                                            @disabled(in_array($selectedRole->system_key, ['fullaccess', 'view'], true))
-                                                            class="h-4 w-4 rounded border-slate-300 text-[#fa8900] focus:ring-[#fa8900] disabled:opacity-30">
+                                                            class="h-4 w-4 rounded border border-black text-[#fa8900] focus:ring-[#fa8900] cursor-pointer">
                                                     </td>
                                                 @endforeach
                                             </tr>
@@ -167,11 +160,9 @@
                                 </table>
                             </div>
 
-                            @if(!in_array($selectedRole->system_key, ['fullaccess', 'view'], true))
-                                <div class="mt-4 flex justify-end">
-                                    <button type="submit" class="admin-prod-btn-primary px-6">Save changes</button>
-                                </div>
-                            @endif
+                            <div class="mt-4 flex justify-end">
+                                <button type="submit" class="admin-prod-btn-primary px-6">Save changes</button>
+                            </div>
                         </form>
                     @else
                         <p class="text-sm text-slate-500">Create a role on the left to manage permissions.</p>

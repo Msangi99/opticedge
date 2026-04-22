@@ -84,10 +84,6 @@ class SettingController extends Controller
 
     public function updateSubadminRolePermissions(Request $request, SubadminRole $role)
     {
-        if (in_array($role->system_key, ['fullaccess', 'view'], true)) {
-            return redirect()->back()->with('error', 'System roles cannot be edited.');
-        }
-
         $validated = $request->validate([
             'permissions' => 'array',
             'permissions.*' => [
