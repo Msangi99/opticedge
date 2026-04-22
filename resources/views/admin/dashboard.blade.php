@@ -459,8 +459,8 @@
             </a>
 
             @isset($financialMetrics)
-            <!-- Total quantity across purchases -->
-            <a href="{{ route('admin.stock.purchases') }}"
+            <!-- Agent aging products -->
+            <a href="{{ route('admin.dashboard', ['open' => 'agent-aging-assets']) }}"
                 class="group admin-clay-panel-interactive p-6 transition-all relative overflow-hidden">
                 <div class="flex items-center gap-4 relative z-10">
                     <div
@@ -472,8 +472,8 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-slate-500">Total products in purchases</p>
-                        <p class="text-2xl font-bold text-slate-900">{{ number_format($financialMetrics['total_products_in_purchases'] ?? 0) }}</p>
+                        <p class="text-sm font-medium text-slate-500">Agent aging products</p>
+                        <p class="text-2xl font-bold text-slate-900">{{ number_format($agentAgingAssetsCount ?? 0) }}</p>
                     </div>
                 </div>
             </a>
@@ -611,7 +611,7 @@
 
         <!-- Financial Metrics -->
         @if(isset($financialMetrics))
-        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, manualPayablesModalOpen: false, receivablesModalOpen: false }">
+        <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, manualPayablesModalOpen: false, receivablesModalOpen: false, agentAgingAssetsModalOpen: @js(request('open') === 'agent-aging-assets') }">
             <div class="admin-dash-section-head">
                 <h3 class="admin-dash-section-title">Financial Summary</h3>
                 <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
@@ -782,6 +782,110 @@
                 </div>
             </div>
             @endif
+
+            <!-- Agent aging assets -->
+            <div x-show="agentAgingAssetsModalOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click.self="agentAgingAssetsModalOpen = false">
+                <div
+                    class="w-full max-w-6xl max-h-[80vh] overflow-y-auto rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                    <div class="admin-dash-section-head flex items-center justify-between">
+                        <div>
+                            <h3 class="admin-dash-section-title">Agent aging assets</h3>
+                            <p class="admin-dash-section-desc">Assigned devices that are still not sold, oldest assignments first.</p>
+                        </div>
+                        <div class="flex items-center gap-3 flex-wrap justify-end">
+                            <button type="button"
+                                class="admin-dash-link text-xs shrink-0 border-0 bg-transparent cursor-pointer p-0"
+                                @click="agentAgingAssetsModalOpen = false; manualPayablesModalOpen = true">
+                                Manual payables
+                            </button>
+                            <a href="{{ route('admin.stock.imei-search') }}" class="admin-dash-link text-xs shrink-0">
+                                View all
+                            </a>
+                            <button type="button" class="ml-2 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
+                                @click="agentAgingAssetsModalOpen = false">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-dash-body">
+                        <div class="admin-dash-table-wrap">
+                            <table id="agent-aging-assets-table" class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="admin-dash-th">Model</th>
+                                        <th class="admin-dash-th">IMEI</th>
+                                        <th class="admin-dash-th">Assigned agent</th>
+                                        <th class="admin-dash-th">Date assigned</th>
+                                        <th class="admin-dash-th">Aging</th>
+                                        <th class="admin-dash-th admin-dash-th--end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-slate-100/80 bg-white/40">
+                                    @forelse($agentAgingAssets ?? [] as $asset)
+                                        @php
+                                            $assignment = $asset->agentProductListAssignment;
+                                            $assignedAt = $assignment?->created_at;
+                                            $diffDays = $assignedAt ? (int) floor($assignedAt->floatDiffInRealDays(now())) : 0;
+                                            if ($diffDays < 7) {
+                                                $agingLabel = $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+                                            } elseif ($diffDays < 30) {
+                                                $weeks = floor($diffDays / 7);
+                                                $agingLabel = $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+                                            } else {
+                                                $months = floor($diffDays / 30);
+                                                $agingLabel = $months . ' month' . ($months === 1 ? '' : 's') . '+';
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td class="px-4 py-2.5 font-semibold text-[#232f3e]">
+                                                {{ $asset->model ?: ($asset->product?->name ?? '—') }}
+                                            </td>
+                                            <td class="px-4 py-2.5 text-slate-700 font-mono">
+                                                {{ $asset->imei_number ?? '—' }}
+                                            </td>
+                                            <td class="px-4 py-2.5 text-slate-700">
+                                                {{ $assignment?->agent?->name ?? '—' }}
+                                            </td>
+                                            <td class="px-4 py-2.5 text-slate-700">
+                                                {{ $assignedAt ? $assignedAt->format('Y-m-d') : '—' }}
+                                            </td>
+                                            <td class="px-4 py-2.5">
+                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                    {{ $agingLabel }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-2.5 text-right">
+                                                <a href="{{ route('admin.stock.imei-item', $asset) }}"
+                                                   class="admin-dash-link text-xs py-1.5 px-3">
+                                                    Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                                No aging assets found.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Overdue Purchases Modal -->
             <div x-show="overduePurchasesModalOpen" x-cloak
@@ -1280,6 +1384,16 @@
             });
 
             jQuery('#overdue-payables-table').DataTable({
+                paging: true,
+                lengthChange: false,
+                pageLength: 10,
+                searching: true,
+                ordering: false,
+                info: false,
+                autoWidth: false
+            });
+
+            jQuery('#agent-aging-assets-table').DataTable({
                 paging: true,
                 lengthChange: false,
                 pageLength: 10,

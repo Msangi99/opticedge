@@ -87,6 +87,24 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             
             // Get payment options with balances
             $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
+            $agentAgingAssetsCount = \App\Models\ProductListItem::query()
+                ->whereNull('sold_at')
+                ->whereHas('agentProductListAssignment')
+                ->count();
+            $agentAgingAssets = \App\Models\ProductListItem::query()
+                ->with(['agentProductListAssignment.agent:id,name'])
+                ->whereNull('sold_at')
+                ->whereHas('agentProductListAssignment')
+                ->addSelect([
+                    'assigned_at' => \App\Models\AgentProductListAssignment::query()
+                        ->select('created_at')
+                        ->whereColumn('agent_product_list_assignments.product_list_id', 'product_list.id')
+                        ->limit(1),
+                ])
+                ->orderBy('assigned_at', 'asc')
+                ->orderBy('id', 'asc')
+                ->limit(50)
+                ->get();
 
             // Overdue purchases: not fully paid, oldest first
             $overduePurchases = \App\Models\Purchase::with(['product', 'branch'])
@@ -115,6 +133,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
                 'startDate',
                 'endDate',
                 'paymentOptions',
+                'agentAgingAssetsCount',
+                'agentAgingAssets',
                 'overduePurchases',
                 'overduePayables',
                 'distributorReceivables'
@@ -156,6 +176,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         // Settings
         Route::get('settings', [App\Http\Controllers\Admin\SettingController::class , 'index'])->name('settings.index');
         Route::post('settings', [App\Http\Controllers\Admin\SettingController::class , 'update'])->name('settings.update');
+        Route::post('settings/subadmin-roles', [App\Http\Controllers\Admin\SettingController::class, 'storeSubadminRole'])->name('settings.subadmin-roles.store');
+        Route::put('settings/subadmin-roles/{role}', [App\Http\Controllers\Admin\SettingController::class, 'updateSubadminRolePermissions'])->name('settings.subadmin-roles.update');
 
         // Command center mirror under /admin/command (same UI as /command)
         Route::get('command', [CommandCenterController::class, 'index'])->name('command.center');

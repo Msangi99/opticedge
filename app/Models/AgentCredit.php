@@ -10,6 +10,8 @@ class AgentCredit extends Model
         'agent_id',
         'customer_name',
         'customer_phone',
+        'kin_name',
+        'kin_phone',
         'product_list_id',
         'product_id',
         'total_amount',

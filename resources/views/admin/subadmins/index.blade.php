@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Administration</p>
                 <h1 class="admin-prod-title">Subadmins</h1>
-                <p class="admin-prod-subtitle">Manage subadmin accounts and their access level.</p>
+                <p class="admin-prod-subtitle">Manage subadmin accounts and assigned roles.</p>
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
                 <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-btn-ghost">Add subadmin</a>
@@ -28,7 +28,7 @@
                             <th scope="col" class="admin-prod-th">Name</th>
                             <th scope="col" class="admin-prod-th">Email</th>
                             <th scope="col" class="admin-prod-th">Phone</th>
-                            <th scope="col" class="admin-prod-th">Ability</th>
+                            <th scope="col" class="admin-prod-th">Role</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                         </tr>
                     </thead>
@@ -38,7 +38,7 @@
                                 <td class="font-semibold text-[#232f3e]">{{ $subadmin->name }}</td>
                                 <td class="text-slate-600">{{ $subadmin->email }}</td>
                                 <td class="text-slate-600">{{ $subadmin->phone ?? '—' }}</td>
-                                <td class="text-slate-600">{{ ($subadmin->ability ?? 'fullaccess') === 'view' ? 'View only' : 'Full access' }}</td>
+                                <td class="text-slate-600">{{ $subadmin->subadminRole?->name ?? '—' }}</td>
                                 <td>
                                     @php
                                         $active = ($subadmin->status ?? '') === 'active';

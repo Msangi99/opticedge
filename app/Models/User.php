@@ -24,6 +24,7 @@ class User extends Authenticatable
         'role',
         'status',
         'ability',
+        'subadmin_role_id',
         'business_name',
         'phone',
         'branch_id',
@@ -73,5 +74,10 @@ class User extends Authenticatable
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function subadminRole()
+    {
+        return $this->belongsTo(SubadminRole::class, 'subadmin_role_id');
     }
 }

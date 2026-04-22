@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentOption;
+use App\Models\Setting;
 
 class PaymentOptionController extends Controller
 {
@@ -31,7 +32,17 @@ class PaymentOptionController extends Controller
      */
     public function indexVisible()
     {
-        $options = PaymentOption::visible()->orderBy('name')->get()->map(function ($opt) {
+        $defaultIdRaw = Setting::query()
+            ->where('key', 'default_agent_sale_channel_id')
+            ->value('value');
+        $defaultId = is_numeric($defaultIdRaw) ? (int) $defaultIdRaw : null;
+
+        $query = PaymentOption::visible()->orderBy('name');
+        if ($defaultId !== null) {
+            $query->where('id', $defaultId);
+        }
+
+        $options = $query->get()->map(function ($opt) {
             return [
                 'id' => $opt->id,
                 'name' => $opt->name,

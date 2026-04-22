@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Administration</p>
                 <h1 class="admin-prod-title">Add subadmin</h1>
-                <p class="admin-prod-subtitle">Create a subadmin with fullaccess or view-only access.</p>
+                <p class="admin-prod-subtitle">Create a subadmin and assign a role from Settings → Roles & Permissions.</p>
             </div>
             <a href="{{ route('admin.subadmins.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -21,7 +21,7 @@
         <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Account</h2>
-                <p class="admin-prod-form-hint">Name, email, phone, password, and ability for sign-in.</p>
+                <p class="admin-prod-form-hint">Name, email, phone, password, and role for sign-in.</p>
             </div>
             <form method="POST" action="{{ route('admin.subadmins.store') }}" class="admin-prod-form-body space-y-6">
                 @csrf
@@ -50,12 +50,19 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="ability" class="admin-prod-label">Ability</label>
-                    <select name="ability" id="ability" class="admin-prod-select w-full max-w-xl" required>
-                        <option value="fullaccess" @selected(old('ability', 'fullaccess') === 'fullaccess')>Full access</option>
-                        <option value="view" @selected(old('ability') === 'view')>View only (can print invoices/reports)</option>
+                    <label for="subadmin_role_id" class="admin-prod-label">Role</label>
+                    <select name="subadmin_role_id" id="subadmin_role_id" class="admin-prod-select w-full max-w-xl" required>
+                        <option value="">-- Select role --</option>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->id }}" @selected((string) old('subadmin_role_id') === (string) $role->id)>
+                                {{ $role->name }}
+                            </option>
+                        @endforeach
                     </select>
-                    @error('ability')
+                    <p class="text-xs text-slate-500 mt-2">
+                        Manage role permissions from <a class="admin-prod-link" href="{{ route('admin.settings.index') }}">Settings</a>.
+                    </p>
+                    @error('subadmin_role_id')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>

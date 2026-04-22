@@ -8,6 +8,7 @@ use App\Models\AgentProductListAssignment;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductListItem;
+use App\Models\SubadminRole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class AgentController extends Controller
 
     public function subadminsIndex()
     {
-        $subadmins = User::where('role', 'subadmin')->orderBy('name')->get();
+        $subadmins = User::where('role', 'subadmin')->with('subadminRole')->orderBy('name')->get();
         return view('admin.subadmins.index', compact('subadmins'));
     }
 
@@ -151,7 +152,9 @@ class AgentController extends Controller
 
     public function createSubadmin()
     {
-        return view('admin.subadmins.create');
+        $roles = SubadminRole::orderBy('name')->get();
+
+        return view('admin.subadmins.create', compact('roles'));
     }
 
     public function store(Request $request)
@@ -182,7 +185,7 @@ class AgentController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
-            'ability' => 'required|in:view,fullaccess',
+            'subadmin_role_id' => 'required|exists:subadmin_roles,id',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);

@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Admin: stocks (with limit), create stock, add product to product_list
-    Route::middleware('admin')->prefix('admin')->group(function () {
+    Route::middleware(['admin', 'subadmin.ability'])->prefix('admin')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index']);
         Route::get('stocks', [ApiStockController::class, 'index']);
         Route::post('stocks', [ApiStockController::class, 'store']);

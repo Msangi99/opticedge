@@ -13,6 +13,7 @@ use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
 use App\Models\PendingSale;
 use App\Models\PaymentOption;
+use App\Models\Setting;
 use App\Models\Purchase;
 use App\Services\AgentProductTransferService;
 use App\Services\DistributionSaleService;
@@ -457,7 +458,23 @@ class ProductListController extends Controller
         }
 
         $paymentOptId = isset($validated['payment_option_id']) ? (int) $validated['payment_option_id'] : null;
-        $paymentOpt   = $paymentOptId ? PaymentOption::find($paymentOptId) : null;
+        $defaultChannelRaw = Setting::query()
+            ->where('key', 'default_agent_sale_channel_id')
+            ->value('value');
+        $defaultChannelId = is_numeric($defaultChannelRaw) ? (int) $defaultChannelRaw : null;
+        $defaultChannel = $defaultChannelId ? PaymentOption::visible()->find($defaultChannelId) : null;
+
+        if ($defaultChannel) {
+            if ($paymentOptId === null) {
+                $paymentOptId = (int) $defaultChannel->id;
+            } elseif ($paymentOptId !== (int) $defaultChannel->id) {
+                return response()->json([
+                    'message' => 'Only the configured default channel can be used for agent sales.',
+                ], 422);
+            }
+        }
+
+        $paymentOpt = $paymentOptId ? PaymentOption::find($paymentOptId) : null;
 
         // Non-Watu channel selected → create AgentSale directly, immediately visible
         if ($paymentOpt && ! $paymentOpt->isWatuAgentCreditChannel()) {
@@ -504,6 +521,8 @@ class ProductListController extends Controller
             'product_list_id' => 'required|exists:product_list,id',
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'nullable|string|max:64',
+            'kin_name' => 'nullable|string|max:255',
+            'kin_phone' => 'nullable|string|max:64',
             'description' => 'nullable|string|max:2000',
             'selling_price' => 'required|numeric|min:0',
             'down_payment' => 'nullable|numeric|min:0',
@@ -651,6 +670,14 @@ class ProductListController extends Controller
             if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'customer_phone')) {
                 $phone = isset($validated['customer_phone']) ? trim((string) $validated['customer_phone']) : '';
                 $creditAttrs['customer_phone'] = $phone !== '' ? $phone : null;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'kin_name')) {
+                $kinName = isset($validated['kin_name']) ? trim((string) $validated['kin_name']) : '';
+                $creditAttrs['kin_name'] = $kinName !== '' ? $kinName : null;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'kin_phone')) {
+                $kinPhone = isset($validated['kin_phone']) ? trim((string) $validated['kin_phone']) : '';
+                $creditAttrs['kin_phone'] = $kinPhone !== '' ? $kinPhone : null;
             }
             if (\Illuminate\Support\Facades\Schema::hasColumn('agent_credits', 'installment_interval_days')) {
                 $creditAttrs['installment_interval_days'] = isset($validated['installment_interval_days'])
