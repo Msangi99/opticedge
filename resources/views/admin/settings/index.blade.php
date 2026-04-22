@@ -82,6 +82,13 @@
         </div>
 
         <div x-show="tab === 'roles'" x-cloak class="admin-clay-panel overflow-hidden">
+            @if(!$rolesFeatureReady)
+                <div class="p-5">
+                    <div class="admin-prod-alert admin-prod-alert--warning mb-0">
+                        Roles & Permissions needs database update first. Run <code>php artisan migrate</code>, then reload this page.
+                    </div>
+                </div>
+            @else
             <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[560px]">
                 <aside class="lg:col-span-4 border-r border-slate-100/80 p-4 bg-white/40">
                     <div class="flex items-center justify-between mb-3">
@@ -172,6 +179,7 @@
                     @endif
                 </section>
             </div>
+            @endif
         </div>
     </div>
 </x-admin-layout>

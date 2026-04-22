@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\PaymentOption;
 use App\Models\SubadminRole;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
@@ -16,13 +17,24 @@ class SettingController extends Controller
     {
         $settings = Setting::all()->pluck('value', 'key');
         $paymentOptions = PaymentOption::visible()->orderBy('name')->get(['id', 'name']);
-        $roles = SubadminRole::withCount('users')->orderBy('name')->get();
-        $selectedRoleId = (int) request('role_id', $roles->first()?->id ?? 0);
-        $selectedRole = $roles->firstWhere('id', $selectedRoleId) ?? $roles->first();
-        $abilityMatrix = $this->buildAbilityMatrix();
-        $granted = $selectedRole
-            ? $selectedRole->permissions()->get()->map(fn ($p) => $p->module . '.' . $p->action)->all()
-            : [];
+        $rolesFeatureReady = Schema::hasTable('subadmin_roles')
+            && Schema::hasTable('subadmin_role_permissions')
+            && Schema::hasColumn('users', 'subadmin_role_id');
+
+        if ($rolesFeatureReady) {
+            $roles = SubadminRole::withCount('users')->orderBy('name')->get();
+            $selectedRoleId = (int) request('role_id', $roles->first()?->id ?? 0);
+            $selectedRole = $roles->firstWhere('id', $selectedRoleId) ?? $roles->first();
+            $abilityMatrix = $this->buildAbilityMatrix();
+            $granted = $selectedRole
+                ? $selectedRole->permissions()->get()->map(fn ($p) => $p->module . '.' . $p->action)->all()
+                : [];
+        } else {
+            $roles = collect();
+            $selectedRole = null;
+            $abilityMatrix = [];
+            $granted = [];
+        }
 
         return view('admin.settings.index', compact(
             'settings',
@@ -30,7 +42,8 @@ class SettingController extends Controller
             'roles',
             'selectedRole',
             'abilityMatrix',
-            'granted'
+            'granted',
+            'rolesFeatureReady'
         ));
     }
 
