@@ -94,6 +94,33 @@
                         <pre
                             class="text-xs text-slate-100 bg-[#1e293b] rounded-xl p-3 max-h-64 overflow-auto custom-scrollbar whitespace-pre-wrap font-mono border border-slate-700/50">{{ $migrateStatus }}</pre>
                     </div>
+
+                    <form action="{{ route('command.seed-class') }}" method="POST" class="space-y-3 border-t border-slate-200/60 pt-4">
+                        @csrf
+                        <div>
+                            <label for="seeder_class" class="admin-prod-label">Seeder class</label>
+                            @if (count($seederClasses) === 0)
+                                <p class="admin-prod-alert admin-prod-alert--warning !mb-0 text-sm">No seeders found under <code>database/seeders</code>.</p>
+                            @else
+                                <select name="seeder_class" id="seeder_class" class="admin-prod-select max-h-40">
+                                    @foreach ($seederClasses as $class)
+                                        <option value="{{ $class }}" @selected(old('seeder_class') === $class)>{{ $class }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('seeder_class')
+                                <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                            <input type="checkbox" name="force" value="1" class="rounded border-slate-300 text-[#fa8900] focus:ring-[#fa8900]" @checked(old('force'))>
+                            <span>--force</span>
+                        </label>
+                        <button type="submit" @disabled(count($seederClasses) === 0)
+                            class="admin-prod-btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                            Seed selected class
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

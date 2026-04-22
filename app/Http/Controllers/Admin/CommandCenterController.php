@@ -38,6 +38,14 @@ class CommandCenterController extends Controller
             ->values()
             ->all();
 
+        $seederClasses = collect(glob(base_path('database/seeders/*.php')) ?: [])
+            ->map(fn ($p) => pathinfo((string) $p, PATHINFO_FILENAME))
+            ->filter(fn ($name) => $name !== '' && $name !== 'DatabaseSeeder')
+            ->map(fn ($name) => 'Database\\Seeders\\' . $name)
+            ->sort()
+            ->values()
+            ->all();
+
         $migrateStatus = '';
         try {
             Artisan::call('migrate:status', ['--no-interaction' => true]);
@@ -58,6 +66,7 @@ class CommandCenterController extends Controller
         return view('admin.command-center', compact(
             'allowedCommands',
             'migrationFiles',
+            'seederClasses',
             'migrateStatus',
             'extensions',
             'trackedExtensions',
@@ -132,6 +141,45 @@ class CommandCenterController extends Controller
             );
         } catch (\Throwable $e) {
             return redirect()->back()->withErrors(['migration' => $e->getMessage()]);
+        }
+    }
+
+    public function seedClass(Request $request)
+    {
+        $validated = $request->validate([
+            'seeder_class' => 'required|string|max:255',
+            'force' => 'nullable|boolean',
+        ]);
+
+        $allowedSeederClasses = collect(glob(base_path('database/seeders/*.php')) ?: [])
+            ->map(fn ($p) => pathinfo((string) $p, PATHINFO_FILENAME))
+            ->filter(fn ($name) => $name !== '' && $name !== 'DatabaseSeeder')
+            ->map(fn ($name) => 'Database\\Seeders\\' . $name)
+            ->values()
+            ->all();
+
+        if (! in_array($validated['seeder_class'], $allowedSeederClasses, true)) {
+            return redirect()->back()->withErrors(['seeder_class' => 'Seeder class is not allowed.']);
+        }
+
+        $options = [
+            '--class' => $validated['seeder_class'],
+            '--no-interaction' => true,
+        ];
+        if (! empty($validated['force'])) {
+            $options['--force'] = true;
+        }
+
+        try {
+            Artisan::call('db:seed', $options);
+            $output = trim(Artisan::output());
+
+            return redirect()->back()->with(
+                'success',
+                $output !== '' ? $output : "Seeder [{$validated['seeder_class']}] finished."
+            );
+        } catch (\Throwable $e) {
+            return redirect()->back()->withErrors(['seeder_class' => $e->getMessage()]);
         }
     }
 
