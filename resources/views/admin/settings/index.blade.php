@@ -1,7 +1,7 @@
 <x-admin-layout>
     @include('admin.partials.catalog-styles')
 
-    <div class="admin-prod-page admin-prod-page--narrow" x-data="{ tab: @js(request()->has('role_id') ? 'roles' : 'store') }">
+    <div class="admin-prod-page" x-data="{ tab: @js(request()->has('role_id') ? 'roles' : 'store') }">
         <div class="mb-8">
             <p class="admin-prod-eyebrow">Store</p>
             <h1 class="admin-prod-title">Store settings</h1>
@@ -151,14 +151,13 @@
                                                     @php
                                                         $key = $module . '.' . $action;
                                                         $isChecked = in_array($key, $granted, true);
-                                                        $isAvailable = in_array($action, $actions, true);
                                                     @endphp
                                                     <td class="px-2 py-2 text-center">
                                                         <input type="checkbox"
                                                             name="permissions[]"
                                                             value="{{ $key }}"
                                                             @checked($isChecked)
-                                                            @disabled(!$isAvailable || in_array($selectedRole->system_key, ['fullaccess', 'view'], true))
+                                                            @disabled(in_array($selectedRole->system_key, ['fullaccess', 'view'], true))
                                                             class="h-4 w-4 rounded border-slate-300 text-[#fa8900] focus:ring-[#fa8900] disabled:opacity-30">
                                                     </td>
                                                 @endforeach
