@@ -372,6 +372,8 @@
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Vendors</a>
             <a href="{{ route('admin.agents.index') }}"
                 class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Agents</a>
+            <a href="{{ route('admin.settings.index') }}"
+                class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-[#232f3e] hover:bg-white/70 transition-all shrink-0">Settings</a>
         </div>
         </div>
     </header>
