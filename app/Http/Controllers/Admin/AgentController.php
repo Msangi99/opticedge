@@ -11,6 +11,7 @@ use App\Models\ProductListItem;
 use App\Models\SubadminRole;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -168,7 +169,9 @@ class AgentController extends Controller
         ]);
         $validated['password'] = Hash::make($validated['password']);
         $validated['role'] = 'agent';
-        $validated['ability'] = 'fullaccess';
+        if (Schema::hasColumn('users', 'ability')) {
+            $validated['ability'] = 'fullaccess';
+        }
         $validated['status'] = 'active';
         if (empty($validated['branch_id'])) {
             $validated['branch_id'] = null;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class DealerController extends Controller
 {
@@ -21,16 +22,21 @@ class DealerController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:100',
             'business_name' => 'required|string|max:255',
-            'ability' => 'required|in:view,fullaccess',
-        ]);
+        ];
 
-        $user = User::create([
+        if (Schema::hasColumn('users', 'ability')) {
+            $rules['ability'] = 'required|in:view,fullaccess';
+        }
+
+        $validated = $request->validate($rules);
+
+        $payload = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
@@ -38,8 +44,13 @@ class DealerController extends Controller
             'business_name' => $validated['business_name'],
             'role' => 'dealer',
             'status' => 'active',
-            'ability' => $validated['ability'],
-        ]);
+        ];
+
+        if (Schema::hasColumn('users', 'ability')) {
+            $payload['ability'] = $validated['ability'] ?? 'fullaccess';
+        }
+
+        $user = User::create($payload);
         $user->forceFill(['email_verified_at' => now()])->save();
 
         return redirect()->route('admin.dealers.index')->with('success', 'Dealer created. They can sign in with the email and password you set.');
