@@ -90,6 +90,49 @@
                     </p>
                 </div>
 
+                <fieldset class="rounded-xl border border-slate-200/80 bg-white/50 p-4 space-y-4">
+                    <legend class="px-2 text-sm font-semibold text-[#232f3e]">Email configuration</legend>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="mail_mailer" class="admin-prod-label">Mailer</label>
+                            <input type="text" name="mail_mailer" id="mail_mailer" value="{{ $settings['mail_mailer'] ?? '' }}" class="admin-prod-input" placeholder="smtp">
+                        </div>
+                        <div>
+                            <label for="mail_host" class="admin-prod-label">Host</label>
+                            <input type="text" name="mail_host" id="mail_host" value="{{ $settings['mail_host'] ?? '' }}" class="admin-prod-input" placeholder="smtp.example.com">
+                        </div>
+                        <div>
+                            <label for="mail_port" class="admin-prod-label">Port</label>
+                            <input type="number" name="mail_port" id="mail_port" value="{{ $settings['mail_port'] ?? '' }}" class="admin-prod-input" placeholder="587" min="1" max="65535">
+                        </div>
+                        <div>
+                            <label for="mail_encryption" class="admin-prod-label">Encryption</label>
+                            <input type="text" name="mail_encryption" id="mail_encryption" value="{{ $settings['mail_encryption'] ?? '' }}" class="admin-prod-input" placeholder="tls">
+                        </div>
+                        <div>
+                            <label for="mail_username" class="admin-prod-label">Username</label>
+                            <input type="text" name="mail_username" id="mail_username" value="{{ $settings['mail_username'] ?? '' }}" class="admin-prod-input">
+                        </div>
+                        <div>
+                            <label for="mail_password" class="admin-prod-label">Password</label>
+                            <input type="password" name="mail_password" id="mail_password" value="{{ $settings['mail_password'] ?? '' }}" class="admin-prod-input" autocomplete="new-password">
+                        </div>
+                        <div>
+                            <label for="mail_from_address" class="admin-prod-label">From address</label>
+                            <input type="email" name="mail_from_address" id="mail_from_address" value="{{ $settings['mail_from_address'] ?? '' }}" class="admin-prod-input" placeholder="no-reply@example.com">
+                        </div>
+                        <div>
+                            <label for="mail_from_name" class="admin-prod-label">From name</label>
+                            <input type="text" name="mail_from_name" id="mail_from_name" value="{{ $settings['mail_from_name'] ?? '' }}" class="admin-prod-input" placeholder="Optic">
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-500">
+                        These values are saved in settings for email delivery configuration.
+                    </p>
+                </fieldset>
+
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
                     <button type="submit" class="admin-prod-btn-primary px-8">Save changes</button>
                 </div>

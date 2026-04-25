@@ -67,7 +67,7 @@
                             <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
                             <strong>Sales</strong> = units sold on the <strong>report date</strong> only.
                             <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
-                            <strong>Shop</strong> = opening − sales + net transfer (unassigned stock). <strong>Purchased today</strong> = new device rows created on the report date.
+                            <strong>Total</strong> = opening − sales + net transfer (unassigned stock). <strong>Purchased today</strong> = new device rows created on the report date.
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -96,7 +96,7 @@
                 </form>
 
                 @if($asr['agents']->isEmpty())
-                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — only <strong>Shop</strong> columns apply. Add agents under Sales team to see per-agent stock.</p>
+                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — only <strong>Total</strong> columns apply. Add agents under Sales team to see per-agent stock.</p>
                 @endif
                 @if(count($asr['rows']) === 0)
                     <p class="text-sm text-slate-500 py-6">No stock movement for this date and branch filter.</p>
@@ -147,7 +147,7 @@
                                     <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Price (TZS)</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Purchased<br><span class="font-normal text-slate-500">today</span></th>
-                                    <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Shop</th>
+                                    <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Total</th>
                                     @foreach($asr['agents'] as $agent)
                                         @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
                                         <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agent->name }}</th>
@@ -205,7 +205,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>opening</strong> = yesterday’s <strong>closing</strong> (fixed until the day rolls over). <strong>Sales</strong> = today’s sale count on the report date. <strong>Closing</strong> = opening − sales (not below 0). Shop: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
+                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>opening</strong> = yesterday’s <strong>closing</strong> (fixed until the day rolls over). <strong>Sales</strong> = today’s sale count on the report date. <strong>Closing</strong> = opening − sales (not below 0). Total: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
                 @endif
             </div>
         </div>
