@@ -428,39 +428,60 @@ class MobileApiCatalogSyncService
     }
 
     /**
-     * Listing fields first; if still empty, GET /devices/{id}/images/ per MobileAPI docs.
+     * Prefer GET /devices/{id}/images/ (thumbnail, main, gallery); fill from listing if needed.
+     * Remote MobileAPI image URLs require auth — we persist bytes to the public disk so admin <img> works.
      *
-     * @return list<string> storage paths on public disk or absolute image URLs
+     * @return list<string> storage paths on public disk (relative to public disk root)
      */
     private function resolveProductImagesWithGalleryFallback(array $device, int $deviceId, string $apiKey): array
     {
-        $fromListing = $this->resolveProductImagePathsFromListing($device, $deviceId);
-        if ($fromListing !== []) {
-            return array_slice($fromListing, 0, 5);
+        $paths = $this->fetchDeviceImagesFromGallery($deviceId, $apiKey);
+
+        if (count($paths) < 5) {
+            foreach ($this->resolveProductImagePathsFromListing($device, $deviceId, $apiKey) as $p) {
+                if (count($paths) >= 5) {
+                    break;
+                }
+                if (! in_array($p, $paths, true)) {
+                    $paths[] = $p;
+                }
+            }
         }
 
-        $fromGallery = $this->fetchDeviceImagesFromGallery($deviceId, $apiKey);
-
-        return array_slice($fromGallery, 0, 5);
+        return array_slice($paths, 0, 5);
     }
 
     /**
-     * @return list<string>
+     * @return list<string> relative paths on the public disk
      */
-    private function resolveProductImagePathsFromListing(array $device, int $deviceId): array
+    private function resolveProductImagePathsFromListing(array $device, int $deviceId, string $apiKey): array
     {
+        $paths = [];
         $urls = array_values(array_filter([
             $device['image_url'] ?? null,
             $device['main_image_url'] ?? null,
         ], fn ($v) => is_string($v) && (str_starts_with($v, 'http://') || str_starts_with($v, 'https://'))));
 
-        if ($urls !== []) {
-            return $urls;
+        $i = 0;
+        foreach ($urls as $url) {
+            $stored = $this->persistAuthenticatedProductImage(
+                $url,
+                $apiKey,
+                'products/mobileapi/'.$deviceId.'/listing_'.$i
+            );
+            if ($stored !== null) {
+                $paths[] = $stored;
+            }
+            $i++;
+        }
+
+        if ($paths !== []) {
+            return $paths;
         }
 
         $b64 = $device['image_b64'] ?? $device['main_image_b64'] ?? null;
         if (is_string($b64) && $b64 !== '') {
-            $stored = $this->storeDecodedBase64($b64, 'products/mobileapi/'.$deviceId.'.png');
+            $stored = $this->storeDecodedBase64($b64, 'products/mobileapi/'.$deviceId.'/listing_b64.png');
             if ($stored !== null) {
                 return [$stored];
             }
@@ -472,7 +493,7 @@ class MobileApiCatalogSyncService
     /**
      * GET https://api.mobileapi.dev/devices/{id}/images/
      *
-     * @return list<string>
+     * @return list<string> relative paths on the public disk
      */
     private function fetchDeviceImagesFromGallery(int $deviceId, string $apiKey): array
     {
@@ -480,7 +501,7 @@ class MobileApiCatalogSyncService
 
         try {
             $response = Http::connectTimeout(12)
-                ->timeout(25)
+                ->timeout(30)
                 ->retry(1, 1000)
                 ->withToken($apiKey)
                 ->acceptJson()
@@ -497,8 +518,8 @@ class MobileApiCatalogSyncService
                 return [];
             }
 
-            $rows = $response->json();
-            if (! is_array($rows)) {
+            $rows = $this->unwrapDeviceImageRows($response->json());
+            if ($rows === []) {
                 return [];
             }
 
@@ -509,32 +530,33 @@ class MobileApiCatalogSyncService
                 return $oa <=> $ob;
             });
 
-            $idx = 0;
             foreach ($rows as $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-                if (count($paths) >= 5) {
+                if (! is_array($row) || count($paths) >= 5) {
                     break;
                 }
 
+                $order = isset($row['order']) ? (int) $row['order'] : 0;
+                $type = isset($row['type']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $row['type']) : 'img';
+                $rid = isset($row['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $row['id']) : 'x';
+                $base = 'products/mobileapi/'.$deviceId.'/gallery_o'.$order.'_t'.$type.'_i'.$rid;
+
                 $url = $row['image_url'] ?? null;
                 if (is_string($url) && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'))) {
-                    $paths[] = $url;
-                    $idx++;
+                    $stored = $this->persistAuthenticatedProductImage($url, $apiKey, $base);
+                    if ($stored !== null) {
+                        $paths[] = $stored;
+                    }
 
                     continue;
                 }
 
                 $b64 = $row['image_b64'] ?? null;
                 if (is_string($b64) && $b64 !== '' && ! str_contains($b64, 'http')) {
-                    $suffix = isset($row['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $row['id']) : (string) $idx;
-                    $stored = $this->storeDecodedBase64($b64, 'products/mobileapi/'.$deviceId.'_img_'.$suffix.'.png');
+                    $stored = $this->storeDecodedBase64($b64, $base.'.png');
                     if ($stored !== null) {
                         $paths[] = $stored;
                     }
                 }
-                $idx++;
             }
         } catch (\Throwable $e) {
             Log::debug('MobileAPI device images fetch skipped.', [
@@ -544,6 +566,98 @@ class MobileApiCatalogSyncService
         }
 
         return $paths;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function unwrapDeviceImageRows(mixed $json): array
+    {
+        if (! is_array($json)) {
+            return [];
+        }
+
+        if ($json === []) {
+            return [];
+        }
+
+        if (array_is_list($json)) {
+            return $json;
+        }
+
+        foreach (['images', 'data', 'results'] as $key) {
+            if (isset($json[$key]) && is_array($json[$key])) {
+                $inner = $json[$key];
+
+                return array_is_list($inner) ? $inner : array_values($inner);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Download image bytes (MobileAPI hosts often require the same API key as JSON endpoints).
+     */
+    private function persistAuthenticatedProductImage(string $url, string $apiKey, string $relativePathWithoutExtension): ?string
+    {
+        try {
+            $client = Http::connectTimeout(15)
+                ->timeout(90)
+                ->retry(1, 800)
+                ->withHeaders([
+                    'Accept' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                ]);
+
+            $response = $client->withToken($apiKey)->get($url);
+            if (! $response->successful() || strlen($response->body()) < 32) {
+                $response = Http::connectTimeout(15)
+                    ->timeout(90)
+                    ->withHeaders(['Accept' => 'image/*,*/*'])
+                    ->get($url, ['key' => $apiKey]);
+            }
+
+            if (! $response->successful() || strlen($response->body()) < 32) {
+                return null;
+            }
+
+            $ext = $this->guessImageExtensionFromResponse($url, $response);
+            $path = $relativePathWithoutExtension.'.'.$ext;
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
+        } catch (\Throwable $e) {
+            Log::debug('MobileAPI product image download failed.', [
+                'url' => $url,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    private function guessImageExtensionFromResponse(string $url, \Illuminate\Http\Client\Response $response): string
+    {
+        $ct = strtolower((string) $response->header('Content-Type'));
+        if (str_contains($ct, 'png')) {
+            return 'png';
+        }
+        if (str_contains($ct, 'webp')) {
+            return 'webp';
+        }
+        if (str_contains($ct, 'gif')) {
+            return 'gif';
+        }
+        if (str_contains($ct, 'jpeg') || str_contains($ct, 'jpg')) {
+            return 'jpg';
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        if (is_string($path) && preg_match('/\.(png|jpe?g|gif|webp)(\?|$)/i', $path, $m)) {
+            return strtolower($m[1]) === 'jpeg' ? 'jpg' : strtolower($m[1]);
+        }
+
+        return 'jpg';
     }
 
     private function storeDecodedBase64(string $b64, string $relativePath): ?string
