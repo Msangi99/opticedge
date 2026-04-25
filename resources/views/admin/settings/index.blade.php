@@ -133,6 +133,29 @@
                     </p>
                 </fieldset>
 
+                <fieldset class="rounded-xl border border-slate-200/80 bg-white/50 p-4 space-y-4">
+                    <legend class="px-2 text-sm font-semibold text-[#232f3e]">MobileAPI catalog sync</legend>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label for="mobileapi_api_key" class="admin-prod-label">MobileAPI API key</label>
+                            <input type="password" name="mobileapi_api_key" id="mobileapi_api_key" value="{{ $settings['mobileapi_api_key'] ?? '' }}" class="admin-prod-input" autocomplete="new-password">
+                        </div>
+                        <div>
+                            <label for="mobileapi_device_types" class="admin-prod-label">Device types (comma separated)</label>
+                            <input type="text" name="mobileapi_device_types" id="mobileapi_device_types" value="{{ $settings['mobileapi_device_types'] ?? 'phone,tablet' }}" class="admin-prod-input" placeholder="phone,tablet">
+                        </div>
+                        <div>
+                            <label for="mobileapi_sync_pages" class="admin-prod-label">Pages per type on sync</label>
+                            <input type="number" name="mobileapi_sync_pages" id="mobileapi_sync_pages" value="{{ $settings['mobileapi_sync_pages'] ?? '1' }}" class="admin-prod-input" min="1" max="20">
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-500">
+                        On first catalog load, the system fetches products from MobileAPI and stores them locally. Later syncs only insert new devices.
+                    </p>
+                </fieldset>
+
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
                     <button type="submit" class="admin-prod-btn-primary px-8">Save changes</button>
                 </div>
