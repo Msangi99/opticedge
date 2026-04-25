@@ -142,6 +142,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             ));
         }
         )->name('dashboard');
+        Route::get('products/datatable/data', [ProductController::class, 'datatableData'])->name('products.datatable');
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
         Route::resource('products', ProductController::class);
         Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
