@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Setting::updateOrCreate(['key' => 'mobileapi_device_types'], ['value' => 'phone,tablet']);
+        Setting::updateOrCreate(['key' => 'mobileapi_device_types'], ['value' => 'phone']);
         Setting::updateOrCreate(['key' => 'mobileapi_sync_pages'], ['value' => '1']);
 
         $this->call(PaymentChannelSeeder::class);

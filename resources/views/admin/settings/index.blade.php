@@ -143,7 +143,7 @@
                         </div>
                         <div>
                             <label for="mobileapi_device_types" class="admin-prod-label">Device types (comma separated)</label>
-                            <input type="text" name="mobileapi_device_types" id="mobileapi_device_types" value="{{ $settings['mobileapi_device_types'] ?? 'phone,tablet' }}" class="admin-prod-input" placeholder="phone,tablet">
+                            <input type="text" name="mobileapi_device_types" id="mobileapi_device_types" value="{{ $settings['mobileapi_device_types'] ?? 'phone' }}" class="admin-prod-input" placeholder="phone">
                         </div>
                         <div>
                             <label for="mobileapi_sync_pages" class="admin-prod-label">Pages per type on sync</label>
@@ -152,7 +152,7 @@
                     </div>
 
                     <p class="text-xs text-slate-500">
-                        On first catalog load, the system fetches products from MobileAPI and stores them locally. Later syncs only insert new devices.
+                        Categories are synced as <strong>phone brands</strong> (manufacturer). Products are phone models under each brand. Default device type is <code class="text-xs">phone</code> only. On first catalog load, data is fetched from MobileAPI and stored locally; later syncs only insert new devices.
                     </p>
                 </fieldset>
 
