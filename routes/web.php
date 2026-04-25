@@ -63,6 +63,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('command/seed-class', [CommandCenterController::class, 'seedClass'])->name('command.seed-class');
     Route::post('command/extension-track', [CommandCenterController::class, 'trackExtension'])->name('command.extension-track');
     Route::post('command/extension-untrack', [CommandCenterController::class, 'untrackExtension'])->name('command.extension-untrack');
+    Route::post('command/table-empty', [CommandCenterController::class, 'emptyTable'])->name('command.table-empty');
 });
 
 // Run whitelisted artisan command: GET /command/{command} (admin only, JSON)
