@@ -8,6 +8,7 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MobileApiCatalogSyncService
 {
@@ -45,8 +46,10 @@ class MobileApiCatalogSyncService
         'Alcatel',
     ];
 
-    /** @var array<int, string|null> manufacturer id => public disk path or external URL, or '' if fetch failed */
-    private array $manufacturerLogoCache = [];
+    /**
+     * @var array<int, array{name: ?string, logo: ?string}>
+     */
+    private array $manufacturerProfileCache = [];
 
     public function syncIfCatalogEmpty(): array
     {
@@ -125,7 +128,7 @@ class MobileApiCatalogSyncService
                         continue;
                     }
 
-                    $result = $this->processDeviceForCatalog($device, $apiKey, 'phone');
+                    $result = $this->processDeviceForCatalog($device, $apiKey, 'phone', $manufacturerLabel);
                     if ($result['new_category']) {
                         $createdCategories++;
                     }
@@ -208,7 +211,7 @@ class MobileApiCatalogSyncService
                         continue;
                     }
 
-                    $result = $this->processDeviceForCatalog($device, $apiKey, $type);
+                    $result = $this->processDeviceForCatalog($device, $apiKey, $type, null);
                     if ($result['new_category']) {
                         $createdCategories++;
                     }
@@ -239,9 +242,14 @@ class MobileApiCatalogSyncService
     /**
      * @return array{new_category: bool, new_product: bool}
      */
-    private function processDeviceForCatalog(array $device, string $apiKey, string $mobileapiTypeFallback): array
+    /**
+     * @param  string|null  $syncManufacturerLabel  Query label used in /devices/by-manufacturer/ (clean brand, e.g. "Samsung")
+     */
+    private function processDeviceForCatalog(array $device, string $apiKey, string $mobileapiTypeFallback, ?string $syncManufacturerLabel = null): array
     {
-        $brandName = $this->resolveBrandName($device);
+        $modelName = trim((string) $device['name']);
+        $brandName = $this->resolveBrandName($device, $syncManufacturerLabel);
+        $brandName = $this->stripModelSuffixFromBrand($brandName, $modelName);
         $manufacturerId = $this->resolveManufacturerId($device);
 
         if ($manufacturerId !== null) {
@@ -272,7 +280,7 @@ class MobileApiCatalogSyncService
             $category->update(['name' => $brandName]);
         }
 
-        $this->maybeAttachBrandLogo($category, $manufacturerId, $apiKey);
+        $brandForProduct = $this->syncCategoryManufacturerProfile($category, $manufacturerId, $apiKey, $brandName);
 
         $exists = Product::query()
             ->where('mobileapi_device_id', (int) $device['id'])
@@ -286,8 +294,8 @@ class MobileApiCatalogSyncService
 
         Product::query()->create([
             'category_id' => $category->id,
-            'name' => (string) $device['name'],
-            'brand' => $brandName,
+            'name' => $modelName,
+            'brand' => $brandForProduct,
             'price' => 0,
             'rating' => 5.0,
             'stock_quantity' => 0,
@@ -318,31 +326,47 @@ class MobileApiCatalogSyncService
         return max(1, min(500, $n));
     }
 
-    private function maybeAttachBrandLogo(Category $category, ?int $manufacturerId, string $apiKey): void
+    /**
+     * One GET /manufacturers/{id}/ — canonical brand name (category) + logo. Returns display brand for products.
+     */
+    private function syncCategoryManufacturerProfile(Category $category, ?int $manufacturerId, string $apiKey, string $fallbackBrandName): string
     {
-        if ($manufacturerId === null || filled($category->image)) {
-            return;
-        }
+        $displayName = trim($fallbackBrandName);
+        $logo = null;
 
-        if (array_key_exists($manufacturerId, $this->manufacturerLogoCache)) {
-            $cached = $this->manufacturerLogoCache[$manufacturerId];
-            if ($cached !== null && $cached !== '') {
-                $category->update(['image' => $cached]);
+        if ($manufacturerId !== null) {
+            $profile = $this->getManufacturerProfile($manufacturerId, $apiKey);
+            if (is_string($profile['name']) && trim($profile['name']) !== '') {
+                $displayName = trim($profile['name']);
             }
-
-            return;
+            $logo = $profile['logo'];
         }
 
-        $pathOrUrl = $this->fetchManufacturerLogo($manufacturerId, $apiKey);
-        $this->manufacturerLogoCache[$manufacturerId] = $pathOrUrl;
-
-        if ($pathOrUrl !== null && $pathOrUrl !== '') {
-            $category->update(['image' => $pathOrUrl]);
+        $updates = [];
+        if ($category->name !== $displayName) {
+            $updates['name'] = $displayName;
         }
+        if (! filled($category->image) && $logo !== null && $logo !== '') {
+            $updates['image'] = $logo;
+        }
+        if ($updates !== []) {
+            $category->update($updates);
+        }
+
+        return $displayName;
     }
 
-    private function fetchManufacturerLogo(int $manufacturerId, string $apiKey): ?string
+    /**
+     * @return array{name: ?string, logo: ?string}
+     */
+    private function getManufacturerProfile(int $manufacturerId, string $apiKey): array
     {
+        if (array_key_exists($manufacturerId, $this->manufacturerProfileCache)) {
+            return $this->manufacturerProfileCache[$manufacturerId];
+        }
+
+        $out = ['name' => null, 'logo' => null];
+
         try {
             $response = Http::connectTimeout(10)
                 ->timeout(20)
@@ -352,42 +376,57 @@ class MobileApiCatalogSyncService
                 ->get(self::BASE_URL . '/manufacturers/'.$manufacturerId.'/');
 
             if ($response->failed()) {
-                return null;
+                $this->manufacturerProfileCache[$manufacturerId] = $out;
+
+                return $out;
             }
 
             $data = $response->json();
             if (! is_array($data)) {
-                return null;
+                $this->manufacturerProfileCache[$manufacturerId] = $out;
+
+                return $out;
+            }
+
+            $n = $data['name'] ?? null;
+            if (is_string($n) && trim($n) !== '') {
+                $out['name'] = trim($n);
             }
 
             foreach (['logo_url', 'logo', 'image_url', 'brand_logo'] as $urlKey) {
                 $url = $data[$urlKey] ?? null;
                 if (is_string($url) && str_starts_with($url, 'http')) {
-                    return $url;
+                    $out['logo'] = $url;
+                    break;
                 }
             }
 
-            foreach (['logo_b64', 'image_b64', 'logo'] as $b64Key) {
-                $b64 = $data[$b64Key] ?? null;
-                if (is_string($b64) && str_contains($b64, 'http')) {
-                    continue;
-                }
-                if (is_string($b64) && $b64 !== '') {
-                    $relative = 'categories/brands/'.$manufacturerId.'.png';
-                    $stored = $this->storeDecodedBase64($b64, $relative);
-                    if ($stored !== null) {
-                        return $stored;
+            if ($out['logo'] === null) {
+                foreach (['logo_b64', 'image_b64', 'logo'] as $b64Key) {
+                    $b64 = $data[$b64Key] ?? null;
+                    if (is_string($b64) && str_contains($b64, 'http')) {
+                        continue;
+                    }
+                    if (is_string($b64) && $b64 !== '') {
+                        $relative = 'categories/brands/'.$manufacturerId.'.png';
+                        $stored = $this->storeDecodedBase64($b64, $relative);
+                        if ($stored !== null) {
+                            $out['logo'] = $stored;
+                            break;
+                        }
                     }
                 }
             }
         } catch (\Throwable $e) {
-            Log::debug('MobileAPI manufacturer logo fetch skipped.', [
+            Log::debug('MobileAPI manufacturer profile fetch skipped.', [
                 'manufacturer_id' => $manufacturerId,
                 'message' => $e->getMessage(),
             ]);
         }
 
-        return null;
+        $this->manufacturerProfileCache[$manufacturerId] = $out;
+
+        return $out;
     }
 
     /**
@@ -428,26 +467,67 @@ class MobileApiCatalogSyncService
         return $relativePath;
     }
 
-    private function resolveBrandName(array $device): string
+    /**
+     * Brand for categories / product.brand — never use device model name here.
+     * Prefer manufacturer fields; avoid mixing product "brand" strings that include the model.
+     *
+     * @param  string|null  $syncManufacturerLabel  e.g. "Samsung" from by-manufacturer query
+     */
+    private function resolveBrandName(array $device, ?string $syncManufacturerLabel = null): string
     {
-        $nested = $device['manufacturer'] ?? $device['brand'] ?? null;
-        if (is_array($nested) && ! empty($nested['name'])) {
-            return trim((string) $nested['name']);
+        if (is_array($device['manufacturer'] ?? null) && ! empty($device['manufacturer']['name'])) {
+            return trim((string) $device['manufacturer']['name']);
         }
 
-        $n = $device['manufacturer_name'] ?? $device['brand_name'] ?? null;
-        if (is_string($n) && trim($n) !== '') {
-            return trim($n);
+        if (is_string($device['manufacturer_name'] ?? null) && trim((string) $device['manufacturer_name']) !== '') {
+            return trim((string) $device['manufacturer_name']);
+        }
+
+        if (is_string($syncManufacturerLabel) && trim($syncManufacturerLabel) !== '') {
+            return trim($syncManufacturerLabel);
+        }
+
+        if (is_array($device['brand'] ?? null) && ! empty($device['brand']['name'])) {
+            return trim((string) $device['brand']['name']);
+        }
+
+        if (is_string($device['brand_name'] ?? null) && trim((string) $device['brand_name']) !== '') {
+            return trim((string) $device['brand_name']);
         }
 
         return 'Unknown';
     }
 
+    /**
+     * If API sent "Samsung Galaxy S24" as brand and model is "Galaxy S24", trim the model tail.
+     */
+    private function stripModelSuffixFromBrand(string $brand, string $model): string
+    {
+        $brand = trim($brand);
+        $model = trim($model);
+        if ($brand === '' || $model === '') {
+            return $brand;
+        }
+
+        if (str_ends_with($brand, ' '.$model)) {
+            return trim(Str::beforeLast($brand, ' '.$model));
+        }
+
+        if (str_ends_with($brand, $model) && mb_strlen($brand) > mb_strlen($model)) {
+            return trim(mb_substr($brand, 0, mb_strlen($brand) - mb_strlen($model)), " \t,-–|");
+        }
+
+        return $brand;
+    }
+
     private function resolveManufacturerId(array $device): ?int
     {
-        $nested = $device['manufacturer'] ?? $device['brand'] ?? null;
-        if (is_array($nested) && isset($nested['id'])) {
-            return (int) $nested['id'];
+        if (is_array($device['manufacturer'] ?? null) && isset($device['manufacturer']['id'])) {
+            return (int) $device['manufacturer']['id'];
+        }
+
+        if (is_array($device['brand'] ?? null) && isset($device['brand']['id'])) {
+            return (int) $device['brand']['id'];
         }
 
         return null;
