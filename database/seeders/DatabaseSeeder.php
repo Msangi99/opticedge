@@ -16,9 +16,10 @@ class DatabaseSeeder extends Seeder
     {
         Setting::updateOrCreate(['key' => 'mobileapi_device_types'], ['value' => 'phone']);
         Setting::updateOrCreate(['key' => 'mobileapi_sync_pages'], ['value' => '1']);
+        Setting::updateOrCreate(['key' => 'mobileapi_brand_sync_max_pages'], ['value' => '100']);
 
         $this->call(PaymentChannelSeeder::class);
-        $this->call(MobileApiCatalogSeeder::class);
+        $this->call(MajorBrandMobileCatalogSeeder::class);
 
         // User::factory(10)->create();
 

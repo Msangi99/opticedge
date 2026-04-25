@@ -7,15 +7,19 @@ use Illuminate\Console\Command;
 
 class SyncMobileApiCatalog extends Command
 {
-    protected $signature = 'catalog:sync-mobileapi {--first-load : Sync only when local catalog is empty}';
+    protected $signature = 'catalog:sync-mobileapi {--first-load : Sync only when local catalog is empty} {--by-type : Use devices/by-type (settings) instead of major brands by manufacturer}';
 
-    protected $description = 'Sync categories/products from MobileAPI.dev and insert only new devices.';
+    protected $description = 'Sync brand categories and phone models from MobileAPI.dev (insert-only by device id).';
 
     public function handle(MobileApiCatalogSyncService $syncService): int
     {
-        $result = $this->option('first-load')
-            ? $syncService->syncIfCatalogEmpty()
-            : $syncService->syncInsertOnly();
+        if ($this->option('first-load')) {
+            $result = $syncService->syncIfCatalogEmpty();
+        } elseif ($this->option('by-type')) {
+            $result = $syncService->syncInsertOnly();
+        } else {
+            $result = $syncService->syncByManufacturers(MobileApiCatalogSyncService::DEFAULT_MAJOR_BRANDS);
+        }
 
         if (!($result['ok'] ?? false)) {
             $this->warn('MobileAPI sync skipped: ' . ($result['reason'] ?? 'unknown_reason'));

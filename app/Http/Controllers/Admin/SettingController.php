@@ -67,6 +67,7 @@ class SettingController extends Controller
             'mobileapi_api_key' => 'nullable|string|max:255',
             'mobileapi_device_types' => 'nullable|string|max:255',
             'mobileapi_sync_pages' => 'nullable|integer|min:1|max:20',
+            'mobileapi_brand_sync_max_pages' => 'nullable|integer|min:0|max:500',
         ]);
 
         foreach ($data as $key => $value) {

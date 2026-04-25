@@ -149,10 +149,15 @@
                             <label for="mobileapi_sync_pages" class="admin-prod-label">Pages per type on sync</label>
                             <input type="number" name="mobileapi_sync_pages" id="mobileapi_sync_pages" value="{{ $settings['mobileapi_sync_pages'] ?? '1' }}" class="admin-prod-input" min="1" max="20">
                         </div>
+                        <div>
+                            <label for="mobileapi_brand_sync_max_pages" class="admin-prod-label">Max pages per brand (major-brand seed / sync)</label>
+                            <input type="number" name="mobileapi_brand_sync_max_pages" id="mobileapi_brand_sync_max_pages" value="{{ $settings['mobileapi_brand_sync_max_pages'] ?? '100' }}" class="admin-prod-input" min="0" max="500">
+                            <p class="text-xs text-slate-500 mt-1.5">Use <code class="text-xs">0</code> to follow API pagination until there are no more pages (hard cap 500 pages per brand to protect credits).</p>
+                        </div>
                     </div>
 
                     <p class="text-xs text-slate-500">
-                        Categories are synced as <strong>phone brands</strong> (manufacturer). Products are phone models under each brand. Default device type is <code class="text-xs">phone</code> only. On first catalog load, data is fetched from MobileAPI and stored locally; later syncs only insert new devices.
+                        Categories are synced as <strong>phone brands</strong> (manufacturer). Products are phone models under each brand. Default device type is <code class="text-xs">phone</code> only. The <code class="text-xs">MajorBrandMobileCatalogSeeder</code> and <code class="text-xs">catalog:sync-mobileapi</code> use MobileAPI <code class="text-xs">/devices/by-manufacturer/</code> for each major brand. On first catalog load, data is fetched from MobileAPI and stored locally; later syncs only insert new devices.
                     </p>
                 </fieldset>
 
