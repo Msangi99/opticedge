@@ -40,6 +40,8 @@ class ArtisanCommandController extends Controller
         'schema:dump',
         // Stock
         'stock:recalc',
+        // MobileAPI catalog (insert-only new devices)
+        'catalog:sync-mobileapi',
     ];
 
     /**
