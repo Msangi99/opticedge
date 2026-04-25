@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
-use App\Services\MobileApiCatalogSyncService;
+use App\Services\GsmArenaCatalogSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,7 +13,7 @@ class AgentCatalogController extends Controller
 {
     public function categories(): JsonResponse
     {
-        app(MobileApiCatalogSyncService::class)->syncIfCatalogEmpty();
+        app(GsmArenaCatalogSyncService::class)->syncIfCatalogEmpty();
 
         $categories = Category::query()
             ->whereHas('products')
@@ -30,7 +30,7 @@ class AgentCatalogController extends Controller
 
     public function productsByCategory(int $category): JsonResponse
     {
-        app(MobileApiCatalogSyncService::class)->syncIfCatalogEmpty();
+        app(GsmArenaCatalogSyncService::class)->syncIfCatalogEmpty();
 
         $exists = Category::whereKey($category)->exists();
         if (! $exists) {

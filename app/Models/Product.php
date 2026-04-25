@@ -9,6 +9,7 @@ class Product extends Model
     protected $fillable = [
         'category_id',
         'mobileapi_device_id',
+        'gsmarena_device_id',
         'name',
         'brand',
         'device_type',

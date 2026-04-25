@@ -2,21 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Services\MobileApiCatalogSyncService;
+use App\Services\GsmArenaCatalogSyncService;
 use Illuminate\Database\Seeder;
 
 /**
- * Seeds phone brand categories and device models via MobileAPI.dev
- * {@see https://mobileapi.dev/docs/} GET /devices/by-manufacturer/
+ * Seeds phone brand categories and device models from GSMArena HTML
+ * (same behavior as {@see https://github.com/nordmarin/gsmarena-api} catalog service).
  *
- * Requires settings: mobileapi_api_key. Optional: mobileapi_brand_sync_max_pages (0 = all pages up to 500 cap).
+ * Optional setting: mobileapi_brand_sync_max_pages (listing pages per brand; 0 = cap 500).
  */
 class MajorBrandMobileCatalogSeeder extends Seeder
 {
     public function run(): void
     {
-        $result = app(MobileApiCatalogSyncService::class)->syncByManufacturers(
-            MobileApiCatalogSyncService::DEFAULT_MAJOR_BRANDS
+        $result = app(GsmArenaCatalogSyncService::class)->syncByManufacturers(
+            GsmArenaCatalogSyncService::DEFAULT_MAJOR_BRANDS
         );
 
         if (($result['skipped'] ?? false) === true) {

@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Services\MobileApiCatalogSyncService;
+use App\Services\GsmArenaCatalogSyncService;
 use Illuminate\Database\Seeder;
 
 class MobileApiCatalogSeeder extends Seeder
 {
     public function run(): void
     {
-        app(MobileApiCatalogSyncService::class)->syncInsertOnly();
+        app(GsmArenaCatalogSyncService::class)->syncInsertOnly();
     }
 }
