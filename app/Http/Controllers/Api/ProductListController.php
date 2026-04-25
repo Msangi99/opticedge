@@ -464,38 +464,43 @@ class ProductListController extends Controller
             return response()->json(['message' => 'Selected payment channel is invalid or not available.'], 422);
         }
 
-        // Non-Watu channel selected → create AgentSale directly, immediately visible
-        if ($paymentOpt && ! $paymentOpt->isWatuAgentCreditChannel()) {
-            $sale = $this->createDirectAgentSale(
-                $item, $product, $agent,
-                $validated['customer_name'],
-                (float) $validated['selling_price'],
-                $paymentOpt
-            );
+        // Sale tab should always finalize into AgentSale.
+        // If channel is missing, use default regular sale channel from settings, then fallback to first visible non-Watu channel.
+        if (! $paymentOpt) {
+            $defaultSaleChannelRaw = Setting::query()->where('key', 'default_agent_sale_channel_id')->value('value');
+            $defaultSaleChannelId = is_numeric($defaultSaleChannelRaw) ? (int) $defaultSaleChannelRaw : null;
 
-            return response()->json([
-                'message' => 'Sale recorded successfully.',
-                'data' => [
-                    'agent_sale_id' => $sale->id,
-                    'customer_name' => $sale->customer_name,
-                    'selling_price' => $sale->selling_price,
-                ],
-            ], 201);
+            $paymentOpt = $defaultSaleChannelId
+                ? PaymentOption::visible()->find($defaultSaleChannelId)
+                : null;
+
+            if (! $paymentOpt || $paymentOpt->isWatuAgentCreditChannel()) {
+                $paymentOpt = PaymentOption::visible()
+                    ->orderBy('name')
+                    ->get()
+                    ->first(fn ($opt) => ! $opt->isWatuAgentCreditChannel());
+            }
         }
 
-        // No payment option → PendingSale (admin selects channel and finalises)
-        $sale = $this->createPendingAgentSaleForDevice(
+        if (! $paymentOpt) {
+            return response()->json([
+                'message' => 'No regular sale payment channel is configured. Set default regular sale channel in Settings.',
+            ], 422);
+        }
+
+        $sale = $this->createDirectAgentSale(
             $item, $product, $agent,
             $validated['customer_name'],
-            (float) $validated['selling_price']
+            (float) $validated['selling_price'],
+            $paymentOpt
         );
 
         return response()->json([
-            'message' => 'Sale recorded. Waiting for payment option selection.',
+            'message' => 'Sale recorded successfully.',
             'data' => [
-                'pending_sale_id' => $sale->id,
-                'customer_name'   => $sale->customer_name,
-                'selling_price'   => $sale->selling_price,
+                'agent_sale_id' => $sale->id,
+                'customer_name' => $sale->customer_name,
+                'selling_price' => $sale->selling_price,
             ],
         ], 201);
     }
@@ -579,58 +584,26 @@ class ProductListController extends Controller
         }
 
         $eps = 0.0001;
-        $paymentOptionId = $validated['payment_option_id'] ?? null;
-        if ($paymentOptionId === '' || $paymentOptionId === false) {
-            $paymentOptionId = null;
-        } else {
-            $paymentOptionId = $paymentOptionId !== null ? (int) $paymentOptionId : null;
+        $paymentOptionId = null;
+
+        // Watu tab should always create AgentCredit and use default Watu channel.
+        $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+        if (is_numeric($watuDefaultRaw)) {
+            $candidateId = (int) $watuDefaultRaw;
+            $candidate = PaymentOption::visible()->find($candidateId);
+            if ($candidate && $candidate->isWatuAgentCreditChannel()) {
+                $paymentOptionId = $candidate->id;
+            }
         }
 
-        // If no channel provided, auto-use the admin-configured Watu default channel
         if ($paymentOptionId === null) {
-            $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
-            if (is_numeric($watuDefaultRaw)) {
-                $paymentOptionId = (int) $watuDefaultRaw;
+            $fallbackWatu = PaymentOption::visible()
+                ->orderBy('name')
+                ->get()
+                ->first(fn ($opt) => $opt->isWatuAgentCreditChannel());
+            if ($fallbackWatu) {
+                $paymentOptionId = $fallbackWatu->id;
             }
-        }
-
-        $paymentOpt = $paymentOptionId ? PaymentOption::find($paymentOptionId) : null;
-
-        if (! $this->shouldCreateAgentCredit($paymentOpt, $totalCredit, $down, $validated)) {
-            // Non-Watu channel (cash / mobile / bank): create AgentSale immediately.
-            // No channel and full payment: create PendingSale for admin to assign channel.
-            if ($paymentOpt) {
-                $sale = $this->createDirectAgentSale(
-                    $item, $product, $agent,
-                    $validated['customer_name'],
-                    $totalCredit,
-                    $paymentOpt
-                );
-
-                return response()->json([
-                    'message' => 'Sale recorded successfully.',
-                    'data' => [
-                        'agent_sale_id' => $sale->id,
-                        'customer_name' => $sale->customer_name,
-                        'selling_price' => $sale->selling_price,
-                    ],
-                ], 201);
-            }
-
-            $sale = $this->createPendingAgentSaleForDevice(
-                $item, $product, $agent,
-                $validated['customer_name'],
-                $totalCredit
-            );
-
-            return response()->json([
-                'message' => 'Sale recorded. Waiting for payment option selection.',
-                'data' => [
-                    'pending_sale_id' => $sale->id,
-                    'customer_name'   => $sale->customer_name,
-                    'selling_price'   => $sale->selling_price,
-                ],
-            ], 201);
         }
 
         if ($down > $eps && $paymentOptionId) {

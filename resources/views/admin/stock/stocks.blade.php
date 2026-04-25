@@ -85,7 +85,7 @@
                                     @if(($stock->stock_status ?? '') === 'in_stock')
                                         <span class="admin-prod-status admin-prod-status--ok">In stock</span>
                                     @else
-                                        <span class="admin-prod-dealer-status admin-prod-dealer-status--inactive" style="background:#fee2e2;color:#991b1b;">Sold out</span>
+                                        <span class="admin-prod-dealer-status admin-prod-dealer-status--inactive" style="background:#f1f5f9;color:#64748b;">Sold out</span>
                                     @endif
                                 </td>
                                 <td class="admin-prod-cell-actions">

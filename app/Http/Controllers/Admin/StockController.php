@@ -69,7 +69,12 @@ class StockController extends Controller
             
             // If no stocks exist but purchases exist, build rows from purchases instead
             if ($stocksData->isEmpty()) {
-                $purchases = Purchase::withCount('productListItems')->orderBy('date', 'desc')->get();
+                $purchases = Purchase::withCount([
+                    'productListItems',
+                    'productListItems as unsold_items_count' => function ($q) {
+                        $q->whereNull('sold_at');
+                    },
+                ])->orderBy('date', 'desc')->get();
 
                 if ($purchases->isNotEmpty()) {
                     $usingPurchases = true;
@@ -78,6 +83,7 @@ class StockController extends Controller
                         $limit = (int) ($purchase->quantity ?? 0);
                         $added = (int) ($purchase->product_list_items_count ?? 0);
                         $status = ($limit > 0 && $added === $limit) ? 'complete' : 'pending';
+                        $unsoldCount = (int) ($purchase->unsold_items_count ?? 0);
 
                         return (object) [
                             'id' => $purchase->id,
@@ -85,7 +91,7 @@ class StockController extends Controller
                             'stock_quantity' => $limit,
                             'added' => $added,
                             'status' => $status,
-                            'stock_status' => $status === 'complete' ? 'sold_out' : 'in_stock',
+                            'stock_status' => $unsoldCount > 0 ? 'in_stock' : 'sold_out',
                             'imei_count' => $added,
                         ];
                     });
