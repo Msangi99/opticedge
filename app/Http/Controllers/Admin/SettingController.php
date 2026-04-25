@@ -55,6 +55,7 @@ class SettingController extends Controller
             'selcom_api_secret' => 'nullable|string|max:255',
             'selcom_is_live' => 'nullable|in:0,1',
             'default_agent_sale_channel_id' => 'nullable|integer|exists:payment_options,id',
+            'default_watu_channel_id' => 'nullable|integer|exists:payment_options,id',
         ]);
 
         foreach ($data as $key => $value) {

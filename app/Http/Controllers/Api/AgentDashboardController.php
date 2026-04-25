@@ -183,11 +183,14 @@ class AgentDashboardController extends Controller
                 $agentCredit = $item->agentCredit;
                 $agentSale = $item->agentSale;
                 $creditPaid = $agentCredit && ($agentCredit->payment_status ?? '') === 'paid';
-                $salePaid = $agentSale && max(0, (float) ($agentSale->balance ?? 0)) <= 0.0001;
                 $hasPendingSale = (bool) $item->pending_sale_id;
                 $invoiceType = $agentCredit
                     ? 'credit'
                     : (($agentSale || $hasPendingSale) ? 'sale' : null);
+
+                // Agent sale receipts are always downloadable regardless of payment status.
+                // Credit receipts are only available once fully paid.
+                $invoiceAvailable = $agentCredit ? $creditPaid : (bool) $agentSale;
 
                 return $this->mapInventoryItem($item, [
                     'state' => 'sold',
@@ -199,7 +202,7 @@ class AgentDashboardController extends Controller
                     'agent_sale_id' => $agentSale?->id,
                     'pending_sale_id' => $hasPendingSale ? $item->pending_sale_id : null,
                     'invoice_type' => $invoiceType,
-                    'invoice_available' => $creditPaid || $salePaid,
+                    'invoice_available' => $invoiceAvailable,
                     'invoice_endpoint' => $agentCredit
                         ? '/agent/credits/' . $agentCredit->id . '/invoice'
                         : ($agentSale ? '/agent/sales/' . $agentSale->id . '/invoice' : null),
@@ -229,13 +232,6 @@ class AgentDashboardController extends Controller
             ->where('agent_id', Auth::id())
             ->with(['product.category', 'productListItem'])
             ->findOrFail($id);
-
-        $remaining = max(0, (float) ($sale->balance ?? 0));
-        if ($remaining > 0.0001) {
-            return response()->json([
-                'message' => 'Invoice is available after this sale is fully paid.',
-            ], 422);
-        }
 
         $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();

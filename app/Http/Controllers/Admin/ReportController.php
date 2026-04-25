@@ -46,25 +46,15 @@ class ReportController extends Controller
                     $total = (float) $rows->sum(function ($p) {
                         return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
                     });
+                    // Only count items whose purchase still exists and belongs to this branch.
+                    // Using whereHas ensures deleted purchases are excluded automatically.
                     $salesCount = ProductListItem::query()
                         ->whereNotNull('sold_at')
-                        ->where(function ($outer) use ($b) {
-                            $outer->where('branch_id', $b->id)
-                                ->orWhere(function ($inner) use ($b) {
-                                    $inner->whereNull('branch_id')
-                                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id));
-                                });
-                        })
+                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id))
                         ->count();
                     $closingStock = ProductListItem::query()
                         ->whereNull('sold_at')
-                        ->where(function ($outer) use ($b) {
-                            $outer->where('branch_id', $b->id)
-                                ->orWhere(function ($inner) use ($b) {
-                                    $inner->whereNull('branch_id')
-                                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id));
-                                });
-                        })
+                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id))
                         ->count();
                     $openingStock = max(0, $closingStock - $rows->count() + $salesCount);
 
@@ -98,23 +88,11 @@ class ReportController extends Controller
                 $rows = Purchase::where('branch_id', $bid)->get();
                 $salesCount = ProductListItem::query()
                     ->whereNotNull('sold_at')
-                    ->where(function ($outer) use ($bid) {
-                        $outer->where('branch_id', $bid)
-                            ->orWhere(function ($inner) use ($bid) {
-                                $inner->whereNull('branch_id')
-                                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid));
-                            });
-                    })
+                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid))
                     ->count();
                 $closingStock = ProductListItem::query()
                     ->whereNull('sold_at')
-                    ->where(function ($outer) use ($bid) {
-                        $outer->where('branch_id', $bid)
-                            ->orWhere(function ($inner) use ($bid) {
-                                $inner->whereNull('branch_id')
-                                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid));
-                            });
-                    })
+                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid))
                     ->count();
                 $openingStock = max(0, $closingStock - $rows->count() + $salesCount);
                 $selectedBranchDetail = (object) [

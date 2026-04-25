@@ -553,7 +553,7 @@
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
                                 <a href="{{ route('admin.subadmins.index') }}"
                                     @if (request()->routeIs('admin.subadmins.*')) aria-current="page" @endif
-                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.subadmins.*') ? 'admin-sidebar-sublink-active' : '' }}">Subadmins</a>
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.subadmins.*') ? 'admin-sidebar-sublink-active' : '' }}">Leaders</a>
                                 <a href="{{ route('admin.dealers.index') }}"
                                     @if (request()->routeIs('admin.dealers.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.dealers.*') ? 'admin-sidebar-sublink-active' : '' }}">Dealers</a>
@@ -603,7 +603,12 @@
                                     class="admin-sidebar-sublink {{ $navStockPurchases ? 'admin-sidebar-sublink-active' : '' }}">Purchases</a>
                                 <a href="{{ route('admin.orders.index') }}"
                                     @if (request()->routeIs('admin.orders.*')) aria-current="page" @endif
-                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.orders.*') ? 'admin-sidebar-sublink-active' : '' }}">Orders</a>
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.orders.*') ? 'admin-sidebar-sublink-active' : '' }} flex items-center justify-between gap-2">
+                                    <span>Orders</span>
+                                    @if($pendingAgentTransfersCount > 0)
+                                        <span class="inline-flex min-w-[1.25rem] h-5 px-1.5 shrink-0 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none" title="Pending agent transfers">{{ $pendingAgentTransfersCount }}</span>
+                                    @endif
+                                </a>
                                 <a href="{{ route('admin.stock.distribution') }}"
                                     @if ($navStockDistribution) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ $navStockDistribution ? 'admin-sidebar-sublink-active' : '' }}">Distribution</a>

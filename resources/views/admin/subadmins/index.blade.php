@@ -5,11 +5,11 @@
         <div class="admin-prod-toolbar">
             <div>
                 <p class="admin-prod-eyebrow">Administration</p>
-                <h1 class="admin-prod-title">Subadmins</h1>
-                <p class="admin-prod-subtitle">Manage subadmin accounts and assigned roles.</p>
+                <h1 class="admin-prod-title">Leaders</h1>
+                <p class="admin-prod-subtitle">Manage leader accounts and assigned roles.</p>
             </div>
             <div class="flex flex-wrap gap-2 shrink-0">
-                <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-btn-ghost">Add subadmin</a>
+                <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-btn-ghost">Add leader</a>
             </div>
         </div>
 
@@ -51,8 +51,8 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="text-center text-slate-500 py-10">
-                                    No subadmins yet.
-                                    <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-link">Add a subadmin</a>.
+                                    No leaders yet.
+                                    <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-link">Add a leader</a>.
                                 </td>
                             </tr>
                         @endforelse

@@ -54,6 +54,7 @@ class StockController extends Controller
                 $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
 
                 $imeiCount = (int) ProductListItem::where('stock_id', $stock->id)->count();
+                $unsoldCount = (int) ProductListItem::where('stock_id', $stock->id)->whereNull('sold_at')->count();
 
                 return (object) [
                     'id' => $stock->id,
@@ -61,6 +62,7 @@ class StockController extends Controller
                     'stock_quantity' => $stockQuantity,
                     'added' => (int) $added,
                     'status' => $status,
+                    'stock_status' => $unsoldCount > 0 ? 'in_stock' : 'sold_out',
                     'imei_count' => $imeiCount,
                 ];
             });
@@ -83,6 +85,7 @@ class StockController extends Controller
                             'stock_quantity' => $limit,
                             'added' => $added,
                             'status' => $status,
+                            'stock_status' => $status === 'complete' ? 'sold_out' : 'in_stock',
                             'imei_count' => $added,
                         ];
                     });
@@ -340,13 +343,6 @@ class StockController extends Controller
     public function downloadAgentSaleInvoice($id)
     {
         $sale = AgentSale::with(['product.category', 'agent', 'productListItem'])->findOrFail($id);
-
-        $remaining = max(0, (float) ($sale->balance ?? 0));
-        if ($remaining > 0.0001) {
-            return redirect()
-                ->route('admin.stock.agent-sales')
-                ->with('info', 'Invoice is available after this sale is fully paid.');
-        }
 
         $invoiceNo = 'AS-' . str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $sale->date ? Carbon::parse($sale->date) : now();
@@ -957,7 +953,13 @@ class StockController extends Controller
     {
         $purchase = Purchase::with('product')->findOrFail($id);
         $product = $purchase->product;
+
+        // Detach product list items linked to this purchase so they are not orphaned
+        // in reports. Sold items keep their sold_at history; unsold items are freed.
+        ProductListItem::where('purchase_id', $id)->update(['purchase_id' => null]);
+
         $purchase->delete();
+
         // Keep product.stock_quantity in sync
         if ($product) {
             $product->update(['stock_quantity' => max(0, $product->stock_quantity - $purchase->quantity)]);

@@ -120,9 +120,7 @@
                                             class="admin-prod-input w-24 py-1.5 text-sm">
                                         <button type="submit" class="admin-prod-link text-xs">Save</button>
                                     </form>
-                                    @if(((float) ($sale->balance ?? 0)) <= 0.0001)
-                                        <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs ml-2">Download invoice</a>
-                                    @endif
+                                    <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs ml-2">Download receipt</a>
                                 </td>
                             </tr>
                         @empty

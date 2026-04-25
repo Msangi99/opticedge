@@ -52,6 +52,7 @@
                             <th scope="col" class="admin-prod-th">Stock quantity</th>
                             <th scope="col" class="admin-prod-th">Added</th>
                             <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th">Stock status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
                     </thead>
@@ -80,6 +81,13 @@
                                         <span class="admin-prod-dealer-status admin-prod-dealer-status--pending">Pending</span>
                                     @endif
                                 </td>
+                                <td>
+                                    @if(($stock->stock_status ?? '') === 'in_stock')
+                                        <span class="admin-prod-status admin-prod-status--ok">In stock</span>
+                                    @else
+                                        <span class="admin-prod-dealer-status admin-prod-dealer-status--inactive" style="background:#fee2e2;color:#991b1b;">Sold out</span>
+                                    @endif
+                                </td>
                                 <td class="admin-prod-cell-actions">
                                     @if($hasPurchases)
                                         <form action="{{ route('admin.stock.destroy-purchase', $stock->id) }}" method="POST"
@@ -106,7 +114,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-slate-500 py-10">
+                                <td colspan="6" class="text-center text-slate-500 py-10">
                                     @if(isset($hasPurchases) && $hasPurchases)
                                         <p class="font-medium text-slate-700 mb-2">No stocks found, but you have
                                             {{ $purchasesCount }} purchase(s) in the system.</p>

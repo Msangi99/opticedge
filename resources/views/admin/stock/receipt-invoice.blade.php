@@ -61,13 +61,26 @@
         .summary-row.total { font-weight: 800; color: #1d4f9d; border-top: 1px dashed #d1d5db; margin-top: 7px; padding-top: 7px; }
         .status {
             margin-top: 10px;
-            border: 1px solid #a7d6af;
-            background: #eef9f0;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
             border-radius: 8px;
             padding: 10px;
             page-break-inside: avoid;
         }
-        .status .label { text-align: center; color: #246a35; font-size: 20px; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
+        .status .label { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
+        .status-badge {
+            display: inline-block;
+            margin: 0 auto 8px;
+            padding: 4px 18px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .status-badge--paid   { background: #dcfce7; color: #166534; border: 1px solid #a7d6af; }
+        .status-badge--partial { background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
+        .status-badge--pending { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
         .foot {
             margin-top: 10px;
             display: inline-block;
@@ -104,6 +117,34 @@
     $serial = $isCredit
         ? ($credit->productListItem?->imei_number ?? null)
         : ($sale->productListItem?->imei_number ?? null);
+
+    // Determine payment status label
+    if ($isCredit) {
+        $paymentStatus = ($credit->payment_status ?? 'pending');
+    } else {
+        if ($remaining <= 0.0001) {
+            $paymentStatus = 'paid';
+        } elseif ($paid > 0.0001) {
+            $paymentStatus = 'partial';
+        } else {
+            $paymentStatus = 'pending';
+        }
+    }
+    $statusLabel = match($paymentStatus) {
+        'paid'    => 'PAID',
+        'partial' => 'PARTIAL PAYMENT',
+        default   => 'PENDING',
+    };
+    $statusClass = match($paymentStatus) {
+        'paid'    => 'status-badge--paid',
+        'partial' => 'status-badge--partial',
+        default   => 'status-badge--pending',
+    };
+    $statusLabelColor = match($paymentStatus) {
+        'paid'    => '#246a35',
+        'partial' => '#9a3412',
+        default   => '#854d0e',
+    };
 @endphp
 <body>
 <div class="paper">
@@ -166,7 +207,10 @@
     </div>
 
     <div class="status">
-        <div class="label">Payment Status</div>
+        <div class="label" style="color: {{ $statusLabelColor }};">Payment Status</div>
+        <div style="text-align:center; margin-bottom: 8px;">
+            <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
+        </div>
         <div class="summary-row">
             <span>Paid:</span>
             <span>{{ number_format($paid, 2) }} TZS</span>

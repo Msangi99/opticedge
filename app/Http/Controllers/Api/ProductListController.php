@@ -458,23 +458,11 @@ class ProductListController extends Controller
         }
 
         $paymentOptId = isset($validated['payment_option_id']) ? (int) $validated['payment_option_id'] : null;
-        $defaultChannelRaw = Setting::query()
-            ->where('key', 'default_agent_sale_channel_id')
-            ->value('value');
-        $defaultChannelId = is_numeric($defaultChannelRaw) ? (int) $defaultChannelRaw : null;
-        $defaultChannel = $defaultChannelId ? PaymentOption::visible()->find($defaultChannelId) : null;
+        $paymentOpt = $paymentOptId ? PaymentOption::visible()->find($paymentOptId) : null;
 
-        if ($defaultChannel) {
-            if ($paymentOptId === null) {
-                $paymentOptId = (int) $defaultChannel->id;
-            } elseif ($paymentOptId !== (int) $defaultChannel->id) {
-                return response()->json([
-                    'message' => 'Only the configured default channel can be used for agent sales.',
-                ], 422);
-            }
+        if ($paymentOptId && ! $paymentOpt) {
+            return response()->json(['message' => 'Selected payment channel is invalid or not available.'], 422);
         }
-
-        $paymentOpt = $paymentOptId ? PaymentOption::find($paymentOptId) : null;
 
         // Non-Watu channel selected → create AgentSale directly, immediately visible
         if ($paymentOpt && ! $paymentOpt->isWatuAgentCreditChannel()) {
@@ -596,6 +584,14 @@ class ProductListController extends Controller
             $paymentOptionId = null;
         } else {
             $paymentOptionId = $paymentOptionId !== null ? (int) $paymentOptionId : null;
+        }
+
+        // If no channel provided, auto-use the admin-configured Watu default channel
+        if ($paymentOptionId === null) {
+            $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+            if (is_numeric($watuDefaultRaw)) {
+                $paymentOptionId = (int) $watuDefaultRaw;
+            }
         }
 
         $paymentOpt = $paymentOptionId ? PaymentOption::find($paymentOptionId) : null;

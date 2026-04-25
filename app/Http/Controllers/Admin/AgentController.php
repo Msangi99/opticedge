@@ -199,6 +199,6 @@ class AgentController extends Controller
         $user = User::create($validated);
         $user->forceFill(['email_verified_at' => now()])->save();
 
-        return redirect()->route('admin.subadmins.index')->with('success', 'Subadmin created successfully.');
+        return redirect()->route('admin.subadmins.index')->with('success', 'Leader created successfully.');
     }
 }

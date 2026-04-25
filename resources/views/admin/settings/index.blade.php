@@ -61,9 +61,24 @@
                 </div>
 
                 <div>
-                    <label for="default_agent_sale_channel_id" class="admin-prod-label">Default agent sales channel</label>
+                    <label for="default_watu_channel_id" class="admin-prod-label">Default Watu channel</label>
+                    <select name="default_watu_channel_id" id="default_watu_channel_id" class="admin-prod-select">
+                        <option value="">-- Select Watu channel --</option>
+                        @foreach($paymentOptions as $channel)
+                            <option value="{{ $channel->id }}" @selected(($settings['default_watu_channel_id'] ?? '') == (string) $channel->id)>
+                                {{ $channel->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-slate-500 mt-2">
+                        This channel is automatically used when an agent records a Watu sale in the app.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="default_agent_sale_channel_id" class="admin-prod-label">Default regular sale channel (optional)</label>
                     <select name="default_agent_sale_channel_id" id="default_agent_sale_channel_id" class="admin-prod-select">
-                        <option value="">-- Select default channel --</option>
+                        <option value="">-- Any channel (agent chooses) --</option>
                         @foreach($paymentOptions as $channel)
                             <option value="{{ $channel->id }}" @selected(($settings['default_agent_sale_channel_id'] ?? '') == (string) $channel->id)>
                                 {{ $channel->name }}
@@ -71,7 +86,7 @@
                         @endforeach
                     </select>
                     <p class="text-xs text-slate-500 mt-2">
-                        Agents will only see this channel when recording a normal sale in the app.
+                        Leave blank to let agents choose any channel. Set to restrict to one channel.
                     </p>
                 </div>
 

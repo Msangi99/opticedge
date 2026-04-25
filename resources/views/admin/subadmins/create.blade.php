@@ -5,8 +5,8 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
             <div>
                 <p class="admin-prod-eyebrow">Administration</p>
-                <h1 class="admin-prod-title">Add subadmin</h1>
-                <p class="admin-prod-subtitle">Create a subadmin and assign a role from Settings → Roles & Permissions.</p>
+                <h1 class="admin-prod-title">Add leader</h1>
+                <p class="admin-prod-subtitle">Create a leader and assign a role from Settings → Roles & Permissions.</p>
             </div>
             <a href="{{ route('admin.subadmins.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -14,7 +14,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to subadmins
+                Back to leaders
             </a>
         </div>
 
@@ -81,7 +81,7 @@
                 </div>
                 <div class="admin-prod-form-footer">
                     <a href="{{ route('admin.subadmins.index') }}" class="admin-prod-btn-ghost">Cancel</a>
-                    <button type="submit" class="admin-prod-btn-primary px-8">Create subadmin</button>
+                    <button type="submit" class="admin-prod-btn-primary px-8">Create leader</button>
                 </div>
             </form>
         </div>
