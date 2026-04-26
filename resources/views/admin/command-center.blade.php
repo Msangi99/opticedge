@@ -121,6 +121,30 @@
                             Seed selected class
                         </button>
                     </form>
+
+                    <form action="{{ route('command.empty-table') }}" method="POST" class="space-y-3 border-t border-slate-200/60 pt-4">
+                        @csrf
+                        <div>
+                            <label for="table" class="admin-prod-label">Table to empty</label>
+                            @if (count($dbTables) === 0)
+                                <p class="admin-prod-alert admin-prod-alert--warning !mb-0 text-sm">No database tables found.</p>
+                            @else
+                                <select name="table" id="table" class="admin-prod-select max-h-40">
+                                    @foreach ($dbTables as $table)
+                                        <option value="{{ $table }}" @selected(old('table') === $table)>{{ $table }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('table')
+                                <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-amber-700 mt-2">This removes all rows in the selected table.</p>
+                        </div>
+                        <button type="submit" @disabled(count($dbTables) === 0)
+                            class="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Empty selected table
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

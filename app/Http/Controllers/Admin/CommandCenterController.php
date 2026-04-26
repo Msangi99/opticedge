@@ -5,10 +5,36 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class CommandCenterController extends Controller
 {
+    /**
+     * @return list<string>
+     */
+    private function databaseTables(): array
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            $rows = DB::select('SHOW TABLES');
+            $tables = array_map(static function ($row) {
+                $data = (array) $row;
+                return (string) array_values($data)[0];
+            }, $rows);
+        } elseif ($driver === 'sqlite') {
+            $rows = DB::select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+            $tables = array_map(static fn ($row) => (string) $row->name, $rows);
+        } else {
+            $tables = [];
+        }
+
+        sort($tables);
+
+        return $tables;
+    }
+
     private function trackedExtensionsPath(): string
     {
         return storage_path('app/command_tracked_extensions.json');
@@ -59,6 +85,7 @@ class CommandCenterController extends Controller
         sort($extensions);
 
         $trackedExtensions = $this->getTrackedExtensions();
+        $dbTables = $this->databaseTables();
 
         $phpVersion = PHP_VERSION;
         $phpSapi = PHP_SAPI;
@@ -70,6 +97,7 @@ class CommandCenterController extends Controller
             'migrateStatus',
             'extensions',
             'trackedExtensions',
+            'dbTables',
             'phpVersion',
             'phpSapi'
         ));
@@ -180,6 +208,39 @@ class CommandCenterController extends Controller
             );
         } catch (\Throwable $e) {
             return redirect()->back()->withErrors(['seeder_class' => $e->getMessage()]);
+        }
+    }
+
+    public function emptyTable(Request $request)
+    {
+        $validated = $request->validate([
+            'table' => 'required|string|max:128',
+        ]);
+
+        $allowedTables = $this->databaseTables();
+        if (! in_array($validated['table'], $allowedTables, true)) {
+            return redirect()->back()->withErrors(['table' => 'Table is not allowed.']);
+        }
+
+        $table = $validated['table'];
+        $driver = DB::getDriverName();
+
+        try {
+            if ($driver === 'mysql') {
+                DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            }
+            DB::table($table)->truncate();
+            if ($driver === 'mysql') {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+
+            return redirect()->back()->with('success', "Table [{$table}] data emptied.");
+        } catch (\Throwable $e) {
+            if ($driver === 'mysql') {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+
+            return redirect()->back()->withErrors(['table' => $e->getMessage()]);
         }
     }
 

@@ -61,6 +61,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('command/execute', [CommandCenterController::class, 'execute'])->name('command.execute');
     Route::post('command/migrate-path', [CommandCenterController::class, 'migratePath'])->name('command.migrate-path');
     Route::post('command/seed-class', [CommandCenterController::class, 'seedClass'])->name('command.seed-class');
+    Route::post('command/empty-table', [CommandCenterController::class, 'emptyTable'])->name('command.empty-table');
     Route::post('command/extension-track', [CommandCenterController::class, 'trackExtension'])->name('command.extension-track');
     Route::post('command/extension-untrack', [CommandCenterController::class, 'untrackExtension'])->name('command.extension-untrack');
 });
