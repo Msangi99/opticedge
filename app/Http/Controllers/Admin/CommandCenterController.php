@@ -5,20 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Validation\Rule;
 
 class CommandCenterController extends Controller
 {
-    /**
-     * Tables that must not be truncated from the UI (breaks migrations / framework).
-     *
-     * @var list<string>
-     */
-    private const PROTECTED_TABLES = ['migrations'];
-
     private function trackedExtensionsPath(): string
     {
         return storage_path('app/command_tracked_extensions.json');
@@ -73,14 +63,6 @@ class CommandCenterController extends Controller
         $phpVersion = PHP_VERSION;
         $phpSapi = PHP_SAPI;
 
-        $databaseTables = [];
-        $databaseTablesLoadError = null;
-        try {
-            $databaseTables = $this->databaseTableNames();
-        } catch (\Throwable $e) {
-            $databaseTablesLoadError = $e->getMessage();
-        }
-
         return view('admin.command-center', compact(
             'allowedCommands',
             'migrationFiles',
@@ -89,62 +71,8 @@ class CommandCenterController extends Controller
             'extensions',
             'trackedExtensions',
             'phpVersion',
-            'phpSapi',
-            'databaseTables',
-            'databaseTablesLoadError'
+            'phpSapi'
         ));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function databaseTableNames(): array
-    {
-        $schema = Schema::getConnection()->getSchemaBuilder();
-        if (! method_exists($schema, 'getTables')) {
-            return [];
-        }
-
-        return collect($schema->getTables())
-            ->pluck('name')
-            ->map(fn ($n) => (string) $n)
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-    }
-
-    public function emptyTable(Request $request)
-    {
-        $allowed = $this->databaseTableNames();
-        $validated = $request->validate([
-            'table' => [
-                'required',
-                'string',
-                'max:128',
-                Rule::notIn(self::PROTECTED_TABLES),
-                Rule::in($allowed),
-            ],
-            'confirm' => 'accepted',
-        ], [
-            'confirm.accepted' => 'You must confirm that you want to permanently delete all rows in this table.',
-        ]);
-
-        $table = $validated['table'];
-
-        try {
-            Schema::disableForeignKeyConstraints();
-            try {
-                DB::table($table)->truncate();
-            } finally {
-                Schema::enableForeignKeyConstraints();
-            }
-
-            return redirect()->back()->with('success', "Table [{$table}] emptied (TRUNCATE).");
-        } catch (\Throwable $e) {
-            return redirect()->back()->withInput()->withErrors(['table' => $e->getMessage()]);
-        }
     }
 
     public function execute(Request $request)

@@ -1,8 +1,5 @@
 <x-admin-layout>
     @include('admin.partials.catalog-styles')
-    @push('styles')
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    @endpush
 
     <div class="admin-prod-page">
         <div class="admin-prod-toolbar !mb-6">
@@ -128,50 +125,6 @@
             </div>
         </div>
 
-        <div class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden admin-prod-select2-wrap">
-            <div class="admin-prod-form-head">
-                <h2 class="admin-prod-form-title">Empty a database table</h2>
-                <p class="admin-prod-form-hint">
-                    Search and select a table, then confirm. Runs <code class="text-xs">TRUNCATE</code> (all rows removed; structure kept). The <code class="text-xs">migrations</code> table cannot be emptied here.
-                </p>
-            </div>
-            <div class="admin-prod-form-body space-y-4">
-                @if ($databaseTablesLoadError !== null)
-                    <p class="admin-prod-alert admin-prod-alert--warning text-sm font-mono">
-                        Could not load table list: {{ $databaseTablesLoadError }}
-                    </p>
-                @elseif (count($databaseTables) === 0)
-                    <p class="admin-prod-alert admin-prod-alert--warning text-sm">No tables found for the default connection.</p>
-                @else
-                    <form action="{{ route('command.table-empty') }}" method="POST" class="space-y-4" id="form-empty-table">
-                        @csrf
-                        <div>
-                            <label for="database_table_empty" class="admin-prod-label">Table</label>
-                            <select name="table" id="database_table_empty" class="admin-prod-select" data-placeholder="Search tables…">
-                                <option value=""></option>
-                                @foreach ($databaseTables as $tbl)
-                                    <option value="{{ $tbl }}" @selected(old('table') === $tbl)>{{ $tbl }}</option>
-                                @endforeach
-                            </select>
-                            @error('table')
-                                <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <label class="inline-flex items-start gap-2 text-sm text-slate-700">
-                            <input type="checkbox" name="confirm" value="1" class="mt-1 rounded border-slate-300 text-[#fa8900] focus:ring-[#fa8900]" @checked(old('confirm'))>
-                            <span>I understand this permanently deletes all rows in the selected table and may break related data or foreign keys until re-seeded.</span>
-                        </label>
-                        @error('confirm')
-                            <p class="text-red-600 text-xs font-semibold">{{ $message }}</p>
-                        @enderror
-                        <button type="submit" class="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800">
-                            Empty selected table
-                        </button>
-                    </form>
-                @endif
-            </div>
-        </div>
-
         <div class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">PHP extensions</h2>
@@ -236,22 +189,4 @@
             </div>
         </div>
     </div>
-
-    @push('scripts')
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var el = document.getElementById('database_table_empty');
-                if (!el || !window.jQuery || !jQuery.fn.select2) return;
-                var $el = jQuery(el);
-                var ph = el.getAttribute('data-placeholder') || 'Search tables…';
-                $el.select2({
-                    placeholder: ph,
-                    width: '100%',
-                    allowClear: true
-                });
-            });
-        </script>
-    @endpush
 </x-admin-layout>

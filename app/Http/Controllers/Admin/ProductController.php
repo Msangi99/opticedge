@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\CartItem;
 use App\Models\OrderItem;
 use App\Models\Product;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,75 +14,11 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return view('admin.products.index');
-    }
-
-    /**
-     * jQuery DataTables server-side JSON (see resources/views/admin/products/index.blade.php).
-     */
-    public function datatableData(Request $request): JsonResponse
-    {
-        $draw = max(1, (int) $request->input('draw', 1));
-        $start = max(0, (int) $request->input('start', 0));
-        $length = (int) $request->input('length', 25);
-        if ($length < 10) {
-            $length = 10;
-        }
-        if ($length > 100) {
-            $length = 100;
-        }
-
-        $search = trim((string) $request->input('search.value', ''));
-        $like = $search !== '' ? '%'.addcslashes($search, '%_\\').'%' : null;
-
-        $query = Product::query()->with('category:id,name');
-
-        if ($like !== null) {
-            $query->where(function ($q) use ($like) {
-                $q->where('products.name', 'like', $like)
-                    ->orWhere('products.description', 'like', $like)
-                    ->orWhereHas('category', fn ($cq) => $cq->where('categories.name', 'like', $like));
-            });
-        }
-
-        $recordsFiltered = $query->count();
-        $recordsTotal = Product::query()->count();
-
-        $orderCol = (int) $request->input('order.0.column', 0);
-        $orderDir = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
-        if ($orderCol === 2) {
-            $query->orderBy('products.name', $orderDir);
-        } else {
-            $query->orderBy('products.id', $orderDir);
-        }
-
-        $products = $query->skip($start)->take($length)->get();
-
-        $data = $products->map(function (Product $p) {
-            $img = null;
-            if (is_array($p->images) && isset($p->images[0]) && is_string($p->images[0]) && $p->images[0] !== '') {
-                $img = Storage::disk('public')->url($p->images[0]);
-            }
-
-            return [
-                'id' => $p->id,
-                'image_url' => $img,
-                'name' => $p->name,
-                'category_name' => $p->category?->name ?? '—',
-                'description_plain' => \Illuminate\Support\Str::limit(strip_tags((string) ($p->description ?? '')), 280),
-                'stock_quantity' => (int) $p->stock_quantity,
-                'edit_url' => route('admin.products.edit', $p),
-                'imei_url' => route('admin.products.imei', $p),
-                'destroy_url' => route('admin.products.destroy', $p),
-            ];
-        });
-
-        return response()->json([
-            'draw' => $draw,
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data' => $data,
-        ]);
+        $products = Product::query()
+            ->with('category:id,name')
+            ->latest()
+            ->paginate(10);
+        return view('admin.products.index', compact('products'));
     }
 
     public function create()

@@ -63,7 +63,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('command/seed-class', [CommandCenterController::class, 'seedClass'])->name('command.seed-class');
     Route::post('command/extension-track', [CommandCenterController::class, 'trackExtension'])->name('command.extension-track');
     Route::post('command/extension-untrack', [CommandCenterController::class, 'untrackExtension'])->name('command.extension-untrack');
-    Route::post('command/table-empty', [CommandCenterController::class, 'emptyTable'])->name('command.table-empty');
 });
 
 // Run whitelisted artisan command: GET /command/{command} (admin only, JSON)
@@ -143,7 +142,6 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             ));
         }
         )->name('dashboard');
-        Route::get('products/datatable/data', [ProductController::class, 'datatableData'])->name('products.datatable');
         Route::get('products/{product}/imei', [ProductController::class, 'showImei'])->name('products.imei');
         Route::resource('products', ProductController::class);
         Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);

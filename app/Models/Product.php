@@ -8,22 +8,17 @@ class Product extends Model
 {
     protected $fillable = [
         'category_id',
-        'mobileapi_device_id',
-        'gsmarena_device_id',
         'name',
         'brand',
-        'device_type',
         'price',
         'rating',
         'stock_quantity',
         'description',
         'images',
-        'specifications',
     ];
 
     protected $casts = [
         'images' => 'array',
-        'specifications' => 'array',
     ];
 
     public function category()
