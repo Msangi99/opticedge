@@ -75,7 +75,7 @@
 
         <div class="admin-clay-panel overflow-x-auto">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
-                <table class="min-w-[960px]">
+                <table class="min-w-[1080px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Date</th>
@@ -85,7 +85,7 @@
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Total</th>
                             <th scope="col" class="admin-prod-th min-w-[200px]">Channel</th>
-                            <th scope="col" class="admin-prod-th">Comm.</th>
+                            <th scope="col" class="admin-prod-th min-w-[190px]">Comm.</th>
                             <th scope="col" class="admin-prod-th">Pending</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
@@ -129,14 +129,14 @@
                                         <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
                                     @endif
                                 </td>
-                                <td class="admin-prod-cell-actions">
+                                <td class="admin-prod-cell-actions min-w-[190px]">
                                     <form action="{{ route('admin.stock.agent-credits-update-commission', ['id' => $credit->id] + request()->query()) }}" method="POST"
-                                        class="inline-flex items-center gap-1 flex-wrap justify-end">
+                                        class="inline-flex items-center gap-2 flex-wrap justify-end">
                                         @csrf
                                         @method('PATCH')
                                         <input type="number" name="commission_paid" value="{{ $credit->commission_paid ?? 0 }}" step="0.01" min="0"
-                                            class="admin-prod-input w-24 py-1.5 text-sm">
-                                        <button type="submit" class="admin-prod-link text-xs">Save</button>
+                                            class="admin-prod-input w-32 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save</button>
                                     </form>
                                 </td>
                                 <td class="font-variant-numeric font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
