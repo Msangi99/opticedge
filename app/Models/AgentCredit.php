@@ -17,6 +17,7 @@ class AgentCredit extends Model
         'total_amount',
         'paid_amount',
         'commission_paid',
+        'commission_expense_id',
         'payment_status',
         'payment_option_id',
         'installment_count',
@@ -64,5 +65,10 @@ class AgentCredit extends Model
         return $this->hasMany(AgentCreditPayment::class)
             ->orderByDesc('paid_date')
             ->orderByDesc('id');
+    }
+
+    public function commissionExpense()
+    {
+        return $this->belongsTo(Expense::class, 'commission_expense_id');
     }
 }

@@ -90,6 +90,21 @@
                     </p>
                 </div>
 
+                <div>
+                    <label for="default_agent_commission_channel_id" class="admin-prod-label">Default commission channel (agent credit)</label>
+                    <select name="default_agent_commission_channel_id" id="default_agent_commission_channel_id" class="admin-prod-select">
+                        <option value="">-- Select channel for commission expenses --</option>
+                        @foreach($paymentOptions as $channel)
+                            <option value="{{ $channel->id }}" @selected(($settings['default_agent_commission_channel_id'] ?? '') == (string) $channel->id)>
+                                {{ $channel->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-slate-500 mt-2">
+                        When you save commission on an agent credit, an expense is posted to this channel (balance is reduced by the commission amount).
+                    </p>
+                </div>
+
                 <fieldset class="rounded-xl border border-slate-200/80 bg-white/50 p-4 space-y-4">
                     <legend class="px-2 text-sm font-semibold text-[#232f3e]">Email configuration</legend>
 

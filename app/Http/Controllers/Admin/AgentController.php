@@ -4,15 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
-use App\Models\AgentProductListAssignment;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\SubadminRole;
 use App\Models\User;
+use App\Services\AgentProductAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AgentController extends Controller
@@ -68,7 +67,7 @@ class AgentController extends Controller
         ]);
     }
 
-    public function storeAssignment(Request $request)
+    public function storeAssignment(Request $request, AgentProductAssignmentService $assignmentService)
     {
         $validated = $request->validate([
             'agent_id' => 'required|exists:users,id',
@@ -78,54 +77,13 @@ class AgentController extends Controller
         ]);
 
         $user = User::findOrFail($validated['agent_id']);
-        if ($user->role !== 'agent') {
-            return back()->with('error', 'Selected user is not an agent.');
-        }
-
-        $productId = (int) $validated['product_id'];
-        $ids = array_unique(array_map('intval', $validated['product_list_ids']));
 
         try {
-            DB::transaction(function () use ($user, $productId, $ids) {
-                $added = 0;
-
-                foreach ($ids as $listId) {
-                    $item = ProductListItem::lockForUpdate()->find($listId);
-
-                    if (! $item || ! $item->isCatalogProduct($productId)) {
-                        throw new \InvalidArgumentException('One or more IMEIs do not belong to the selected product.');
-                    }
-
-                    if ($item->isSold()) {
-                        throw new \InvalidArgumentException('One or more devices are already sold.');
-                    }
-
-                    if (! $item->isPurchasePaid()) {
-                        throw new \InvalidArgumentException('One or more devices are not from an eligible purchase (paid, partial, unpaid, or purchase still has IMEI limit remaining).');
-                    }
-
-                    if ($item->agentProductListAssignment) {
-                        throw new \InvalidArgumentException('One or more devices are already assigned to an agent.');
-                    }
-
-                    AgentProductListAssignment::create([
-                        'agent_id' => $user->id,
-                        'product_list_id' => $item->id,
-                    ]);
-                    $added++;
-                }
-
-                if ($added === 0) {
-                    throw new \InvalidArgumentException('No devices were assigned.');
-                }
-
-                $assignment = AgentAssignment::firstOrNew([
-                    'agent_id' => $user->id,
-                    'product_id' => $productId,
-                ]);
-                $assignment->quantity_assigned = (int) ($assignment->quantity_assigned ?? 0) + $added;
-                $assignment->save();
-            });
+            $assignmentService->assignToAgent(
+                $user,
+                (int) $validated['product_id'],
+                $validated['product_list_ids']
+            );
         } catch (\InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }

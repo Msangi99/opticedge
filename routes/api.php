@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\AdminAgentProductTransferApiController;
 use App\Http\Controllers\Api\AdminBranchTransferApiController;
 use App\Http\Controllers\Api\AgentCatalogController;
 use App\Http\Controllers\Api\AgentCustomerNeedController;
+use App\Http\Controllers\Api\AdminAgentAssignmentApiController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -54,6 +55,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('agent-sales', [ApiAgentSaleController::class, 'index']);
         Route::get('orders', [ApiOrderController::class, 'index']);
         Route::get('users', [ApiUserController::class, 'index']); // ?role=customer|dealer|agent
+
+        Route::get('agents/products-for-assign', [AdminAgentAssignmentApiController::class, 'productsForAssign'])
+            ->name('admin.agents.products-for-assign');
+        Route::get('agents/assignable-imeis', [AdminAgentAssignmentApiController::class, 'assignableImeis'])
+            ->name('admin.agents.assignable-imeis');
+        Route::post('agents/assignments/validate-imei', [AdminAgentAssignmentApiController::class, 'validateImei'])
+            ->name('admin.agents.assignments.validate-imei');
+        Route::post('agents/assignments', [AdminAgentAssignmentApiController::class, 'store'])
+            ->name('admin.agents.assignments.store');
         Route::get('distribution-sales', [ApiDistributionSaleController::class, 'index']);
         Route::get('pending-sales', [ApiPendingSaleController::class, 'index']);
         Route::get('reports', [ApiReportController::class, 'index']);
