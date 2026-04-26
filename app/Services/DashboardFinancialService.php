@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Purchase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class DashboardFinancialService
@@ -323,56 +324,74 @@ class DashboardFinancialService
     {
         $start = $startDate ? $startDate->copy()->startOfDay() : Carbon::now()->subMonths(1)->startOfDay();
         $end = $endDate ? $endDate->copy()->endOfDay() : Carbon::now()->endOfDay();
+        $productTable = (new Product())->getTable();
+
+        // Avoid hard crashes on login/dashboard when some tables are missing.
+        if (! Schema::hasTable($productTable)) {
+            return [];
+        }
 
         // Get sales from Orders (via OrderItems)
-        $orderSales = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->whereBetween('orders.created_at', [$start, $end])
-            ->select(
-                'products.id',
-                'products.name as model',
-                DB::raw('CAST(SUM(order_items.quantity) AS UNSIGNED) as total_quantity')
-            )
-            ->groupBy('products.id', 'products.name');
+        $orderSales = collect();
+        if (Schema::hasTable('order_items') && Schema::hasTable('orders')) {
+            $orderSales = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join($productTable, 'order_items.product_id', '=', $productTable . '.id')
+                ->whereBetween('orders.created_at', [$start, $end])
+                ->select(
+                    $productTable . '.id',
+                    $productTable . '.name as model',
+                    DB::raw('CAST(SUM(order_items.quantity) AS UNSIGNED) as total_quantity')
+                )
+                ->groupBy($productTable . '.id', $productTable . '.name')
+                ->get();
+        }
 
         // Get sales from DistributionSales
-        $distributionSales = DB::table('distribution_sales')
-            ->join('products', 'distribution_sales.product_id', '=', 'products.id')
-            ->whereBetween('distribution_sales.date', [$start, $end])
-            ->select(
-                'products.id',
-                'products.name as model',
-                DB::raw('CAST(SUM(distribution_sales.quantity_sold) AS UNSIGNED) as total_quantity')
-            )
-            ->groupBy('products.id', 'products.name');
+        $distributionSales = collect();
+        if (Schema::hasTable('distribution_sales')) {
+            $distributionSales = DB::table('distribution_sales')
+                ->join($productTable, 'distribution_sales.product_id', '=', $productTable . '.id')
+                ->whereBetween('distribution_sales.date', [$start, $end])
+                ->select(
+                    $productTable . '.id',
+                    $productTable . '.name as model',
+                    DB::raw('CAST(SUM(distribution_sales.quantity_sold) AS UNSIGNED) as total_quantity')
+                )
+                ->groupBy($productTable . '.id', $productTable . '.name')
+                ->get();
+        }
 
         // Get sales from AgentSales
-        $agentSales = DB::table('agent_sales')
-            ->join('products', 'agent_sales.product_id', '=', 'products.id')
-            ->whereBetween('agent_sales.date', [$start, $end])
-            ->select(
-                'products.id',
-                'products.name as model',
-                DB::raw('CAST(SUM(agent_sales.quantity_sold) AS UNSIGNED) as total_quantity')
-            )
-            ->groupBy('products.id', 'products.name');
+        $agentSales = collect();
+        if (Schema::hasTable('agent_sales')) {
+            $agentSales = DB::table('agent_sales')
+                ->join($productTable, 'agent_sales.product_id', '=', $productTable . '.id')
+                ->whereBetween('agent_sales.date', [$start, $end])
+                ->select(
+                    $productTable . '.id',
+                    $productTable . '.name as model',
+                    DB::raw('CAST(SUM(agent_sales.quantity_sold) AS UNSIGNED) as total_quantity')
+                )
+                ->groupBy($productTable . '.id', $productTable . '.name')
+                ->get();
+        }
 
         // Combine all sales by product
         $allSales = collect();
         
         // Add order sales
-        foreach ($orderSales->get() as $sale) {
+        foreach ($orderSales as $sale) {
             $allSales->push($sale);
         }
         
         // Add distribution sales
-        foreach ($distributionSales->get() as $sale) {
+        foreach ($distributionSales as $sale) {
             $allSales->push($sale);
         }
         
         // Add agent sales
-        foreach ($agentSales->get() as $sale) {
+        foreach ($agentSales as $sale) {
             $allSales->push($sale);
         }
 
