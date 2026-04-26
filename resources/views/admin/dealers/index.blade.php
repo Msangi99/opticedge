@@ -27,7 +27,7 @@
 
         <div class="mt-6 admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
-                <table>
+                <table class="min-w-[980px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Name</th>
@@ -65,55 +65,62 @@
                                     {{ $dealer->created_at->format('M j, Y') }}
                                 </td>
                                 <td class="admin-prod-cell-actions">
-                                    <div class="admin-prod-actions flex-wrap justify-end gap-x-3 gap-y-1">
-                                        <a href="{{ route('admin.dealers.show', $dealer->id) }}" class="admin-prod-link">View</a>
-                                        @if($dealer->status === 'pending')
-                                            <form action="{{ route('admin.dealers.approve', $dealer->id) }}" method="POST"
-                                                class="inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="admin-prod-btn-inline admin-prod-link--success">
-                                                    Approve
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
-                                                class="inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
-                                                    Reject
-                                                </button>
-                                            </form>
-                                        @else
-                                            @if($dealer->status === 'active')
-                                                <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
-                                                    class="inline">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
-                                                        Suspend
-                                                    </button>
-                                                </form>
-                                            @elseif($dealer->status === 'suspended')
+                                    <div class="flex flex-col items-end gap-2 min-w-[260px]">
+                                        <div class="admin-prod-actions flex-wrap justify-end gap-x-3 gap-y-1">
+                                            <a href="{{ route('admin.dealers.show', $dealer->id) }}" class="admin-prod-link">View</a>
+                                            @if($dealer->status === 'pending')
                                                 <form action="{{ route('admin.dealers.approve', $dealer->id) }}" method="POST"
                                                     class="inline">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit" class="admin-prod-btn-inline admin-prod-link--success">
-                                                        Re-activate
+                                                        Approve
                                                     </button>
                                                 </form>
+                                                <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
+                                                    class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
+                                                        Reject
+                                                    </button>
+                                                </form>
+                                            @else
+                                                @if($dealer->status === 'active')
+                                                    <form action="{{ route('admin.dealers.reject', $dealer->id) }}" method="POST"
+                                                        class="inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">
+                                                            Suspend
+                                                        </button>
+                                                    </form>
+                                                @elseif($dealer->status === 'suspended')
+                                                    <form action="{{ route('admin.dealers.approve', $dealer->id) }}" method="POST"
+                                                        class="inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="admin-prod-btn-inline admin-prod-link--success">
+                                                            Re-activate
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             @endif
-                                        @endif
-                                        <form method="POST" action="{{ route('admin.users.reset-password', $dealer) }}"
-                                            class="flex flex-wrap items-center gap-2">
-                                            @csrf
-                                            <input type="password" name="password" required minlength="8"
-                                                placeholder="New password" class="admin-prod-input w-32 py-1.5 text-sm">
-                                            <input type="password" name="password_confirmation" required minlength="8"
-                                                placeholder="Confirm" class="admin-prod-input w-28 py-1.5 text-sm">
-                                            <button type="submit" class="admin-prod-link whitespace-nowrap">Reset password</button>
-                                        </form>
+                                        </div>
+                                        <details class="w-full">
+                                            <summary class="cursor-pointer text-xs font-semibold text-slate-600 hover:text-[#fa8900] list-none text-right">
+                                                Reset password
+                                            </summary>
+                                            <form method="POST" action="{{ route('admin.users.reset-password', $dealer) }}"
+                                                class="mt-2 flex flex-wrap items-center justify-end gap-2">
+                                                @csrf
+                                                <input type="password" name="password" required minlength="8"
+                                                    placeholder="New password" class="admin-prod-input w-36 py-1.5 text-sm">
+                                                <input type="password" name="password_confirmation" required minlength="8"
+                                                    placeholder="Confirm" class="admin-prod-input w-32 py-1.5 text-sm">
+                                                <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Save</button>
+                                            </form>
+                                        </details>
                                     </div>
                                 </td>
                             </tr>
