@@ -53,7 +53,7 @@
                                 <td class="text-slate-500 font-mono text-xs">{{ $category->id }}</td>
                                 <td>
                                     <div class="font-semibold text-[#232f3e]">{{ $category->name }}</div>
-                                    @if($category->products->isNotEmpty())
+                                    {{-- @if($category->products->isNotEmpty())
                                         <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-normal">
                                             @foreach($category->products as $product)
                                                 <span class="inline-flex items-center gap-1">
@@ -63,7 +63,7 @@
                                                 </span>
                                             @endforeach
                                         </div>
-                                    @endif
+                                    @endif --}}
                                 </td>
                                 <td>
                                     <span class="admin-prod-count-pill admin-prod-count-pill--neutral">
