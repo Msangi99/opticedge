@@ -27,6 +27,13 @@
             </div>
         </div>
 
+        @if(session('success'))
+            <div class="admin-prod-alert admin-prod-alert--success mb-4" role="status">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ $errors->first() }}</div>
+        @endif
+
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush">
                 <table>
@@ -77,7 +84,15 @@
                                     {{ $user->created_at->format('M j, Y') }}
                                 </td>
                                 <td class="admin-prod-cell-actions">
-                                    <span class="admin-prod-muted" title="User editing is not available from this screen">—</span>
+                                    <form method="POST" action="{{ route('admin.users.reset-password', $user) }}"
+                                        class="flex flex-wrap items-center justify-end gap-2">
+                                        @csrf
+                                        <input type="password" name="password" required minlength="8"
+                                            placeholder="New password" class="admin-prod-input w-32 py-1.5 text-sm">
+                                        <input type="password" name="password_confirmation" required minlength="8"
+                                            placeholder="Confirm" class="admin-prod-input w-28 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link whitespace-nowrap">Reset password</button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

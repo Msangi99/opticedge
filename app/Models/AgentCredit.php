@@ -16,6 +16,7 @@ class AgentCredit extends Model
         'product_id',
         'total_amount',
         'paid_amount',
+        'commission_paid',
         'payment_status',
         'payment_option_id',
         'installment_count',
@@ -33,6 +34,7 @@ class AgentCredit extends Model
         'first_due_date' => 'date',
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
+        'commission_paid' => 'decimal:2',
         'installment_amount' => 'decimal:2',
         'installment_interval_days' => 'integer',
     ];

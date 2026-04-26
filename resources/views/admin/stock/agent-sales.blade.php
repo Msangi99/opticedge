@@ -8,8 +8,18 @@
                 <h1 class="admin-prod-title">Agent sales</h1>
                 <p class="admin-prod-subtitle">All sales by agents, including pending; set payment channel as needed.</p>
             </div>
-            <a href="{{ route('admin.stock.create-agent-sale') }}"
-                class="shrink-0 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record manual sale</a>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <a href="{{ route('admin.stock.agent-sales.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
+                    </svg>
+                    Export CSV
+                </a>
+                <a href="{{ route('admin.stock.create-agent-sale') }}"
+                    class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Record manual sale</a>
+            </div>
         </div>
 
         @if(session('success'))
@@ -77,7 +87,7 @@
                             <th scope="col" class="admin-prod-th">Profit</th>
                             <th scope="col" class="admin-prod-th">Comm.</th>
                             <th scope="col" class="admin-prod-th">Channel</th>
-                            <th scope="col" class="admin-prod-th admin-prod-th--end">Edit comm.</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,15 +122,7 @@
                                     @endif
                                 </td>
                                 <td class="admin-prod-cell-actions">
-                                    <form action="{{ route('admin.stock.agent-sales-update-commission', $sale->id) }}" method="POST"
-                                        class="inline-flex items-center gap-1 flex-wrap justify-end">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="number" name="commission_paid" value="{{ $sale->commission_paid ?? 0 }}" step="0.01" min="0"
-                                            class="admin-prod-input w-24 py-1.5 text-sm">
-                                        <button type="submit" class="admin-prod-link text-xs">Save</button>
-                                    </form>
-                                    <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs ml-2">Download receipt</a>
+                                    <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs">Download receipt</a>
                                 </td>
                             </tr>
                         @empty

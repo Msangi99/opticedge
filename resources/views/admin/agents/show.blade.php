@@ -48,7 +48,11 @@
                         @forelse($assignments as $a)
                             <tr>
                                 <td class="font-medium text-[#232f3e]">
-                                    {{ $a->product->category->name ?? '—' }} – {{ $a->product->name }}
+                                    @if($a->product)
+                                        {{ $a->product->category->name ?? '—' }} – {{ $a->product->name ?? 'Unknown model' }}
+                                    @else
+                                        <span class="text-amber-700">Unknown product (removed)</span>
+                                    @endif
                                 </td>
                                 <td class="font-variant-numeric text-slate-600">{{ $a->quantity_assigned }}</td>
                                 <td class="font-variant-numeric text-slate-600">{{ $a->quantity_sold }}</td>

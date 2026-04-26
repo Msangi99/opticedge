@@ -67,7 +67,7 @@
                             <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
                             <strong>Sales</strong> = units sold on the <strong>report date</strong> only.
                             <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
-                            <strong>Total</strong> = opening − sales + net transfer (unassigned stock). <strong>Purchased today</strong> = new device rows created on the report date.
+                            <strong>Total</strong> = opening − sales + net transfer (unassigned stock).
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -146,7 +146,6 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Price (TZS)</th>
-                                    <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Purchased<br><span class="font-normal text-slate-500">today</span></th>
                                     <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Total</th>
                                     @foreach($asr['agents'] as $agent)
                                         @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
@@ -171,7 +170,6 @@
                                     <tr class="h-12">
                                         <td class="font-medium text-[#232f3e] bg-white px-3 py-3">{{ $row['name'] }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['price'], 0) }}</td>
-                                        <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['purchased_today']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['opening']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['sales']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['transfer']) }}</td>
@@ -189,7 +187,6 @@
                                 <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row h-12">
                                     <td class="bg-slate-100 px-3 py-3">Totals</td>
                                     <td class="text-right bg-slate-100 px-3 py-3">—</td>
-                                    <td class="text-right font-variant-numeric bg-slate-100 px-3 py-3">{{ number_format($tot['purchased_today']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['opening']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['sales']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['transfer']) }}</td>
@@ -243,8 +240,6 @@
                             <span class="font-semibold text-slate-800">{{ $selectedBranchDetail->branch->name }}</span>
                             <span class="block mt-1 text-sm">
                                 Opening: {{ number_format($selectedBranchDetail->opening_stock) }}
-                                ·
-                                Purchases: {{ $selectedBranchDetail->purchase_count }}
                                 · Sales: {{ number_format($selectedBranchDetail->sales_count) }}
                                 · Closing: {{ number_format($selectedBranchDetail->closing_stock) }}
                                 · Total:
@@ -259,7 +254,6 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th">Branch</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Opening Stock</th>
-                                    <th scope="col" class="admin-prod-th admin-prod-th--end">Purchases</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Sales</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Closing Stock</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end">Value (TZS)</th>
@@ -270,7 +264,6 @@
                                     <tr class="@if(request('branch_id') == $row->id) bg-orange-50/40 @endif">
                                         <td class="font-medium text-[#232f3e]">{{ $row->name }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->opening_stock) }}</td>
-                                        <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->purchase_count) }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->sales_count) }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700">{{ number_format($row->closing_stock) }}</td>
                                         <td class="text-right font-semibold font-variant-numeric">{{ number_format($row->purchase_total, 2) }}</td>
@@ -280,7 +273,6 @@
                                     <tr class="text-slate-600">
                                         <td class="italic">No branch assigned</td>
                                         <td class="text-right">{{ number_format($unassignedOpeningStock) }}</td>
-                                        <td class="text-right">{{ number_format($unassignedPurchases) }}</td>
                                         <td class="text-right">{{ number_format($unassignedSales) }}</td>
                                         <td class="text-right">{{ number_format($unassignedClosingStock) }}</td>
                                         <td class="text-right">{{ number_format($unassignedPurchaseTotal, 2) }}</td>
@@ -289,7 +281,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Closing stock is calculated as Opening stock + Purchases - Sales. Totals use each purchase amount (or quantity × unit price).</p>
+                    <p class="mt-3 text-xs text-slate-500">Closing stock is calculated as Opening stock + Purchases - Sales. Value totals use each purchase amount (or quantity × unit price).</p>
                 </div>
             </div>
         @endif

@@ -41,6 +41,18 @@
                     @enderror
                 </div>
 
+                <div>
+                    <label for="add_amount" class="admin-prod-label">Add amount (TZS)</label>
+                    <input type="number" name="add_amount" id="add_amount" value="{{ old('add_amount') }}" min="0"
+                        step="0.01" placeholder="0.00" class="admin-prod-input">
+                    <p class="text-xs text-slate-500 mt-1.5">
+                        Current balance: {{ number_format((float) ($paymentOption->balance ?? 0), 2) }} TZS
+                    </p>
+                    @error('add_amount')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
                     <a href="{{ route('admin.payment-options.index') }}" class="admin-prod-btn-ghost">Cancel</a>
                     <button type="submit" class="admin-prod-btn-primary px-8">Update channel</button>

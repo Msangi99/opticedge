@@ -68,9 +68,17 @@ class PaymentOptionController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
+            'add_amount' => 'nullable|numeric|min:0',
         ]);
 
+        $addAmount = (float) ($validated['add_amount'] ?? 0);
+        unset($validated['add_amount']);
+
         $paymentOption->update($validated);
+
+        if ($addAmount > 0) {
+            $paymentOption->increment('balance', $addAmount);
+        }
 
         return redirect()->route('admin.payment-options.index')
             ->with('success', 'Payment option updated successfully.');

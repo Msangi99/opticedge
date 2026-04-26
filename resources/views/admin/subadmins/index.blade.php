@@ -19,6 +19,9 @@
         @if(session('error'))
             <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
+        @if($errors->any())
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ $errors->first() }}</div>
+        @endif
 
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
@@ -30,6 +33,7 @@
                             <th scope="col" class="admin-prod-th">Phone</th>
                             <th scope="col" class="admin-prod-th">Role</th>
                             <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -47,10 +51,21 @@
                                         {{ ucfirst($subadmin->status ?? 'N/A') }}
                                     </span>
                                 </td>
+                                <td class="admin-prod-cell-actions">
+                                    <form method="POST" action="{{ route('admin.users.reset-password', $subadmin) }}"
+                                        class="flex flex-wrap items-center justify-end gap-2">
+                                        @csrf
+                                        <input type="password" name="password" required minlength="8"
+                                            placeholder="New password" class="admin-prod-input w-32 py-1.5 text-sm">
+                                        <input type="password" name="password_confirmation" required minlength="8"
+                                            placeholder="Confirm" class="admin-prod-input w-28 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link whitespace-nowrap">Reset password</button>
+                                    </form>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-slate-500 py-10">
+                                <td colspan="6" class="text-center text-slate-500 py-10">
                                     No leaders yet.
                                     <a href="{{ route('admin.subadmins.create') }}" class="admin-prod-link">Add a leader</a>.
                                 </td>

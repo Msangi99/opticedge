@@ -219,6 +219,64 @@ class StockController extends Controller
         return view('admin.stock.purchases', compact('purchases', 'dateFrom', 'dateTo', 'preset', 'purchaseDashboard'));
     }
 
+    public function exportPurchasesCsv(Request $request)
+    {
+        $query = Purchase::with(['product.category', 'branch']);
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        $purchases = $query->latest('date')->get();
+        $filename = 'purchases-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($purchases) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Invoice',
+                'Date',
+                'Branch',
+                'Distributor',
+                'Product',
+                'Quantity',
+                'Unit Price',
+                'Total Amount',
+                'Paid Date',
+                'Paid Amount',
+                'Pending Amount',
+                'Sell Price',
+                'Status',
+            ]);
+
+            foreach ($purchases as $purchase) {
+                $total = (float) ($purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price));
+                $paid = (float) ($purchase->paid_amount ?? 0);
+                $pending = max(0, $total - $paid);
+
+                fputcsv($handle, [
+                    $purchase->name ?? '',
+                    $purchase->date ?? '',
+                    $purchase->branch?->name ?? '',
+                    $purchase->distributor_name ?? '',
+                    trim(($purchase->product?->category?->name ? $purchase->product->category->name . ' - ' : '') . ($purchase->product?->name ?? '')),
+                    (int) ($purchase->quantity ?? 0),
+                    number_format((float) ($purchase->unit_price ?? 0), 2, '.', ''),
+                    number_format($total, 2, '.', ''),
+                    $purchase->paid_date ?? '',
+                    number_format($paid, 2, '.', ''),
+                    number_format($pending, 2, '.', ''),
+                    $purchase->sell_price !== null ? number_format((float) $purchase->sell_price, 2, '.', '') : '',
+                    $purchase->payment_status ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     /**
      * View all payment receipts for all purchases.
      */
@@ -275,6 +333,65 @@ class StockController extends Controller
         return view('admin.stock.distribution', compact('distributionSales', 'distributionDashboard'));
     }
 
+    public function exportDistributionCsv(Request $request)
+    {
+        $query = DistributionSale::with(['product.category', 'dealer']);
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        $sales = $query->latest('date')->get();
+        $filename = 'distribution-sales-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($sales) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Date',
+                'Dealer',
+                'Seller',
+                'Product',
+                'Quantity',
+                'Buy Price',
+                'Sell Price',
+                'Total Buy',
+                'Total Sell',
+                'Paid Amount',
+                'Pending Amount',
+                'Commission',
+                'Profit',
+                'Status',
+            ]);
+
+            foreach ($sales as $sale) {
+                $totalSell = (float) ($sale->total_selling_value ?? 0);
+                $paid = (float) ($sale->paid_amount ?? 0);
+
+                fputcsv($handle, [
+                    $sale->date ?? '',
+                    $sale->dealer_name ?? $sale->dealer?->name ?? '',
+                    $sale->seller_name ?? '',
+                    trim(($sale->product?->category?->name ? $sale->product->category->name . ' - ' : '') . ($sale->product?->name ?? '')),
+                    (int) ($sale->quantity_sold ?? 0),
+                    number_format((float) ($sale->purchase_price ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->selling_price ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->total_purchase_value ?? 0), 2, '.', ''),
+                    number_format($totalSell, 2, '.', ''),
+                    number_format($paid, 2, '.', ''),
+                    number_format(max(0, $totalSell - $paid), 2, '.', ''),
+                    number_format((float) ($sale->commission ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->profit ?? 0), 2, '.', ''),
+                    $sale->status ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     /**
      * Legacy route: channel and installments are handled on the edit distribution page (like purchases).
      */
@@ -313,6 +430,58 @@ class StockController extends Controller
         ];
 
         return view('admin.stock.agent-sales', compact('agentSales', 'paymentOptions', 'agentSalesDashboard'));
+    }
+
+    public function exportAgentSalesCsv(Request $request)
+    {
+        $query = AgentSale::with(['product.category', 'agent', 'paymentOption']);
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        $sales = $query->latest('date')->get();
+        $filename = 'agent-sales-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($sales) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Date',
+                'Customer',
+                'Seller',
+                'Product',
+                'Quantity',
+                'Buy Price',
+                'Sell Price',
+                'Total Buy',
+                'Total Sell',
+                'Profit',
+                'Commission Paid',
+                'Payment Channel',
+            ]);
+
+            foreach ($sales as $sale) {
+                fputcsv($handle, [
+                    $sale->date ?? '',
+                    $sale->customer_name ?? '',
+                    $sale->seller_name ?? $sale->agent?->name ?? '',
+                    trim(($sale->product?->category?->name ? $sale->product->category->name . ' - ' : '') . ($sale->product?->name ?? '')),
+                    (int) ($sale->quantity_sold ?? 0),
+                    number_format((float) ($sale->purchase_price ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->selling_price ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->total_purchase_value ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->total_selling_value ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->profit ?? 0), 2, '.', ''),
+                    number_format((float) ($sale->commission_paid ?? 0), 2, '.', ''),
+                    $sale->paymentOption?->name ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function saveAgentSaleChannel(Request $request, $id)
@@ -620,7 +789,7 @@ class StockController extends Controller
 
         $validated = $request->validate([
             'stock_id' => 'nullable|exists:stocks,id',
-            'branch_id' => 'nullable|exists:branches,id',
+            'branch_id' => 'required|exists:branches,id',
             'name' => 'nullable|string|max:255',
             'date' => 'required|date',
             'distributor_name' => 'nullable|string|max:255',
@@ -672,10 +841,6 @@ class StockController extends Controller
         unset($validated['category_id']);
         unset($validated['model']);
         unset($validated['stock_id']);
-
-        if (empty($validated['branch_id'] ?? null)) {
-            $validated['branch_id'] = null;
-        }
 
         // Add product_id and optional stock_id
         $validated['product_id'] = $product->id;
@@ -1004,7 +1169,7 @@ class StockController extends Controller
         ]);
 
         $service = app(\App\Services\DistributionSaleService::class);
-        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']); // Now uses sell_price from purchases
+        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']); // Uses latest purchase unit_price as buy cost
         $validated['purchase_price'] = $buyPrice;
         $validated['total_selling_value'] = $validated['quantity_sold'] * $validated['selling_price'];
         $validated['total_purchase_value'] = $validated['quantity_sold'] * $buyPrice;

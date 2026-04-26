@@ -9,6 +9,14 @@
                 <p class="admin-prod-subtitle">Stock purchases, payments, and sell prices.</p>
             </div>
             <div class="flex flex-wrap gap-2 justify-end shrink-0">
+                <a href="{{ route('admin.stock.purchases.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
+                    </svg>
+                    Export CSV
+                </a>
                 <form action="{{ route('admin.stock.update-product-prices') }}" method="POST"
                     onsubmit="return confirm('This will update all existing product prices to use sell_price from their latest purchase. Continue?');"
                     class="inline">

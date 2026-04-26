@@ -48,6 +48,57 @@ class AgentCreditController extends Controller
         return view('admin.stock.agent-credits', compact('credits', 'paymentOptions', 'agentCreditsDashboard'));
     }
 
+    public function exportCsv(Request $request)
+    {
+        $query = AgentCredit::with(['agent', 'product.category', 'productListItem', 'paymentOption']);
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+
+        $credits = $query->orderByDesc('date')->orderByDesc('id')->get();
+        $filename = 'agent-credits-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($credits) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Date',
+                'Agent',
+                'Customer',
+                'Product',
+                'IMEI',
+                'Total Amount',
+                'Paid Amount',
+                'Pending Amount',
+                'Payment Channel',
+                'Status',
+            ]);
+
+            foreach ($credits as $credit) {
+                $total = (float) ($credit->total_amount ?? 0);
+                $paid = (float) ($credit->paid_amount ?? 0);
+
+                fputcsv($handle, [
+                    $credit->date ? (string) $credit->date : '',
+                    $credit->agent?->name ?? '',
+                    $credit->customer_name ?? '',
+                    trim(($credit->product?->category?->name ? $credit->product->category->name . ' - ' : '') . ($credit->product?->name ?? '')),
+                    $credit->productListItem?->imei_number ?? '',
+                    number_format($total, 2, '.', ''),
+                    number_format($paid, 2, '.', ''),
+                    number_format(max(0, $total - $paid), 2, '.', ''),
+                    $credit->paymentOption?->name ?? '',
+                    $credit->payment_status ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function edit(int $id)
     {
         $credit = AgentCredit::with(['agent', 'product.category', 'productListItem', 'payments.paymentOption'])
@@ -246,6 +297,25 @@ class AgentCreditController extends Controller
         return redirect()
             ->route('admin.stock.agent-credits')
             ->with('success', 'Payment recorded. Amount added to channel; status set to paid.');
+    }
+
+    public function updateCommission(Request $request, int $id)
+    {
+        $credit = AgentCredit::findOrFail($id);
+
+        $validated = $request->validate([
+            'commission_paid' => 'required|numeric|min:0',
+        ]);
+
+        if (Schema::hasColumn('agent_credits', 'commission_paid')) {
+            $credit->update([
+                'commission_paid' => (float) $validated['commission_paid'],
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.stock.agent-credits', $request->query())
+            ->with('success', 'Commission updated.');
     }
 
     public function update(Request $request, int $id)

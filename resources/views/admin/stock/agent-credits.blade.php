@@ -8,6 +8,14 @@
                 <h1 class="admin-prod-title">Agent credit</h1>
                 <p class="admin-prod-subtitle">Loans from agents to customers; record repayments per credit.</p>
             </div>
+            <a href="{{ route('admin.stock.agent-credits.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
+                </svg>
+                Export CSV
+            </a>
         </div>
 
         @if(session('success'))
@@ -77,6 +85,7 @@
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Total</th>
                             <th scope="col" class="admin-prod-th min-w-[200px]">Channel</th>
+                            <th scope="col" class="admin-prod-th">Comm.</th>
                             <th scope="col" class="admin-prod-th">Pending</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
@@ -120,6 +129,16 @@
                                         <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
                                     @endif
                                 </td>
+                                <td class="admin-prod-cell-actions">
+                                    <form action="{{ route('admin.stock.agent-credits-update-commission', ['id' => $credit->id] + request()->query()) }}" method="POST"
+                                        class="inline-flex items-center gap-1 flex-wrap justify-end">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="number" name="commission_paid" value="{{ $credit->commission_paid ?? 0 }}" step="0.01" min="0"
+                                            class="admin-prod-input w-24 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link text-xs">Save</button>
+                                    </form>
+                                </td>
                                 <td class="font-variant-numeric font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
                                 <td>
                                     <span
@@ -137,7 +156,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
+                                <td colspan="11" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
                             </tr>
                         @endforelse
                     </tbody>

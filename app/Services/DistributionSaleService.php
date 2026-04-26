@@ -70,7 +70,8 @@ class DistributionSaleService
     }
 
     /**
-     * Get buy price (unit) for a product from purchase data (latest purchase sell_price, else unit_price, else 0).
+     * Get buy price (unit) for a product from purchase data.
+     * Uses latest purchase unit_price as cost basis for distribution/agent-sale profit.
      */
     public function getBuyPriceForProduct(int $productId): float
     {
@@ -82,7 +83,6 @@ class DistributionSaleService
             return 0;
         }
 
-        // Use sell_price if available, otherwise fallback to unit_price
-        return (float) ($purchase->sell_price ?? $purchase->unit_price ?? 0);
+        return (float) ($purchase->unit_price ?? 0);
     }
 }

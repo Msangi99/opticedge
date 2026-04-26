@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Catalog</p>
                 <h1 class="admin-prod-title">Add product</h1>
-                <p class="admin-prod-subtitle">Choose a category, enter the model name, and add specifications.</p>
+                <p class="admin-prod-subtitle">Choose a brand, enter the model name, and add description.</p>
             </div>
             <a href="{{ route('admin.products.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -28,9 +28,9 @@
                 @csrf
 
                 <div>
-                    <label for="category_id" class="admin-prod-label">Category</label>
+                    <label for="category_id" class="admin-prod-label">Brand</label>
                     <select name="category_id" id="category_id" required class="admin-prod-select cursor-pointer">
-                        <option value="">Select category</option>
+                        <option value="">Select brand</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
@@ -43,7 +43,7 @@
                 </div>
 
                 <div>
-                    <label for="name" class="admin-prod-label">Product model</label>
+                    <label for="name" class="admin-prod-label">Model</label>
                     <input type="text" name="name" id="name" value="{{ old('name') }}" required
                         class="admin-prod-input" placeholder="e.g. Galaxy S24 Ultra 512GB">
                     @error('name')
@@ -52,7 +52,7 @@
                 </div>
 
                 <div>
-                    <label for="description" class="admin-prod-label">Description / specifications</label>
+                    <label for="description" class="admin-prod-label">Description</label>
                     <textarea name="description" id="description" rows="8" class="admin-prod-textarea"
                         placeholder="Features, specs, condition notes…">{{ old('description') }}</textarea>
                     @error('description')

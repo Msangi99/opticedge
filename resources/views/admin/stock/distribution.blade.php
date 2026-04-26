@@ -9,6 +9,14 @@
                 <p class="admin-prod-subtitle">Sales to dealers (buy from purchases, sell from orders).</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <a href="{{ route('admin.stock.distribution.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
+                    </svg>
+                    Export CSV
+                </a>
                 <a href="{{ route('admin.stock.create-distribution') }}"
                     class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add</a>
             </div>

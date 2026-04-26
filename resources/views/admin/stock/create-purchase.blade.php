@@ -71,9 +71,9 @@
 
                         <!-- Branch -->
                         <div class="col-span-2">
-                            <label for="branch_id" class="admin-prod-label">Branch</label>
-                            <select name="branch_id" id="branch_id" class="admin-prod-select">
-                                <option value="">— Optional —</option>
+                            <label for="branch_id" class="admin-prod-label">Branch <span class="text-red-500">*</span></label>
+                            <select name="branch_id" id="branch_id" required class="admin-prod-select">
+                                <option value="">Select branch…</option>
                                 @foreach($branches ?? [] as $branch)
                                     <option value="{{ $branch->id }}" {{ (string) old('branch_id') === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                                 @endforeach
@@ -176,6 +176,13 @@
             if (price <= 0) {
                 alert('❌ Unit price must be greater than 0');
                 document.getElementById('unit_price')?.focus();
+                return false;
+            }
+
+            const branchId = document.getElementById('branch_id')?.value || '';
+            if (!branchId) {
+                alert('❌ Branch is required');
+                document.getElementById('branch_id')?.focus();
                 return false;
             }
             

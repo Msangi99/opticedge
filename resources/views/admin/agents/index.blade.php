@@ -20,6 +20,9 @@
         @if(session('error'))
             <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ session('error') }}</div>
         @endif
+        @if($errors->any())
+            <div class="admin-prod-alert admin-prod-alert--error mb-4" role="alert">{{ $errors->first() }}</div>
+        @endif
 
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
@@ -51,8 +54,19 @@
                                     </span>
                                 </td>
                                 <td class="admin-prod-cell-actions">
-                                    <a href="{{ route('admin.agents.show', $agent) }}" class="admin-prod-link">View &amp;
-                                        assign</a>
+                                    <div class="flex flex-wrap items-center justify-end gap-2">
+                                        <a href="{{ route('admin.agents.show', $agent) }}" class="admin-prod-link">View &amp;
+                                            assign</a>
+                                        <form method="POST" action="{{ route('admin.users.reset-password', $agent) }}"
+                                            class="flex flex-wrap items-center gap-2">
+                                            @csrf
+                                            <input type="password" name="password" required minlength="8"
+                                                placeholder="New password" class="admin-prod-input w-32 py-1.5 text-sm">
+                                            <input type="password" name="password_confirmation" required minlength="8"
+                                                placeholder="Confirm" class="admin-prod-input w-28 py-1.5 text-sm">
+                                            <button type="submit" class="admin-prod-link whitespace-nowrap">Reset password</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
