@@ -1,5 +1,8 @@
 <x-admin-layout>
     @include('admin.products.partials.styles')
+    @push('styles')
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    @endpush
 
     <div class="admin-prod-page">
         <div class="admin-prod-toolbar">
@@ -26,7 +29,7 @@
 
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush">
-                <table>
+                <table id="models-table">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Image</th>
@@ -89,9 +92,34 @@
                     </tbody>
                 </table>
             </div>
-            <div class="admin-prod-pagination">
-                {{ $products->links() }}
-            </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.jQuery || !jQuery.fn.DataTable) {
+                    return;
+                }
+
+                jQuery('#models-table').DataTable({
+                    pageLength: 25,
+                    order: [],
+                    columnDefs: [
+                        { targets: [0, 4], orderable: false, searchable: false }
+                    ],
+                    language: {
+                        search: 'Search models:',
+                        lengthMenu: 'Show _MENU_ models',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ models',
+                        emptyTable: 'No models found.'
+                    }
+                });
+            });
+        </script>
+    @endpush
 </x-admin-layout>

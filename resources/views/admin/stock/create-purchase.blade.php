@@ -161,39 +161,37 @@
                 </form>
         </div>
     </div>
-    
-    <script>
-        function validatePurchaseForm() {
-            const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
-            const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
-            
-            if (quantity <= 0) {
-                alert('❌ Quantity must be greater than 0');
-                document.getElementById('quantity')?.focus();
-                return false;
-            }
-            
-            if (price <= 0) {
-                alert('❌ Unit price must be greater than 0');
-                document.getElementById('unit_price')?.focus();
-                return false;
-            }
-
-            const branchId = document.getElementById('branch_id')?.value || '';
-            if (!branchId) {
-                alert('❌ Branch is required');
-                document.getElementById('branch_id')?.focus();
-                return false;
-            }
-            
-            const total = (quantity * price).toFixed(2);
-            return confirm('✓ Confirm purchase?\n\nQuantity: ' + quantity + '\nUnit Price: ' + price.toFixed(2) + ' TZS\nTotal: ' + total + ' TZS');
-        }
-
     @push('scripts')
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
+            function validatePurchaseForm() {
+                const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
+                const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
+                
+                if (quantity <= 0) {
+                    alert('❌ Quantity must be greater than 0');
+                    document.getElementById('quantity')?.focus();
+                    return false;
+                }
+                
+                if (price <= 0) {
+                    alert('❌ Unit price must be greater than 0');
+                    document.getElementById('unit_price')?.focus();
+                    return false;
+                }
+
+                const branchId = document.getElementById('branch_id')?.value || '';
+                if (!branchId) {
+                    alert('❌ Branch is required');
+                    document.getElementById('branch_id')?.focus();
+                    return false;
+                }
+                
+                const total = (quantity * price).toFixed(2);
+                return confirm('✓ Confirm purchase?\n\nQuantity: ' + quantity + '\nUnit Price: ' + price.toFixed(2) + ' TZS\nTotal: ' + total + ' TZS');
+            }
+
             function calculateTotal() {
                 const qty = parseFloat(document.getElementById('quantity')?.value) || 0;
                 const price = parseFloat(document.getElementById('unit_price')?.value) || 0;
@@ -238,6 +236,13 @@
                         placeholder: 'Select vendor…',
                         width: '100%',
                         allowClear: true
+                    });
+
+                    var $branchSel = jQuery('#branch_id');
+                    $branchSel.select2({
+                        placeholder: 'Select branch…',
+                        width: '100%',
+                        allowClear: false
                     });
                 }
                 @endif
