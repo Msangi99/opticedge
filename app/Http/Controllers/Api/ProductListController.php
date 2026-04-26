@@ -34,7 +34,7 @@ class ProductListController extends Controller
         $validated = $request->validate([
             'purchase_id' => 'nullable|exists:purchases,id',
             'stock_id' => 'nullable|exists:stocks,id',
-            'category_id' => 'nullable|exists:categories,id',
+            'category_id' => 'nullable|exists:brands,id',
             'model' => 'nullable|string|max:255',
             'imei_number' => 'required|string|max:512|unique:product_list,imei_number',
         ]);

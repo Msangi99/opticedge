@@ -14,8 +14,8 @@ class AgentCustomerNeedController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'product_id' => 'required|exists:products,id',
+            'category_id' => 'required|exists:brands,id',
+            'product_id' => 'required|exists:models,id',
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:64',
             'branch_id' => 'nullable|exists:branches,id',

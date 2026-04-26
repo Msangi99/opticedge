@@ -453,7 +453,7 @@ class StockController extends Controller
         $validated = $request->validate([
             'stock_id' => 'required|exists:stocks,id',
             'model' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required|exists:brands,id',
             'imei_numbers' => 'required|string|max:65535',
         ]);
 
@@ -609,7 +609,7 @@ class StockController extends Controller
     {
         if (! $request->filled('stock_id')) {
             $request->validate([
-                'product_id' => 'required|exists:products,id',
+                'product_id' => 'required|exists:models,id',
             ]);
             $selectedProduct = Product::findOrFail($request->product_id);
             $request->merge([
@@ -624,7 +624,7 @@ class StockController extends Controller
             'name' => 'nullable|string|max:255',
             'date' => 'required|date',
             'distributor_name' => 'nullable|string|max:255',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required|exists:brands,id',
             'model' => 'required|string|max:255',
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
@@ -997,7 +997,7 @@ class StockController extends Controller
             'dealer_id' => 'nullable|exists:users,id',
             'dealer_name' => 'nullable|string|max:255',
             'seller_name' => 'nullable|string|max:255',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:models,id',
             'quantity_sold' => 'required|integer|min:1',
             'selling_price' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -1158,7 +1158,7 @@ class StockController extends Controller
             'date' => 'required|date',
             'customer_name' => 'nullable|string|max:255',
             'seller_name' => 'nullable|string|max:255',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:models,id',
             'quantity_sold' => 'required|integer|min:1',
             'selling_price' => 'required|numeric|min:0',
         ]);

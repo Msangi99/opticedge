@@ -109,7 +109,7 @@ class AgentController extends Controller
     public function transferableImeis(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:models,id',
         ]);
 
         $service = app(AgentProductTransferService::class);

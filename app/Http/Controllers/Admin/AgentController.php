@@ -53,7 +53,7 @@ class AgentController extends Controller
     public function assignableImeis(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:models,id',
         ]);
 
         $items = ProductListItem::assignableToAgent((int) $validated['product_id'])
@@ -72,7 +72,7 @@ class AgentController extends Controller
     {
         $validated = $request->validate([
             'agent_id' => 'required|exists:users,id',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:models,id',
             'product_list_ids' => 'required|array|min:1',
             'product_list_ids.*' => 'distinct|integer|exists:product_list,id',
         ]);

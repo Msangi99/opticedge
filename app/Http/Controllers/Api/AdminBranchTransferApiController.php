@@ -13,7 +13,7 @@ class AdminBranchTransferApiController extends Controller
     {
         $validated = $request->validate([
             'branch_id' => 'nullable',
-            'product_id' => 'nullable|exists:products,id',
+            'product_id' => 'nullable|exists:models,id',
         ]);
 
         $service = app(BranchTransferService::class);

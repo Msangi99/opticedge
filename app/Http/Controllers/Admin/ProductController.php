@@ -30,7 +30,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required|exists:brands,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
@@ -62,7 +62,7 @@ class ProductController extends Controller
             'images' => $imagePaths,
         ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product added successfully.');
+        return redirect()->route('admin.products.index')->with('success', 'Model added successfully.');
     }
     /**
      * Show product list items (IMEI numbers) for this model.
@@ -85,7 +85,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required|exists:brands,id',
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',

@@ -44,7 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('purchases', [ApiPurchaseController::class, 'index']);
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
-        Route::get('categories', [ApiCategoryController::class, 'index']);
+        Route::get('brands', [ApiCategoryController::class, 'index']);
+        Route::get('categories', [ApiCategoryController::class, 'index']); // backward compatible alias
         Route::post('product-list', [ProductListController::class, 'store']);
         Route::post('product-list/batch', [ProductListController::class, 'batchStore']);
         Route::post('barcodes/decode-image', [BarcodeDecodeController::class, 'decodeImage']);
@@ -79,8 +80,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('sale-config', [ApiPaymentOptionController::class, 'agentSaleConfig']);
         Route::post('sell', [ProductListController::class, 'sell']);
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
-        Route::get('catalog/categories', [AgentCatalogController::class, 'categories']);
-        Route::get('catalog/categories/{category}/products', [AgentCatalogController::class, 'productsByCategory']);
+        Route::get('catalog/brands', [AgentCatalogController::class, 'categories']);
+        Route::get('catalog/brands/{category}/models', [AgentCatalogController::class, 'productsByCategory']);
+        Route::get('catalog/categories', [AgentCatalogController::class, 'categories']); // backward compatible alias
+        Route::get('catalog/categories/{category}/products', [AgentCatalogController::class, 'productsByCategory']); // backward compatible alias
         Route::get('branches', [ApiBranchController::class, 'index']);
         Route::post('customer-needs', [AgentCustomerNeedController::class, 'store']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
