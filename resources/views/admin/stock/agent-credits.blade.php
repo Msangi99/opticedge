@@ -110,21 +110,17 @@
                                     @if($paymentOptions->isEmpty())
                                         <span class="text-slate-500 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
                                     @elseif($pend > 0.0001)
-                                        <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
-                                            class="flex flex-wrap items-center gap-2">
-                                            @csrf
-                                            <select name="payment_option_id" required
-                                                class="admin-prod-select text-sm min-w-[150px] max-w-[220px] py-1.5"
-                                                title="Bank / payment channel">
-                                                <option value="">Choose channel…</option>
-                                                @foreach($paymentOptions as $option)
-                                                    <option value="{{ $option->id }}" @selected((int) ($credit->payment_option_id ?? 0) === (int) $option->id)>
-                                                        {{ $option->name }} ({{ number_format((float) $option->balance, 2) }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-3 shrink-0">Pay</button>
-                                        </form>
+                                        @if($defaultWatuChannel)
+                                            <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
+                                                class="flex flex-wrap items-center gap-2">
+                                                @csrf
+                                                <input type="hidden" name="payment_option_id" value="{{ $defaultWatuChannel->id }}">
+                                                <span class="text-sm font-medium text-slate-700">{{ $defaultWatuChannel->name }}</span>
+                                                <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-3 shrink-0">Pay</button>
+                                            </form>
+                                        @else
+                                            <span class="text-slate-500 text-sm">No default Watu channel set</span>
+                                        @endif
                                     @else
                                         <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
                                     @endif
