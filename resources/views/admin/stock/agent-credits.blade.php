@@ -107,22 +107,14 @@
                                 <td class="font-mono text-xs text-slate-600">{{ $credit->productListItem?->imei_number ?? '—' }}</td>
                                 <td class="font-variant-numeric">{{ number_format($t, 2) }}</td>
                                 <td class="align-middle">
-                                    @if($paymentOptions->isEmpty())
-                                        <span class="text-slate-500 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
-                                    @elseif($pend > 0.0001)
-                                        @if($defaultWatuChannel)
-                                            <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
-                                                class="flex flex-wrap items-center gap-2">
-                                                @csrf
-                                                <input type="hidden" name="payment_option_id" value="{{ $defaultWatuChannel->id }}">
-                                                <span class="text-sm font-medium text-slate-700">{{ $defaultWatuChannel->name }}</span>
-                                                <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-3 shrink-0">Pay</button>
-                                            </form>
-                                        @else
-                                            <span class="text-slate-500 text-sm">No default Watu channel set</span>
-                                        @endif
-                                    @else
-                                        <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? '—' }}</span>
+                                    <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? $defaultWatuChannel?->name ?? '—' }}</span>
+                                    @if($pend > 0.0001 && $defaultWatuChannel)
+                                        <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
+                                            class="inline-block mt-1">
+                                            @csrf
+                                            <input type="hidden" name="payment_option_id" value="{{ $defaultWatuChannel->id }}">
+                                            <button type="submit" class="admin-prod-btn-primary text-xs py-1 px-2 shrink-0">Pay remaining</button>
+                                        </form>
                                     @endif
                                 </td>
                                 <td class="admin-prod-cell-actions min-w-[190px]">

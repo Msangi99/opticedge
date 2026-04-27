@@ -584,25 +584,29 @@ class ProductListController extends Controller
         }
 
         $eps = 0.0001;
-        $paymentOptionId = null;
 
-        // Watu tab should always create AgentCredit and use default Watu channel.
-        $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
-        if (is_numeric($watuDefaultRaw)) {
-            $candidateId = (int) $watuDefaultRaw;
-            $candidate = PaymentOption::visible()->find($candidateId);
-            if ($candidate && $candidate->isWatuAgentCreditChannel()) {
-                $paymentOptionId = $candidate->id;
-            }
-        }
+        // Use the channel submitted from the app if provided
+        $paymentOptionId = isset($validated['payment_option_id']) ? (int) $validated['payment_option_id'] : null;
 
+        // If no channel submitted, fall back to default Watu channel
         if ($paymentOptionId === null) {
-            $fallbackWatu = PaymentOption::visible()
-                ->orderBy('name')
-                ->get()
-                ->first(fn ($opt) => $opt->isWatuAgentCreditChannel());
-            if ($fallbackWatu) {
-                $paymentOptionId = $fallbackWatu->id;
+            $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+            if (is_numeric($watuDefaultRaw)) {
+                $candidateId = (int) $watuDefaultRaw;
+                $candidate = PaymentOption::visible()->find($candidateId);
+                if ($candidate && $candidate->isWatuAgentCreditChannel()) {
+                    $paymentOptionId = $candidate->id;
+                }
+            }
+
+            if ($paymentOptionId === null) {
+                $fallbackWatu = PaymentOption::visible()
+                    ->orderBy('name')
+                    ->get()
+                    ->first(fn ($opt) => $opt->isWatuAgentCreditChannel());
+                if ($fallbackWatu) {
+                    $paymentOptionId = $fallbackWatu->id;
+                }
             }
         }
 
