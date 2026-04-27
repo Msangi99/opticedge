@@ -11,6 +11,31 @@ use Illuminate\Support\Facades\Auth;
 
 class AgentCustomerNeedController extends Controller
 {
+    public function index(): JsonResponse
+    {
+        $rows = CustomerNeed::query()
+            ->where('agent_id', Auth::id())
+            ->with(['category:id,name', 'product:id,name', 'branch:id,name'])
+            ->latest('id')
+            ->get();
+
+        return response()->json([
+            'data' => $rows->map(fn (CustomerNeed $need) => $this->serializeNeed($need))->values()->all(),
+        ]);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $need = CustomerNeed::query()
+            ->where('agent_id', Auth::id())
+            ->with(['category:id,name', 'product:id,name', 'branch:id,name'])
+            ->findOrFail($id);
+
+        return response()->json([
+            'data' => $this->serializeNeed($need),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -41,14 +66,20 @@ class AgentCustomerNeedController extends Controller
 
         return response()->json([
             'message' => 'Customer need recorded.',
-            'data' => [
-                'id' => $need->id,
-                'category' => $need->category?->name,
-                'product' => $need->product?->name,
-                'customer_name' => $need->customer_name,
-                'customer_phone' => $need->customer_phone,
-                'branch' => $need->branch?->name,
-            ],
+            'data' => $this->serializeNeed($need),
         ], 201);
+    }
+
+    private function serializeNeed(CustomerNeed $need): array
+    {
+        return [
+            'id' => $need->id,
+            'category' => $need->category?->name,
+            'product' => $need->product?->name,
+            'customer_name' => $need->customer_name,
+            'customer_phone' => $need->customer_phone,
+            'branch' => $need->branch?->name,
+            'created_at' => $need->created_at?->toIso8601String(),
+        ];
     }
 }

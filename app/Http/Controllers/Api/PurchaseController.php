@@ -7,8 +7,49 @@ use App\Models\Purchase;
 
 class PurchaseController extends Controller
 {
+    private function serializePurchase(Purchase $p): array
+    {
+        $qty = (int) ($p->quantity ?? 0);
+        $unit = (float) ($p->unit_price ?? 0);
+        $total = (float) ($p->total_amount ?? ($qty * $unit));
+        $paid = (float) ($p->paid_amount ?? 0);
+        $pending = max(0, $total - $paid);
+
+        return [
+            'id' => $p->id,
+            'name' => $p->name ?? 'Purchase #' . $p->id,
+            // Legacy summary fields used by Stocks page.
+            'limit' => $qty,
+            'available' => (int) ($p->limit_remaining ?? 0),
+            'available_status' => $p->limit_status ?? '–',
+            'status' => $p->payment_status ?? '–',
+            // Extended details aligned with website purchases table.
+            'date' => $p->date,
+            'branch_id' => $p->branch_id,
+            'branch_name' => $p->branch?->name,
+            'distributor_name' => $p->distributor_name,
+            'product_name' => $p->product?->name ?? 'N/A',
+            'product_category_name' => $p->product?->category?->name ?? null,
+            'quantity' => $qty,
+            'unit_price' => $unit,
+            'total_amount' => $total,
+            'paid_date' => $p->paid_date,
+            'paid_amount' => $paid,
+            'pending_amount' => $pending,
+            'sell_price' => $p->sell_price !== null ? (float) $p->sell_price : null,
+            'payment_status' => $p->payment_status ?? '–',
+            'payment_option_id' => $p->payment_option_id,
+            'payment_option_name' => $p->paymentOption?->name,
+            'payment_receipt_image' => $p->payment_receipt_image,
+            'payment_receipt_url' => $p->payment_receipt_image ? asset('storage/' . $p->payment_receipt_image) : null,
+            'created_at' => $p->created_at?->toISOString(),
+            'updated_at' => $p->updated_at?->toISOString(),
+        ];
+    }
+
     /**
-     * List all purchases for Stocks page: name, limit (quantity), available (limit_status), status (payment_status).
+     * List purchases for admin app.
+     * Includes stock summary fields plus purchase information shown on website purchases page.
      */
     public function index()
     {
@@ -16,21 +57,42 @@ class PurchaseController extends Controller
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
             ->get()
-            ->map(function ($p) {
+            ->map(fn ($p) => $this->serializePurchase($p))
+            ->values()
+            ->all();
+
+        return response()->json(['data' => $purchases]);
+    }
+
+    /**
+     * One purchase details for mobile app.
+     */
+    public function show(int $id)
+    {
+        $purchase = Purchase::with([
+            'product.category',
+            'stock',
+            'branch',
+            'paymentOption',
+            'payments.paymentOption',
+        ])->findOrFail($id);
+
+        $data = $this->serializePurchase($purchase);
+        $data['payments'] = $purchase->payments
+            ->map(function ($payment) {
                 return [
-                    'id' => $p->id,
-                    'name' => $p->name ?? 'Purchase #' . $p->id,
-                    'limit' => (int) $p->quantity,
-                    'available' => $p->limit_status ?? '–',
-                    'status' => $p->payment_status ?? '–',
-                    'branch_id' => $p->branch_id,
-                    'branch_name' => $p->branch?->name,
+                    'id' => $payment->id,
+                    'amount' => (float) ($payment->amount ?? 0),
+                    'paid_date' => optional($payment->paid_date)->toDateString(),
+                    'payment_option_id' => $payment->payment_option_id,
+                    'payment_option_name' => $payment->paymentOption?->name,
+                    'created_at' => $payment->created_at?->toISOString(),
                 ];
             })
             ->values()
             ->all();
 
-        return response()->json(['data' => $purchases]);
+        return response()->json(['data' => $data]);
     }
 
     /**

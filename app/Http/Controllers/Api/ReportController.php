@@ -142,4 +142,38 @@ class ReportController extends Controller
             'data' => $payload,
         ]);
     }
+
+    public function branchDetail(int $branchId)
+    {
+        $branch = Branch::findOrFail($branchId);
+        $purchases = Purchase::with('product.category')
+            ->where('branch_id', $branchId)
+            ->latest('date')
+            ->take(100)
+            ->get()
+            ->map(function ($p) {
+                $total = (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name ?? 'Purchase #'.$p->id,
+                    'date' => $p->date?->format('Y-m-d'),
+                    'product_name' => $p->product?->name ?? '–',
+                    'category_name' => $p->product?->category?->name ?? '–',
+                    'quantity' => (int) ($p->quantity ?? 0),
+                    'total_amount' => $total,
+                    'paid_amount' => (float) ($p->paid_amount ?? 0),
+                    'payment_status' => $p->payment_status ?? '–',
+                ];
+            })
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data' => [
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->name,
+                'purchases' => $purchases,
+            ],
+        ]);
+    }
 }

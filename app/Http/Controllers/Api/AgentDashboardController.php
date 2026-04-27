@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
+use App\Models\AgentCredit;
 use App\Models\AgentProductListAssignment;
 use App\Models\AgentSale;
 use App\Models\PendingSale;
@@ -239,6 +240,69 @@ class AgentDashboardController extends Controller
         $title = 'RECEIPT';
 
         return PdfDownload::fromView('admin.stock.receipt-invoice', compact('sale', 'invoiceNo', 'invoiceDate', 'title'), $filename);
+    }
+
+    public function sales()
+    {
+        $agentId = Auth::id();
+
+        $sales = AgentSale::query()
+            ->where('agent_id', $agentId)
+            ->with(['product.category', 'paymentOption', 'productListItem'])
+            ->latest('date')
+            ->latest('id')
+            ->take(100)
+            ->get()
+            ->map(fn (AgentSale $sale) => [
+                'record_type' => 'agent_sale',
+                'id' => $sale->id,
+                'customer_name' => $sale->customer_name ?? '–',
+                'product_name' => $sale->product?->name ?? '–',
+                'category_name' => $sale->product?->category?->name ?? '–',
+                'imei_number' => $sale->productListItem?->imei_number,
+                'quantity_sold' => (int) ($sale->quantity_sold ?? 0),
+                'selling_price' => (float) ($sale->selling_price ?? 0),
+                'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
+                'profit' => (float) ($sale->profit ?? 0),
+                'payment_option' => $sale->paymentOption?->name,
+                'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
+            ])
+            ->values()
+            ->all();
+
+        return response()->json(['data' => $sales]);
+    }
+
+    public function saleDetail(int $id)
+    {
+        $sale = AgentSale::query()
+            ->where('agent_id', Auth::id())
+            ->with(['product.category', 'paymentOption', 'productListItem'])
+            ->findOrFail($id);
+
+        $credit = AgentCredit::query()
+            ->where('agent_id', Auth::id())
+            ->where('product_list_id', $sale->product_list_id)
+            ->latest('id')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'id' => $sale->id,
+                'customer_name' => $sale->customer_name,
+                'product_name' => $sale->product?->name,
+                'category_name' => $sale->product?->category?->name,
+                'imei_number' => $sale->productListItem?->imei_number,
+                'quantity_sold' => (int) ($sale->quantity_sold ?? 0),
+                'selling_price' => (float) ($sale->selling_price ?? 0),
+                'total_selling_value' => (float) ($sale->total_selling_value ?? 0),
+                'profit' => (float) ($sale->profit ?? 0),
+                'payment_option' => $sale->paymentOption?->name,
+                'date' => $sale->date ? (is_string($sale->date) ? Carbon::parse($sale->date)->toISOString() : $sale->date->toISOString()) : null,
+                'credit_id' => $credit?->id,
+                'invoice_endpoint' => '/agent/sales/' . $sale->id . '/invoice',
+            ],
+        ]);
     }
 
     private function mapInventoryItem(?ProductListItem $item, array $extra = []): ?array

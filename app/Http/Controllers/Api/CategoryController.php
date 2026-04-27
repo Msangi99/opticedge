@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -25,5 +27,22 @@ class CategoryController extends Controller
         }
 
         return response()->json(['data' => $categories]);
+    }
+
+    /**
+     * Distinct models (products) in a category — same catalog rows as agent catalog, for admin UI.
+     */
+    public function models(int $category): JsonResponse
+    {
+        if (! Category::whereKey($category)->exists()) {
+            return response()->json(['message' => 'Category not found.'], 404);
+        }
+
+        $products = Product::query()
+            ->where('category_id', $category)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json(['data' => $products]);
     }
 }

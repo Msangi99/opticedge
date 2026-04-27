@@ -164,6 +164,54 @@ class AgentCreditApiController extends Controller
         ], 200);
     }
 
+    public function show(int $id)
+    {
+        $credit = AgentCredit::query()
+            ->where('agent_id', Auth::id())
+            ->with(['product.category', 'productListItem', 'paymentOption', 'payments.paymentOption'])
+            ->findOrFail($id);
+
+        $total = (float) $credit->total_amount;
+        $paid = (float) ($credit->paid_amount ?? 0);
+
+        return response()->json([
+            'data' => [
+                'id' => $credit->id,
+                'customer_name' => $credit->customer_name,
+                'customer_phone' => $credit->customer_phone,
+                'kin_name' => $credit->kin_name,
+                'kin_phone' => $credit->kin_phone,
+                'description' => $credit->installment_notes,
+                'date' => $credit->date ? $credit->date->format('Y-m-d') : null,
+                'total_amount' => $total,
+                'paid_amount' => $paid,
+                'remaining' => max(0, $total - $paid),
+                'payment_status' => $credit->payment_status,
+                'product_label' => ($credit->product?->category?->name ?? '—').' – '.($credit->product?->name ?? '—'),
+                'imei_number' => $credit->productListItem?->imei_number,
+                'installment_count' => $credit->installment_count,
+                'installment_amount' => $credit->installment_amount !== null ? (float) $credit->installment_amount : null,
+                'first_due_date' => $credit->first_due_date ? $credit->first_due_date->format('Y-m-d') : null,
+                'payment_option' => $credit->paymentOption ? [
+                    'id' => $credit->paymentOption->id,
+                    'name' => $credit->paymentOption->name,
+                ] : null,
+                'payments' => $credit->payments->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'amount' => (float) $payment->amount,
+                        'paid_date' => $payment->paid_date ? $payment->paid_date->format('Y-m-d') : null,
+                        'notes' => $payment->notes,
+                        'payment_option' => $payment->paymentOption ? [
+                            'id' => $payment->paymentOption->id,
+                            'name' => $payment->paymentOption->name,
+                        ] : null,
+                    ];
+                })->values()->all(),
+            ],
+        ]);
+    }
+
     public function downloadInvoice(int $id)
     {
         $credit = AgentCredit::query()

@@ -44,16 +44,30 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('branches', [ApiBranchController::class, 'index']);
         Route::get('purchases', [ApiPurchaseController::class, 'index']);
         Route::get('purchases/for-add-product', [ApiPurchaseController::class, 'forAddProduct']);
+        Route::get('purchases/{id}', [ApiPurchaseController::class, 'show']);
         Route::get('purchases/{id}/items', [ApiPurchaseController::class, 'items']);
         Route::get('brands', [ApiCategoryController::class, 'index']);
         Route::get('categories', [ApiCategoryController::class, 'index']); // backward compatible alias
+        Route::get('categories/{category}/models', [ApiCategoryController::class, 'models']);
         Route::post('product-list', [ProductListController::class, 'store']);
         Route::post('product-list/batch', [ProductListController::class, 'batchStore']);
         Route::post('barcodes/decode-image', [BarcodeDecodeController::class, 'decodeImage']);
         Route::get('expenses', [ApiExpenseController::class, 'index']);
+        Route::get('expenses/{id}', [ApiExpenseController::class, 'show']);
+        Route::post('expenses', [ApiExpenseController::class, 'store']);
+        Route::put('expenses/{id}', [ApiExpenseController::class, 'update']);
+        Route::delete('expenses/{id}', [ApiExpenseController::class, 'destroy']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'index']);
+        Route::post('payment-options/transfers', [ApiPaymentOptionController::class, 'transfer']);
+        Route::get('payment-options/transfers/history', [ApiPaymentOptionController::class, 'transferHistory']);
+        Route::get('payment-options/{id}', [ApiPaymentOptionController::class, 'show']);
+        Route::post('payment-options', [ApiPaymentOptionController::class, 'store']);
+        Route::put('payment-options/{id}', [ApiPaymentOptionController::class, 'update']);
+        Route::delete('payment-options/{id}', [ApiPaymentOptionController::class, 'destroy']);
+        Route::patch('payment-options/{id}/toggle-visibility', [ApiPaymentOptionController::class, 'toggleVisibility']);
         Route::get('agent-sales', [ApiAgentSaleController::class, 'index']);
         Route::get('orders', [ApiOrderController::class, 'index']);
+        Route::get('orders/{order}', [ApiOrderController::class, 'show']);
         Route::get('users', [ApiUserController::class, 'index']); // ?role=customer|dealer|agent
 
         Route::get('agents/products-for-assign', [AdminAgentAssignmentApiController::class, 'productsForAssign'])
@@ -65,10 +79,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('agents/assignments', [AdminAgentAssignmentApiController::class, 'store'])
             ->name('admin.agents.assignments.store');
         Route::get('distribution-sales', [ApiDistributionSaleController::class, 'index']);
+        Route::get('distribution-sales/{id}', [ApiDistributionSaleController::class, 'show']);
         Route::get('pending-sales', [ApiPendingSaleController::class, 'index']);
+        Route::get('pending-sales/{id}', [ApiPendingSaleController::class, 'show']);
+        Route::post('pending-sales/{id}/save', [ApiPendingSaleController::class, 'save']);
         Route::get('reports', [ApiReportController::class, 'index']);
+        Route::get('reports/branches/{branchId}', [ApiReportController::class, 'branchDetail']);
         Route::get('settings', [ApiSettingController::class, 'index']);
         Route::put('settings', [ApiSettingController::class, 'update']);
+        Route::get('settings/roles', [ApiSettingController::class, 'roles']);
+        Route::post('settings/roles', [ApiSettingController::class, 'storeRole']);
+        Route::get('settings/roles/{id}/permissions', [ApiSettingController::class, 'rolePermissions']);
+        Route::put('settings/roles/{id}/permissions', [ApiSettingController::class, 'updateRolePermissions']);
+        Route::post('agent-sales/{id}/channel', [ApiAgentSaleController::class, 'updateChannel']);
+        Route::post('agent-sales/{id}/commission', [ApiAgentSaleController::class, 'updateCommission']);
 
         Route::get('agent-transfers', [AdminAgentProductTransferApiController::class, 'index']);
         Route::get('agent-transfers/{agent_product_transfer}', [AdminAgentProductTransferApiController::class, 'show']);
@@ -96,14 +120,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('catalog/categories/{category}/products', [AgentCatalogController::class, 'productsByCategory']); // backward compatible alias
         Route::get('branches', [ApiBranchController::class, 'index']);
         Route::post('customer-needs', [AgentCustomerNeedController::class, 'store']);
+        Route::get('customer-needs', [AgentCustomerNeedController::class, 'index']);
+        Route::get('customer-needs/{id}', [AgentCustomerNeedController::class, 'show']);
         Route::get('credits', [AgentCreditApiController::class, 'index']);
+        Route::get('credits/{id}', [AgentCreditApiController::class, 'show']);
         Route::post('credits/{id}/pay', [AgentCreditApiController::class, 'payInstallment']);
         Route::get('credits/{id}/invoice', [AgentCreditApiController::class, 'downloadInvoice']);
+        Route::get('sales', [\App\Http\Controllers\Api\AgentDashboardController::class, 'sales']);
+        Route::get('sales/{id}', [\App\Http\Controllers\Api\AgentDashboardController::class, 'saleDetail']);
         Route::get('sales/{id}/invoice', [\App\Http\Controllers\Api\AgentDashboardController::class, 'downloadSaleInvoice']);
 
         Route::get('transfer-recipients', [AgentProductTransferApiController::class, 'transferRecipients']);
         Route::get('transferable-imeis', [AgentProductTransferApiController::class, 'transferableImeis']);
         Route::get('transfers', [AgentProductTransferApiController::class, 'index']);
+        Route::get('transfers/{agent_product_transfer}', [AgentProductTransferApiController::class, 'show']);
         Route::post('transfers', [AgentProductTransferApiController::class, 'store']);
         Route::post('transfers/{agent_product_transfer}/cancel', [AgentProductTransferApiController::class, 'cancel']);
     });

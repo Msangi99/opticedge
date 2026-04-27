@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentOption;
+use App\Models\PaymentTransfer;
 use App\Models\Setting;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentOptionController extends Controller
 {
@@ -74,6 +77,160 @@ class PaymentOptionController extends Controller
                 'watu_channel' => $watuChannel
                     ? ['id' => $watuChannel->id, 'name' => $watuChannel->name]
                     : null,
+            ],
+        ]);
+    }
+
+    public function show(int $id)
+    {
+        $opt = PaymentOption::findOrFail($id);
+        return response()->json([
+            'data' => [
+                'id' => $opt->id,
+                'name' => $opt->name,
+                'type' => $opt->type,
+                'balance' => (float) $opt->balance,
+                'opening_balance' => (float) $opt->opening_balance,
+                'is_hidden' => (bool) $opt->is_hidden,
+            ],
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:mobile,bank,cash',
+            'name' => 'required|string|max:255',
+        ]);
+
+        $validated['opening_balance'] = 0;
+        $validated['balance'] = 0;
+        $opt = PaymentOption::create($validated);
+
+        return response()->json([
+            'message' => 'Payment option created successfully.',
+            'data' => [
+                'id' => $opt->id,
+                'name' => $opt->name,
+                'type' => $opt->type,
+                'balance' => (float) $opt->balance,
+                'opening_balance' => (float) $opt->opening_balance,
+                'is_hidden' => (bool) $opt->is_hidden,
+            ],
+        ], 201);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $opt = PaymentOption::findOrFail($id);
+        $validated = $request->validate([
+            'type' => 'required|in:mobile,bank,cash',
+            'name' => 'required|string|max:255',
+            'add_amount' => 'nullable|numeric|min:0',
+        ]);
+        $addAmount = (float) ($validated['add_amount'] ?? 0);
+        unset($validated['add_amount']);
+        $opt->update($validated);
+        if ($addAmount > 0) {
+            $opt->increment('balance', $addAmount);
+        }
+        $opt->refresh();
+        return response()->json([
+            'message' => 'Payment option updated successfully.',
+            'data' => [
+                'id' => $opt->id,
+                'name' => $opt->name,
+                'type' => $opt->type,
+                'balance' => (float) $opt->balance,
+                'opening_balance' => (float) $opt->opening_balance,
+                'is_hidden' => (bool) $opt->is_hidden,
+            ],
+        ]);
+    }
+
+    public function destroy(int $id)
+    {
+        $opt = PaymentOption::findOrFail($id);
+        $opt->delete();
+        return response()->json(['message' => 'Payment option deleted successfully.']);
+    }
+
+    public function toggleVisibility(int $id)
+    {
+        $opt = PaymentOption::findOrFail($id);
+        $opt->update(['is_hidden' => ! $opt->is_hidden]);
+        $opt->refresh();
+        return response()->json([
+            'message' => $opt->is_hidden ? 'Channel hidden.' : 'Channel is now visible.',
+            'data' => [
+                'id' => $opt->id,
+                'is_hidden' => (bool) $opt->is_hidden,
+            ],
+        ]);
+    }
+
+    public function transfer(Request $request)
+    {
+        $validated = $request->validate([
+            'from_channel_id' => 'required|integer|exists:payment_options,id',
+            'to_channel_id' => 'required|integer|exists:payment_options,id|different:from_channel_id',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $from = PaymentOption::findOrFail((int) $validated['from_channel_id']);
+        $to = PaymentOption::findOrFail((int) $validated['to_channel_id']);
+        $amount = (float) $validated['amount'];
+        if ((float) $from->balance < $amount) {
+            return response()->json([
+                'message' => 'Insufficient balance in source channel.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($validated, $from, $to, $amount, $request) {
+            PaymentTransfer::create([
+                'from_channel_id' => $validated['from_channel_id'],
+                'to_channel_id' => $validated['to_channel_id'],
+                'amount' => $amount,
+                'description' => $validated['description'] ?? null,
+                'user_id' => $request->user()?->id,
+            ]);
+            $from->decrement('balance', $amount);
+            $to->increment('balance', $amount);
+        });
+
+        return response()->json(['message' => 'Transfer completed successfully.'], 201);
+    }
+
+    public function transferHistory(Request $request)
+    {
+        $query = PaymentTransfer::with('fromChannel:id,name', 'toChannel:id,name', 'user:id,name')
+            ->latest('created_at');
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->input('from_date'));
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->input('to_date'));
+        }
+        $page = $query->paginate($request->integer('per_page', 30));
+
+        return response()->json([
+            'data' => $page->getCollection()->map(function ($t) {
+                return [
+                    'id' => $t->id,
+                    'from_channel' => $t->fromChannel?->name,
+                    'to_channel' => $t->toChannel?->name,
+                    'amount' => (float) $t->amount,
+                    'description' => $t->description,
+                    'user' => $t->user ? ['id' => $t->user->id, 'name' => $t->user->name] : null,
+                    'created_at' => $t->created_at?->toIso8601String(),
+                ];
+            })->values()->all(),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
             ],
         ]);
     }

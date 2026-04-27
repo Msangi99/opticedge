@@ -110,6 +110,18 @@ class AgentProductTransferApiController extends Controller
         ]);
     }
 
+    public function show(AgentProductTransfer $agent_product_transfer)
+    {
+        $transfer = $agent_product_transfer;
+        if ((int) $transfer->from_agent_id !== (int) Auth::id() && (int) $transfer->to_agent_id !== (int) Auth::id()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        return response()->json([
+            'data' => $this->transferDetail($transfer),
+        ]);
+    }
+
     public function cancel(AgentProductTransfer $agent_product_transfer)
     {
         if ((int) $agent_product_transfer->from_agent_id !== (int) Auth::id()) {
@@ -139,5 +151,32 @@ class AgentProductTransferApiController extends Controller
             'to_agent' => $t->toAgent ? ['id' => $t->toAgent->id, 'name' => $t->toAgent->name, 'email' => $t->toAgent->email] : null,
             'items_count' => $t->items->count(),
         ];
+    }
+
+    private function transferDetail(AgentProductTransfer $t): array
+    {
+        $t->loadMissing(['fromAgent', 'toAgent', 'decidedByUser', 'items.productListItem.product.category']);
+
+        $summary = $this->transferSummary($t);
+        $summary['decided_by'] = $t->decidedByUser ? [
+            'id' => $t->decidedByUser->id,
+            'name' => $t->decidedByUser->name,
+            'email' => $t->decidedByUser->email,
+        ] : null;
+        $summary['items'] = $t->items->map(function ($item) {
+            $pl = $item->productListItem;
+
+            return [
+                'id' => $item->id,
+                'product_list_id' => $item->product_list_id,
+                'imei_number' => $pl?->imei_number,
+                'model' => $pl?->model,
+                'product_name' => $pl?->product?->name,
+                'category_name' => $pl?->product?->category?->name,
+                'sold_at' => $pl?->sold_at?->toIso8601String(),
+            ];
+        })->values()->all();
+
+        return $summary;
     }
 }
