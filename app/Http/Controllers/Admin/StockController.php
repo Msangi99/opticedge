@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\Stock;
 use App\Models\Vendor;
+use App\Models\Setting;
 use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PdfDownload;
@@ -960,17 +961,11 @@ class StockController extends Controller
     {
         $purchase = Purchase::with('product')->findOrFail($id);
 
-        $incrementPreview = max(0, (float) ($request->input('paid_amount') ?? 0));
-        $epsRule = 0.0001;
-        $paymentOptionRules = $incrementPreview > $epsRule
-            ? 'required|exists:payment_options,id'
-            : 'nullable|exists:payment_options,id';
-
         $rules = [
             'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
-            'payment_option_id' => $paymentOptionRules,
+            'payment_option_id' => 'nullable|exists:payment_options,id',
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
         $validated = $request->validate($rules);
@@ -1009,11 +1004,35 @@ class StockController extends Controller
         $paymentStatus = $newPaidAmount >= $totalAmount - $eps ? 'paid' : ($newPaidAmount > $eps ? 'partial' : 'pending');
 
         $oldPaymentOption = $purchase->payment_option_id;
-        $newPaymentOptionId = $validated['payment_option_id'] ?? null;
-        if ($newPaymentOptionId === '' || $newPaymentOptionId === false) {
-            $newPaymentOptionId = null;
+        $hasPaymentOptionInput = $request->has('payment_option_id');
+        if ($hasPaymentOptionInput) {
+            $newPaymentOptionId = $validated['payment_option_id'] ?? null;
+            if ($newPaymentOptionId === '' || $newPaymentOptionId === false) {
+                $newPaymentOptionId = null;
+            } else {
+                $newPaymentOptionId = (int) $newPaymentOptionId;
+            }
         } else {
-            $newPaymentOptionId = (int) $newPaymentOptionId;
+            $newPaymentOptionId = $oldPaymentOption !== null ? (int) $oldPaymentOption : null;
+        }
+
+        if ($increment > $eps && $newPaymentOptionId === null) {
+            $defaultWatuChannelRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+            $defaultWatuChannelId = $defaultWatuChannelRaw !== null && $defaultWatuChannelRaw !== ''
+                ? (int) $defaultWatuChannelRaw
+                : null;
+            if (! $defaultWatuChannelId) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['error' => 'Choose a default Watu channel in Store settings before recording payment.']);
+            }
+            $defaultWatuChannel = PaymentOption::visible()->whereKey($defaultWatuChannelId)->first();
+            if (! $defaultWatuChannel) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['error' => 'Default Watu channel is invalid or hidden. Update Store settings.']);
+            }
+            $newPaymentOptionId = $defaultWatuChannel->id;
         }
         $newPaidDate = $validated['paid_date'] ?? null;
 

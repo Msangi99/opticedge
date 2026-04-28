@@ -15,7 +15,7 @@
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Purchase</h2>
             </div>
-            <form action="{{ route('admin.stock.update-purchase', $purchase->id) }}" method="POST" enctype="multipart/form-data" class="admin-prod-form-body">
+            <form action="{{ route('admin.stock.update-purchase', $purchase->id) }}" method="POST" class="admin-prod-form-body">
                     @csrf
                     @method('PUT')
                     
@@ -109,7 +109,7 @@
 
                         <!-- Paid Amount -->
                         <div class="col-span-1">
-                            <label for="paid_amount" class="admin-prod-label">Pay (this time)</label>
+                            <label for="paid_amount" class="admin-prod-label">Paid (this time)</label>
                             @php
                                 $purchaseTotal = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
                                 $alreadyPaid = (float) ($purchase->paid_amount ?? 0);
@@ -132,44 +132,11 @@
                             </p>
                         </div>
 
-                        <!-- Payment Channel -->
-                        <div class="col-span-1">
-                            <label for="payment_option_id" class="admin-prod-label">Payment channel <span class="text-red-600">*</span></label>
-                            <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
-                                <option value="">Select channel</option>
-                                @foreach($paymentOptions as $option)
-                                    <option value="{{ $option->id }}" 
-                                        data-balance="{{ $option->balance }}"
-                                        {{ old('payment_option_id', $purchase->payment_option_id) == $option->id ? 'selected' : '' }}>
-                                        {{ $option->name }} (Balance: {{ number_format($option->balance, 2) }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('payment_option_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                            <p class="text-xs text-slate-500 mt-1">Required when you enter a pay amount. Amount is deducted from the channel balance.</p>
-                        </div>
-
                         <!-- Pending Amount (read-only, shows actual pending amount) -->
                         <div class="col-span-1">
                             <label class="admin-prod-label">Pending Amount</label>
                             <input type="text" id="pending_amount" readonly class="admin-prod-input font-medium cursor-not-allowed" value="{{ number_format($pendingNow, 2) }}">
                             <p class="text-xs text-slate-500 mt-1">Actual pending amount = Total − total paid. Updates automatically as you type.</p>
-                        </div>
-
-                        <!-- Payment Receipt Image -->
-                        <div class="col-span-2">
-                            <label for="payment_receipt_image" class="admin-prod-label">Payment Receipt Image</label>
-                            @if($purchase->payment_receipt_image)
-                                <div class="mb-2">
-                                    <img src="{{ asset('storage/' . $purchase->payment_receipt_image) }}" alt="Payment Receipt" class="w-32 h-32 object-cover rounded border border-slate-200">
-                                </div>
-                            @endif
-                            <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="admin-prod-file">
-                            <p class="text-xs text-slate-500 mt-1">Upload or replace payment receipt image (optional). Formats: JPG, PNG, GIF, WebP. Max 5MB.</p>
-                            @error('payment_receipt_image')
-                                <span class="text-red-500 text-xs">{{ $message }}</span>
-                            @enderror
                         </div>
 
                         <!-- Payment History -->
@@ -230,7 +197,6 @@
             var pendingBase = {{ $pendingNow }};
             var paidInput = document.getElementById('paid_amount');
             var pendingEl = document.getElementById('pending_amount');
-            var paymentOptionSelect = document.getElementById('payment_option_id');
             
             function updatePendingAmount() {
                 if (paidInput && pendingEl) {
@@ -242,18 +208,6 @@
                     }
                     var pending = Math.max(0, pendingBase - payNow);
                     pendingEl.value = pending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    
-                    // Check payment option balance if selected
-                    if (paymentOptionSelect && paymentOptionSelect.value) {
-                        var selectedOption = paymentOptionSelect.options[paymentOptionSelect.selectedIndex];
-                        var balance = parseFloat(selectedOption.getAttribute('data-balance')) || 0;
-                        if (payNow > balance) {
-                            paidInput.setCustomValidity('Insufficient balance in selected payment channel. Available: ' + balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-                            paidInput.reportValidity();
-                        } else {
-                            paidInput.setCustomValidity('');
-                        }
-                    }
                 }
             }
             
@@ -261,9 +215,6 @@
                 paidInput.addEventListener('input', updatePendingAmount);
             }
             
-            if (paymentOptionSelect) {
-                paymentOptionSelect.addEventListener('change', updatePendingAmount);
-            }
         })();
     </script>
 </x-admin-layout>

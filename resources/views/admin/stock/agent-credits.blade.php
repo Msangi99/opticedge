@@ -88,8 +88,8 @@
                             <th scope="col" class="admin-prod-th">Product</th>
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Total</th>
-                            <th scope="col" class="admin-prod-th min-w-[200px]">Channel</th>
-                            <th scope="col" class="admin-prod-th min-w-[190px]">Comm.</th>
+                            <th scope="col" class="admin-prod-th">Channel</th>
+                            <th scope="col" class="admin-prod-th">Comm.</th>
                             <th scope="col" class="admin-prod-th">Pending</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
@@ -113,7 +113,7 @@
                                 <td class="align-middle">
                                     <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? $defaultWatuChannel?->name ?? '—' }}</span>
                                 </td>
-                                <td class="admin-prod-cell-actions min-w-[190px]">
+                                <td class="admin-prod-cell-actions">
                                     <form action="{{ route('admin.stock.agent-credits-update-commission', ['id' => $credit->id] + request()->query()) }}" method="POST"
                                         class="inline-flex items-center gap-2 flex-wrap justify-end">
                                         @csrf
@@ -130,15 +130,8 @@
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
                                     @if($pend > 0.0001 && $paymentOptions->count() > 0)
                                         <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
-                                            class="inline-flex items-center gap-2 mr-2">
+                                            class="inline-flex items-center mr-2">
                                             @csrf
-                                            <select name="payment_option_id" class="admin-prod-input py-1.5 text-xs min-w-[9rem]">
-                                                @foreach($paymentOptions as $opt)
-                                                    <option value="{{ $opt->id }}" @selected((int) ($credit->payment_option_id ?? $defaultWatuChannel?->id) === (int) $opt->id)>
-                                                        {{ $opt->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
                                             <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-2">Pay</button>
                                         </form>
                                     @endif

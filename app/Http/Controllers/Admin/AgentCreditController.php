@@ -264,10 +264,6 @@ class AgentCreditController extends Controller
                 ->withErrors(['error' => 'Payment channels are not configured.']);
         }
 
-        $validated = $request->validate([
-            'payment_option_id' => 'required|exists:payment_options,id',
-        ]);
-
         $totalAmount = (float) $credit->total_amount;
         $oldPaid = (float) ($credit->paid_amount ?? 0);
         $eps = 0.0001;
@@ -279,12 +275,21 @@ class AgentCreditController extends Controller
                 ->with('info', 'This credit is already fully paid.');
         }
 
-        $paymentOptionId = (int) $validated['payment_option_id'];
+        $defaultWatuChannelRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+        $paymentOptionId = $defaultWatuChannelRaw !== null && $defaultWatuChannelRaw !== ''
+            ? (int) $defaultWatuChannelRaw
+            : null;
+        if (! $paymentOptionId) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Choose a default Watu channel in Store settings before recording payment.']);
+        }
+
         $opt = PaymentOption::visible()->whereKey($paymentOptionId)->first();
         if (! $opt) {
             return redirect()
                 ->back()
-                ->withErrors(['payment_option_id' => 'Invalid or hidden payment channel.']);
+                ->withErrors(['error' => 'Default Watu channel is invalid or hidden. Update Store settings.']);
         }
 
         $paidDate = now()->toDateString();
