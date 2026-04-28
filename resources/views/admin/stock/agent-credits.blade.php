@@ -1,7 +1,8 @@
 <x-admin-layout>
     @include('admin.partials.catalog-styles')
 
-    <div class="admin-prod-page" x-data="{ paymentHistoryOpen: false }">
+    <div class="admin-prod-page"
+        x-data="{ paymentHistoryOpen: false, payModalOpen: {{ old('agent_credit_id') || old('amount') || old('paid_date') ? 'true' : 'false' }} }">
         <div class="admin-prod-toolbar !mb-4">
             <div>
                 <p class="admin-prod-eyebrow">Agents</p>
@@ -10,7 +11,7 @@
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <button type="button" class="admin-prod-btn-ghost" @click="paymentHistoryOpen = true">Payment history</button>
-                <a href="#credits-table" class="admin-prod-btn-primary">Pay</a>
+                <button type="button" class="admin-prod-btn-primary" @click="payModalOpen = true">Pay</button>
                 <a href="{{ route('admin.stock.agent-credits.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="w-5 h-5">
@@ -89,7 +90,7 @@
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Total</th>
                             <th scope="col" class="admin-prod-th">Channel</th>
-                            <th scope="col" class="admin-prod-th">Comm.</th>
+                            <th scope="col" class="admin-prod-th min-w-[180px]">Comm.</th>
                             <th scope="col" class="admin-prod-th">Pending</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
@@ -119,7 +120,7 @@
                                         @csrf
                                         @method('PATCH')
                                         <input type="number" name="commission_paid" value="{{ $credit->commission_paid ?? 0 }}" step="0.01" min="0"
-                                            class="admin-prod-input w-32 py-1.5 text-sm">
+                                            class="admin-prod-input w-40 py-1.5 text-sm">
                                         <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save</button>
                                     </form>
                                 </td>
@@ -128,13 +129,6 @@
                                     <span class="admin-prod-dealer-status admin-prod-dealer-status--active">sold</span>
                                 </td>
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
-                                    @if($pend > 0.0001 && $paymentOptions->count() > 0)
-                                        <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
-                                            class="inline-flex items-center mr-2">
-                                            @csrf
-                                            <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-2">Pay</button>
-                                        </form>
-                                    @endif
                                     <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="admin-prod-link">Edit</a>
                                     <span class="text-slate-300 mx-1">|</span>
                                     <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download invoice</a>
@@ -177,7 +171,6 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th">Paid date</th>
                                     <th scope="col" class="admin-prod-th">Credit #</th>
-                                    <th scope="col" class="admin-prod-th">Agent</th>
                                     <th scope="col" class="admin-prod-th">Customer</th>
                                     <th scope="col" class="admin-prod-th">Channel</th>
                                     <th scope="col" class="admin-prod-th">Amount</th>
@@ -188,20 +181,70 @@
                                     <tr>
                                         <td class="text-slate-600 text-sm">{{ $payment->paid_date?->format('Y-m-d') ?? '—' }}</td>
                                         <td class="font-medium text-[#232f3e]">#{{ $payment->agent_credit_id }}</td>
-                                        <td class="text-slate-700">{{ $payment->agentCredit?->agent?->name ?? '—' }}</td>
                                         <td class="text-slate-700">{{ $payment->agentCredit?->customer_name ?? '—' }}</td>
                                         <td class="text-slate-700">{{ $payment->paymentOption?->name ?? '—' }}</td>
                                         <td class="font-variant-numeric font-semibold text-emerald-800">{{ number_format((float) $payment->amount, 2) }} TZS</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-slate-500 py-10">No payment history for the selected filter.</td>
+                                        <td colspan="5" class="text-center text-slate-500 py-10">No payment history for the selected filter.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div x-show="payModalOpen" x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click.self="payModalOpen = false">
+            <div class="w-full max-w-xl rounded-2xl border border-white/80 bg-white shadow-xl overflow-hidden">
+                <div class="admin-prod-form-head flex items-center justify-between">
+                    <div>
+                        <h2 class="admin-prod-form-title">Record payment</h2>
+                        <p class="admin-prod-subtitle">Payment amount is added to Total paid and reduced from Pending.</p>
+                    </div>
+                    <button type="button" class="admin-prod-btn-ghost" @click="payModalOpen = false">Close</button>
+                </div>
+                <form method="POST" action="{{ route('admin.stock.agent-credits-pay', request()->query()) }}" class="admin-prod-form-body space-y-4">
+                    @csrf
+                    <div>
+                        <label for="agent_credit_id" class="admin-prod-label">Credit</label>
+                        <select name="agent_credit_id" id="agent_credit_id" required class="admin-prod-input">
+                            <option value="">Select credit</option>
+                            @foreach($payableCredits as $payableCredit)
+                                @php
+                                    $remaining = max(0, (float) $payableCredit->total_amount - (float) ($payableCredit->paid_amount ?? 0));
+                                @endphp
+                                <option value="{{ $payableCredit->id }}" @selected((string) old('agent_credit_id') === (string) $payableCredit->id)>
+                                    #{{ $payableCredit->id }} - {{ $payableCredit->agent?->name ?? '—' }} - {{ $payableCredit->customer_name }} (Pending {{ number_format($remaining, 2) }} TZS)
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="paid_date" class="admin-prod-label">Date</label>
+                            <input type="date" name="paid_date" id="paid_date" value="{{ old('paid_date', now()->toDateString()) }}" required class="admin-prod-input">
+                        </div>
+                        <div>
+                            <label for="amount" class="admin-prod-label">Amount</label>
+                            <input type="number" name="amount" id="amount" value="{{ old('amount') }}" min="0.01" step="0.01" required class="admin-prod-input">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end gap-2">
+                        <button type="button" class="admin-prod-btn-ghost" @click="payModalOpen = false">Cancel</button>
+                        <button type="submit" class="admin-prod-btn-primary">Submit payment</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

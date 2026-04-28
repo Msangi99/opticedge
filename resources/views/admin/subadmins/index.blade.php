@@ -25,7 +25,7 @@
 
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
-                <table>
+                <table class="min-w-[980px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Name</th>
@@ -52,15 +52,30 @@
                                     </span>
                                 </td>
                                 <td class="admin-prod-cell-actions">
-                                    <form method="POST" action="{{ route('admin.users.reset-password', $subadmin) }}"
-                                        class="flex flex-wrap items-center justify-end gap-2">
-                                        @csrf
-                                        <input type="password" name="password" required minlength="8"
-                                            placeholder="New password" class="admin-prod-input w-32 py-1.5 text-sm">
-                                        <input type="password" name="password_confirmation" required minlength="8"
-                                            placeholder="Confirm" class="admin-prod-input w-28 py-1.5 text-sm">
-                                        <button type="submit" class="admin-prod-link whitespace-nowrap">Reset password</button>
-                                    </form>
+                                    <div class="flex flex-col items-end gap-2 min-w-[260px]">
+                                        <details class="w-full">
+                                            <summary class="cursor-pointer text-xs font-semibold text-slate-600 hover:text-[#fa8900] list-none">
+                                                Reset password
+                                            </summary>
+                                            <form method="POST" action="{{ route('admin.users.reset-password', $subadmin) }}"
+                                                class="mt-2 flex flex-wrap items-center justify-end gap-2">
+                                                @csrf
+                                                <input type="password" name="password" required minlength="8"
+                                                    placeholder="New password" class="admin-prod-input w-36 py-1.5 text-sm">
+                                                <input type="password" name="password_confirmation" required minlength="8"
+                                                    placeholder="Confirm" class="admin-prod-input w-32 py-1.5 text-sm">
+                                                <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Save</button>
+                                            </form>
+                                        </details>
+                                        @if($active)
+                                            <form method="POST" action="{{ route('admin.subadmins.deactivate', $subadmin) }}" class="w-full flex justify-end"
+                                                onsubmit="return confirm('Deactivate this leader? They will not be able to log in until reactivated.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="admin-prod-link text-sm text-red-600 hover:text-red-700">Deactivate</button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty

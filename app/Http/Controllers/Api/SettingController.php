@@ -118,20 +118,23 @@ class SettingController extends Controller
     private function buildAbilityMatrix(): array
     {
         $actionOrder = ['view', 'create', 'edit', 'delete', 'approve', 'export', 'all'];
-        $matrix = [];
+        $modules = [];
         foreach (Route::getRoutes() as $route) {
             $name = (string) $route->getName();
             if (! str_starts_with($name, 'admin.')) continue;
             $segments = explode('.', $name);
             $module = $segments[1] ?? 'dashboard';
-            $action = $this->resolveRouteAction($name, $route->methods());
-            $matrix[$module] = $matrix[$module] ?? [];
-            if (! in_array($action, $matrix[$module], true)) $matrix[$module][] = $action;
+            if ($module === '') {
+                $module = 'dashboard';
+            }
+            $modules[$module] = true;
         }
-        ksort($matrix);
-        foreach ($matrix as $module => $actions) {
-            usort($actions, fn ($a, $b) => array_search($a, $actionOrder, true) <=> array_search($b, $actionOrder, true));
-            $matrix[$module] = $actions;
+        $matrix = [];
+        $moduleNames = array_keys($modules);
+        sort($moduleNames);
+        foreach ($moduleNames as $module) {
+            // Keep API validator aligned with web UI's fixed action columns.
+            $matrix[$module] = $actionOrder;
         }
         return $matrix;
     }

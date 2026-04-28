@@ -136,7 +136,7 @@ class SettingController extends Controller
     private function buildAbilityMatrix(): array
     {
         $actionOrder = ['view', 'create', 'edit', 'delete', 'approve', 'export', 'all'];
-        $matrix = [];
+        $modules = [];
 
         foreach (Route::getRoutes() as $route) {
             $name = (string) $route->getName();
@@ -150,19 +150,15 @@ class SettingController extends Controller
                 $module = 'dashboard';
             }
 
-            $action = $this->resolveRouteAction($name, $route->methods());
-            $matrix[$module] = $matrix[$module] ?? [];
-            if (! in_array($action, $matrix[$module], true)) {
-                $matrix[$module][] = $action;
-            }
+            $modules[$module] = true;
         }
 
-        ksort($matrix);
-        foreach ($matrix as $module => $actions) {
-            usort($actions, function ($a, $b) use ($actionOrder) {
-                return array_search($a, $actionOrder, true) <=> array_search($b, $actionOrder, true);
-            });
-            $matrix[$module] = $actions;
+        $matrix = [];
+        $moduleNames = array_keys($modules);
+        sort($moduleNames);
+        foreach ($moduleNames as $module) {
+            // UI renders fixed action columns for each module, so backend must accept all of them.
+            $matrix[$module] = $actionOrder;
         }
 
         return $matrix;

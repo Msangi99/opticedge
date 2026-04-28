@@ -171,6 +171,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::get('agents/assignable-imeis', [App\Http\Controllers\Admin\AgentController::class, 'assignableImeis'])->name('assignable-imeis');
         Route::get('agents/{agent}', [App\Http\Controllers\Admin\AgentController::class, 'show'])->name('agents.show');
         Route::patch('agents/{agent}/transfer-branch', [App\Http\Controllers\Admin\AgentController::class, 'transferBranch'])->name('agents.transfer-branch');
+        Route::patch('agents/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('agents.deactivate');
+        Route::patch('subadmins/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('subadmins.deactivate');
 
         // Orders
         Route::resource('orders', App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show', 'update']);
@@ -275,6 +277,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::get('agent-credits/{id}/invoice', [App\Http\Controllers\Admin\AgentCreditController::class, 'downloadInvoice'])->name('agent-credit-invoice');
             Route::patch('agent-credits/{id}/payment-channel', [App\Http\Controllers\Admin\AgentCreditController::class, 'updatePaymentChannel'])->name('agent-credit-payment-channel');
             Route::patch('agent-credits/{id}/commission', [App\Http\Controllers\Admin\AgentCreditController::class, 'updateCommission'])->name('agent-credits-update-commission');
+            Route::post('agent-credits/pay', [App\Http\Controllers\Admin\AgentCreditController::class, 'pay'])->name('agent-credits-pay');
             Route::post('agent-credits/{id}/pay-remaining', [App\Http\Controllers\Admin\AgentCreditController::class, 'payRemaining'])->name('agent-credit-pay-remaining');
             Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
 

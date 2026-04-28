@@ -87,6 +87,14 @@
                                                 <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Save</button>
                                             </form>
                                         </details>
+                                        @if($active)
+                                            <form method="POST" action="{{ route('admin.agents.deactivate', $agent) }}" class="w-full flex justify-end"
+                                                onsubmit="return confirm('Deactivate this agent? They will not be able to log in until reactivated.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="admin-prod-link text-sm text-red-600 hover:text-red-700">Deactivate</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\AgentDailyStockReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,8 +31,8 @@ class ReportController extends Controller
         // Sales chart data (Last 7 days)
         $salesData = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i)->format('Y-m-d');
-            $salesData[$date] = Order::whereDate('created_at', $date)->sum('total_price');
+            $date = Carbon::today()->subDays($i)->toDateString();
+            $salesData[$date] = $this->dailySalesAmount($date);
         }
 
         $branchesBusiness = collect();
@@ -46,18 +47,15 @@ class ReportController extends Controller
                     $total = (float) $rows->sum(function ($p) {
                         return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
                     });
-                    // Only count items whose purchase still exists and belongs to this branch.
-                    // Using whereHas ensures deleted purchases are excluded automatically.
                     $salesCount = ProductListItem::query()
+                        ->whereEffectiveBranch($b->id)
                         ->whereNotNull('sold_at')
-                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id))
                         ->count();
                     $closingStock = ProductListItem::query()
+                        ->whereEffectiveBranch($b->id)
                         ->whereNull('sold_at')
-                        ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id))
                         ->count();
-                    $purchaseQuantity = $rows->sum('quantity');
-                    $openingStock = max(0, $closingStock - $purchaseQuantity + $salesCount);
+                    $openingStock = $closingStock + $salesCount;
 
                     return (object) [
                         'id' => $b->id,
@@ -89,15 +87,14 @@ class ReportController extends Controller
             if ($branch) {
                 $rows = Purchase::where('branch_id', $bid)->get();
                 $salesCount = ProductListItem::query()
+                    ->whereEffectiveBranch($bid)
                     ->whereNotNull('sold_at')
-                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid))
                     ->count();
                 $closingStock = ProductListItem::query()
+                    ->whereEffectiveBranch($bid)
                     ->whereNull('sold_at')
-                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid))
                     ->count();
-                $purchaseQuantity = $rows->sum('quantity');
-                $openingStock = max(0, $closingStock - $purchaseQuantity + $salesCount);
+                $openingStock = $closingStock + $salesCount;
                 $selectedBranchDetail = (object) [
                     'branch' => $branch,
                     'purchase_count' => $rows->count(),
@@ -127,7 +124,7 @@ class ReportController extends Controller
                     ->orWhereHas('purchase', fn ($p) => $p->whereNull('branch_id'));
             })
             ->count();
-        $unassignedOpeningStock = max(0, $unassignedClosingStock - $unassignedPurchaseQuantity + $unassignedSales);
+        $unassignedOpeningStock = $unassignedClosingStock + $unassignedSales;
 
         $reportBranchOptions = Schema::hasTable('branches')
             ? Branch::orderBy('name')->get()
@@ -177,5 +174,30 @@ class ReportController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function dailySalesAmount(string $date): float
+    {
+        $total = (float) Order::whereDate('created_at', $date)->sum('total_price');
+
+        if (Schema::hasTable('distribution_sales')) {
+            $total += (float) DB::table('distribution_sales')
+                ->whereDate('date', $date)
+                ->sum('total_selling_value');
+        }
+
+        if (Schema::hasTable('agent_sales')) {
+            $total += (float) DB::table('agent_sales')
+                ->whereDate('date', $date)
+                ->sum('total_selling_value');
+        }
+
+        if (Schema::hasTable('agent_credits')) {
+            $total += (float) DB::table('agent_credits')
+                ->whereDate('date', $date)
+                ->sum('total_amount');
+        }
+
+        return $total;
     }
 }

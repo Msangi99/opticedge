@@ -10,6 +10,8 @@ use App\Models\Purchase;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportController extends Controller
 {
@@ -23,8 +25,8 @@ class ReportController extends Controller
 
         $salesData = [];
         for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i)->format('Y-m-d');
-            $salesData[$date] = (float) Order::whereDate('created_at', $date)->sum('total_price');
+            $date = Carbon::today()->subDays($i)->toDateString();
+            $salesData[$date] = $this->dailySalesAmount($date);
         }
 
         $branchesBusiness = Branch::orderBy('name')
@@ -35,26 +37,14 @@ class ReportController extends Controller
                     return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
                 });
                 $salesCount = ProductListItem::query()
+                    ->whereEffectiveBranch($b->id)
                     ->whereNotNull('sold_at')
-                    ->where(function ($outer) use ($b) {
-                        $outer->where('branch_id', $b->id)
-                            ->orWhere(function ($inner) use ($b) {
-                                $inner->whereNull('branch_id')
-                                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id));
-                            });
-                    })
                     ->count();
                 $closingStock = ProductListItem::query()
+                    ->whereEffectiveBranch($b->id)
                     ->whereNull('sold_at')
-                    ->where(function ($outer) use ($b) {
-                        $outer->where('branch_id', $b->id)
-                            ->orWhere(function ($inner) use ($b) {
-                                $inner->whereNull('branch_id')
-                                    ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id));
-                            });
-                    })
                     ->count();
-                $openingStock = max(0, $closingStock - $purchases->count() + $salesCount);
+                $openingStock = $closingStock + $salesCount;
 
                 return [
                     'branch_id' => $b->id,
@@ -86,7 +76,7 @@ class ReportController extends Controller
                     ->orWhereHas('purchase', fn ($p) => $p->whereNull('branch_id'));
             })
             ->count();
-        $unassignedOpeningStock = max(0, $unassignedClosingStock - $unassignedPurchases + $unassignedSales);
+        $unassignedOpeningStock = $unassignedClosingStock + $unassignedSales;
 
         $payload = [
             'total_sales' => $totalSales,
@@ -110,26 +100,14 @@ class ReportController extends Controller
             });
             $purchaseCount = (clone $purchaseQuery)->count();
             $salesCount = ProductListItem::query()
+                ->whereEffectiveBranch($bid)
                 ->whereNotNull('sold_at')
-                ->where(function ($outer) use ($bid) {
-                    $outer->where('branch_id', $bid)
-                        ->orWhere(function ($inner) use ($bid) {
-                            $inner->whereNull('branch_id')
-                                ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid));
-                        });
-                })
                 ->count();
             $closingStock = ProductListItem::query()
+                ->whereEffectiveBranch($bid)
                 ->whereNull('sold_at')
-                ->where(function ($outer) use ($bid) {
-                    $outer->where('branch_id', $bid)
-                        ->orWhere(function ($inner) use ($bid) {
-                            $inner->whereNull('branch_id')
-                                ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid));
-                        });
-                })
                 ->count();
-            $openingStock = max(0, $closingStock - $purchaseCount + $salesCount);
+            $openingStock = $closingStock + $salesCount;
             $payload['branch_id'] = $bid;
             $payload['branch_purchase_total'] = $purchaseTotal;
             $payload['branch_purchase_count'] = $purchaseCount;
@@ -175,5 +153,30 @@ class ReportController extends Controller
                 'purchases' => $purchases,
             ],
         ]);
+    }
+
+    private function dailySalesAmount(string $date): float
+    {
+        $total = (float) Order::whereDate('created_at', $date)->sum('total_price');
+
+        if (Schema::hasTable('distribution_sales')) {
+            $total += (float) DB::table('distribution_sales')
+                ->whereDate('date', $date)
+                ->sum('total_selling_value');
+        }
+
+        if (Schema::hasTable('agent_sales')) {
+            $total += (float) DB::table('agent_sales')
+                ->whereDate('date', $date)
+                ->sum('total_selling_value');
+        }
+
+        if (Schema::hasTable('agent_credits')) {
+            $total += (float) DB::table('agent_credits')
+                ->whereDate('date', $date)
+                ->sum('total_amount');
+        }
+
+        return $total;
     }
 }

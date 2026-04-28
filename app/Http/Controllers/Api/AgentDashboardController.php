@@ -183,15 +183,13 @@ class AgentDashboardController extends Controller
             ->map(function (ProductListItem $item) {
                 $agentCredit = $item->agentCredit;
                 $agentSale = $item->agentSale;
-                $creditPaid = $agentCredit && ($agentCredit->payment_status ?? '') === 'paid';
                 $hasPendingSale = (bool) $item->pending_sale_id;
                 $invoiceType = $agentCredit
                     ? 'credit'
                     : (($agentSale || $hasPendingSale) ? 'sale' : null);
 
-                // Agent sale receipts are always downloadable regardless of payment status.
-                // Credit receipts are only available once fully paid.
-                $invoiceAvailable = $agentCredit ? $creditPaid : (bool) $agentSale;
+                // Agent sale and credit receipts are downloadable even if not fully paid.
+                $invoiceAvailable = $agentCredit ? true : (bool) $agentSale;
 
                 return $this->mapInventoryItem($item, [
                     'state' => 'sold',

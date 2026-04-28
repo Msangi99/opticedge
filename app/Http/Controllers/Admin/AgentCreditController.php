@@ -61,13 +61,102 @@ class AgentCreditController extends Controller
             ->limit(100)
             ->get();
 
+        $payableCredits = (clone $base)
+            ->with(['agent'])
+            ->whereRaw('COALESCE(paid_amount, 0) < total_amount')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get();
+
         return view('admin.stock.agent-credits', compact(
             'credits',
             'paymentOptions',
             'agentCreditsDashboard',
             'defaultWatuChannel',
-            'paymentHistory'
+            'paymentHistory',
+            'payableCredits'
         ));
+    }
+
+    public function pay(Request $request)
+    {
+        $validated = $request->validate([
+            'agent_credit_id' => 'required|integer|exists:agent_credits,id',
+            'paid_date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $credit = AgentCredit::query()->findOrFail((int) $validated['agent_credit_id']);
+        $totalAmount = (float) $credit->total_amount;
+        $oldPaid = (float) ($credit->paid_amount ?? 0);
+        $remaining = max(0, $totalAmount - $oldPaid);
+        $amount = (float) $validated['amount'];
+        $paidDate = $validated['paid_date'];
+        $eps = 0.0001;
+
+        if ($remaining <= $eps) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->with('info', 'This credit is already fully paid.');
+        }
+
+        if ($amount > $remaining + $eps) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withInput()
+                ->withErrors(['amount' => 'Amount cannot exceed pending balance (' . number_format($remaining, 2) . ').']);
+        }
+
+        if (! Schema::hasTable('payment_options')) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withErrors(['error' => 'Payment channels are not configured.']);
+        }
+
+        $defaultWatuChannelRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
+        $paymentOptionId = $defaultWatuChannelRaw !== null && $defaultWatuChannelRaw !== ''
+            ? (int) $defaultWatuChannelRaw
+            : null;
+        if (! $paymentOptionId) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withErrors(['error' => 'Choose a default Watu channel in Store settings before recording payment.']);
+        }
+
+        $option = PaymentOption::query()->visible()->whereKey($paymentOptionId)->first();
+        if (! $option) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withErrors(['error' => 'Default Watu channel is invalid or hidden. Update Store settings.']);
+        }
+
+        DB::transaction(function () use ($credit, $option, $paymentOptionId, $amount, $paidDate, $totalAmount, $oldPaid, $eps) {
+            $option->increment('balance', $amount);
+
+            $newPaid = min($totalAmount, $oldPaid + $amount);
+            $status = $newPaid >= $totalAmount - $eps ? 'paid' : ($newPaid > $eps ? 'partial' : 'pending');
+            $update = [
+                'paid_amount' => $newPaid,
+                'payment_status' => $status,
+                'paid_date' => $paidDate,
+            ];
+            if (Schema::hasColumn('agent_credits', 'payment_option_id')) {
+                $update['payment_option_id'] = $paymentOptionId;
+            }
+            $credit->update($update);
+
+            AgentCreditPayment::create([
+                'agent_credit_id' => $credit->id,
+                'payment_option_id' => $paymentOptionId,
+                'amount' => $amount,
+                'paid_date' => $paidDate,
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.stock.agent-credits', $request->query())
+            ->with('success', 'Payment recorded and totals updated.');
     }
 
     public function exportCsv(Request $request)
@@ -379,6 +468,7 @@ class AgentCreditController extends Controller
 
                 $commissionExpenseId = null;
                 if ($newCommission > $eps) {
+                    $agentName = trim((string) ($credit->agent?->name ?? 'Unknown agent'));
                     $option = PaymentOption::query()
                         ->visible()
                         ->whereKey($defaultChannelId)
@@ -396,7 +486,7 @@ class AgentCreditController extends Controller
                     $option->decrement('balance', $newCommission);
 
                     $expense = Expense::create([
-                        'activity' => 'Agent credit #' . $credit->id . ' commission',
+                        'activity' => 'Agent commission - ' . $agentName . ' (credit #' . $credit->id . ')',
                         'amount' => $newCommission,
                         'cash_used' => null,
                         'payment_option_id' => $option->id,
