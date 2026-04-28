@@ -123,6 +123,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
                 ->get();
 
             $distributorReceivables = $financialService->getDistributorReceivableBreakdown();
+            $agentCreditReceivables = $financialService->getAgentCreditReceivableSummary();
             
             return view('admin.dashboard', compact(
                 'totalCustomers',
@@ -139,7 +140,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
                 'agentAgingAssets',
                 'overduePurchases',
                 'overduePayables',
-                'distributorReceivables'
+                'distributorReceivables',
+                'agentCreditReceivables'
             ));
         }
         )->name('dashboard');

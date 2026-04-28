@@ -630,7 +630,7 @@
                         @click="receivablesModalOpen = true">
                         <p class="admin-dash-metric-label">Receivables</p>
                         <p class="admin-dash-metric-value">{{ number_format($financialMetrics['receivables'], 0) }} TZS</p>
-                        <p class="admin-dash-metric-hint">Pending from Distribution Sales</p>
+                        <p class="admin-dash-metric-hint">Pending from Distribution Sales + Agent Credit</p>
                     </button>
                     <div class="admin-dash-metric admin-dash-metric--emerald">
                         <p class="admin-dash-metric-label">Stock in Hand Value</p>
@@ -1008,7 +1008,7 @@
                     <div class="admin-dash-section-head flex items-center justify-between">
                         <div>
                             <h3 class="admin-dash-section-title">Receivables — dealers</h3>
-                            <p class="admin-dash-section-desc">Amount billed to each dealer on distribution sales, how much they have paid, and what is still owed.</p>
+                            <p class="admin-dash-section-desc">Distribution receivables plus agent credit receivables.</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <a href="{{ route('admin.stock.distribution') }}" class="admin-dash-link text-xs shrink-0">
@@ -1030,7 +1030,19 @@
                             $recvBilled = (float) $recvRows->sum('total_billed');
                             $recvPaid = (float) $recvRows->sum('total_paid');
                             $recvOutstanding = (float) $recvRows->sum('outstanding');
+                            $agentCreditRecv = $agentCreditReceivables ?? ['credits' => 0, 'total_credit' => 0, 'total_paid' => 0, 'outstanding' => 0];
                         @endphp
+                        <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                                <p class="text-xs uppercase font-semibold text-blue-700">Distribution receivables</p>
+                                <p class="text-lg font-bold text-blue-900 mt-1">{{ number_format($recvOutstanding, 0) }} TZS</p>
+                            </div>
+                            <div class="rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3">
+                                <p class="text-xs uppercase font-semibold text-amber-700">Agent credit receivables</p>
+                                <p class="text-lg font-bold text-amber-900 mt-1">{{ number_format((float) ($agentCreditRecv['outstanding'] ?? 0), 0) }} TZS</p>
+                                <p class="text-[11px] text-amber-800 mt-1">Credits: {{ number_format((int) ($agentCreditRecv['credits'] ?? 0)) }}</p>
+                            </div>
+                        </div>
                         <div class="admin-dash-table-wrap">
                             <table class="w-full text-left border-collapse" aria-label="Dealer receivables">
                                 <thead>
@@ -1078,7 +1090,7 @@
                                 @endif
                             </table>
                         </div>
-                        <p class="mt-4 text-xs text-slate-500">The Receivables figure on the dashboard is the sum of <strong>remaining</strong> balances across all distribution sales (matches “Remaining” total when every sale is included).</p>
+                        <p class="mt-4 text-xs text-slate-500">The Receivables figure on the dashboard is <strong>Distribution remaining + Agent Credit pending</strong>.</p>
                     </div>
                 </div>
             </div>

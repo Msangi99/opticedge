@@ -1,21 +1,25 @@
 <x-admin-layout>
     @include('admin.partials.catalog-styles')
 
-    <div class="admin-prod-page">
+    <div class="admin-prod-page" x-data="{ paymentHistoryOpen: false }">
         <div class="admin-prod-toolbar !mb-4">
             <div>
                 <p class="admin-prod-eyebrow">Agents</p>
                 <h1 class="admin-prod-title">Agent credit</h1>
                 <p class="admin-prod-subtitle">Loans from agents to customers; record repayments per credit.</p>
             </div>
-            <a href="{{ route('admin.stock.agent-credits.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
-                </svg>
-                Export CSV
-            </a>
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" class="admin-prod-btn-ghost" @click="paymentHistoryOpen = true">Payment history</button>
+                <a href="#credits-table" class="admin-prod-btn-primary">Pay</a>
+                <a href="{{ route('admin.stock.agent-credits.export-csv', request()->query()) }}" class="admin-prod-btn-ghost inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 16.5V4.5m0 12 3.75-3.75M12 16.5l-3.75-3.75M3.75 19.5h16.5" />
+                    </svg>
+                    Export CSV
+                </a>
+            </div>
         </div>
 
         @if(session('success'))
@@ -73,7 +77,7 @@
             </div>
         </div>
 
-        <div class="admin-clay-panel overflow-x-auto">
+        <div id="credits-table" class="admin-clay-panel overflow-x-auto">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
                 <table class="min-w-[1080px]">
                     <thead>
@@ -108,14 +112,6 @@
                                 <td class="font-variant-numeric">{{ number_format($t, 2) }}</td>
                                 <td class="align-middle">
                                     <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? $defaultWatuChannel?->name ?? '—' }}</span>
-                                    {{-- @if($pend > 0.0001 && $defaultWatuChannel)
-                                        <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
-                                            class="inline-block mt-1">
-                                            @csrf
-                                            <input type="hidden" name="payment_option_id" value="{{ $defaultWatuChannel->id }}">
-                                            <button type="submit" class="admin-prod-btn-primary text-xs py-1 px-2 shrink-0">Pay remaining</button>
-                                        </form>
-                                    @endif --}}
                                 </td>
                                 <td class="admin-prod-cell-actions min-w-[190px]">
                                     <form action="{{ route('admin.stock.agent-credits-update-commission', ['id' => $credit->id] + request()->query()) }}" method="POST"
@@ -129,12 +125,30 @@
                                 </td>
                                 <td class="font-variant-numeric font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
                                 <td>
+                                    @php
+                                        $paidNow = (float) ($credit->paid_amount ?? 0);
+                                        $statusComputed = $paidNow >= $t - 0.0001 ? 'paid' : ($paidNow > 0.0001 ? 'partial' : 'pending');
+                                    @endphp
                                     <span
-                                        class="admin-prod-dealer-status {{ $credit->payment_status === 'paid' ? 'admin-prod-dealer-status--active' : ($credit->payment_status === 'partial' ? 'admin-prod-dealer-status--pending' : 'admin-prod-dealer-status--suspended') }}">
-                                        {{ $credit->payment_status }}
+                                        class="admin-prod-dealer-status {{ $statusComputed === 'paid' ? 'admin-prod-dealer-status--active' : ($statusComputed === 'partial' ? 'admin-prod-dealer-status--pending' : 'admin-prod-dealer-status--suspended') }}">
+                                        {{ $statusComputed }}
                                     </span>
                                 </td>
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
+                                    @if($pend > 0.0001 && $paymentOptions->count() > 0)
+                                        <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
+                                            class="inline-flex items-center gap-2 mr-2">
+                                            @csrf
+                                            <select name="payment_option_id" class="admin-prod-input py-1.5 text-xs min-w-[9rem]">
+                                                @foreach($paymentOptions as $opt)
+                                                    <option value="{{ $opt->id }}" @selected((int) ($credit->payment_option_id ?? $defaultWatuChannel?->id) === (int) $opt->id)>
+                                                        {{ $opt->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="admin-prod-btn-primary text-xs py-1.5 px-2">Pay</button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="admin-prod-link">Edit</a>
                                     <span class="text-slate-300 mx-1">|</span>
                                     <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download invoice</a>
@@ -151,6 +165,58 @@
             @if($credits->hasPages())
                 <div class="admin-prod-pagination">{{ $credits->links() }}</div>
             @endif
+        </div>
+
+        <div x-show="paymentHistoryOpen" x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40 backdrop-blur-sm"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click.self="paymentHistoryOpen = false">
+            <div class="w-full max-w-6xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/80 bg-white shadow-xl">
+                <div class="admin-prod-form-head flex items-center justify-between">
+                    <div>
+                        <h2 class="admin-prod-form-title">Agent credit payment history</h2>
+                        <p class="admin-prod-subtitle">Latest repayments recorded across credits.</p>
+                    </div>
+                    <button type="button" class="admin-prod-btn-ghost" @click="paymentHistoryOpen = false">Close</button>
+                </div>
+                <div class="admin-prod-form-body">
+                    <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
+                        <table class="min-w-[900px]">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="admin-prod-th">Paid date</th>
+                                    <th scope="col" class="admin-prod-th">Credit #</th>
+                                    <th scope="col" class="admin-prod-th">Agent</th>
+                                    <th scope="col" class="admin-prod-th">Customer</th>
+                                    <th scope="col" class="admin-prod-th">Channel</th>
+                                    <th scope="col" class="admin-prod-th">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($paymentHistory as $payment)
+                                    <tr>
+                                        <td class="text-slate-600 text-sm">{{ $payment->paid_date?->format('Y-m-d') ?? '—' }}</td>
+                                        <td class="font-medium text-[#232f3e]">#{{ $payment->agent_credit_id }}</td>
+                                        <td class="text-slate-700">{{ $payment->agentCredit?->agent?->name ?? '—' }}</td>
+                                        <td class="text-slate-700">{{ $payment->agentCredit?->customer_name ?? '—' }}</td>
+                                        <td class="text-slate-700">{{ $payment->paymentOption?->name ?? '—' }}</td>
+                                        <td class="font-variant-numeric font-semibold text-emerald-800">{{ number_format((float) $payment->amount, 2) }} TZS</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-slate-500 py-10">No payment history for the selected filter.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </x-admin-layout>

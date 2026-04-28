@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgentAssignment;
+use App\Models\AgentCredit;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\Expense;
@@ -33,11 +34,32 @@ class DashboardFinancialService
     }
 
     /**
-     * Total pending (not collected) from Distribution Sales (balance).
+     * Total pending (not collected) from Distribution Sales and Agent Credits.
      */
     public function receivables(): float
     {
+        return $this->distributionReceivables() + $this->agentCreditReceivables();
+    }
+
+    /**
+     * Total pending from Distribution Sales (balance).
+     */
+    public function distributionReceivables(): float
+    {
         return (float) DistributionSale::get()->sum(fn ($s) => (float) ($s->balance ?? max(0, ($s->total_selling_value ?? 0) - ($s->paid_amount ?? 0))));
+    }
+
+    /**
+     * Total pending from Agent Credits (credit amount not yet paid).
+     */
+    public function agentCreditReceivables(): float
+    {
+        return (float) AgentCredit::query()->get()->sum(function (AgentCredit $credit) {
+            $total = (float) ($credit->total_amount ?? 0);
+            $paid = (float) ($credit->paid_amount ?? 0);
+
+            return max(0, $total - $paid);
+        });
     }
 
     /**
@@ -89,6 +111,25 @@ class DashboardFinancialService
             ->sortByDesc('outstanding')
             ->values()
             ->all();
+    }
+
+    /**
+     * Agent credit receivables summary for dashboard.
+     *
+     * @return array{credits: int, total_credit: float, total_paid: float, outstanding: float}
+     */
+    public function getAgentCreditReceivableSummary(): array
+    {
+        $credits = AgentCredit::query()->get(['total_amount', 'paid_amount']);
+        $totalCredit = (float) $credits->sum(fn (AgentCredit $credit) => (float) ($credit->total_amount ?? 0));
+        $totalPaid = (float) $credits->sum(fn (AgentCredit $credit) => (float) ($credit->paid_amount ?? 0));
+
+        return [
+            'credits' => $credits->count(),
+            'total_credit' => $totalCredit,
+            'total_paid' => $totalPaid,
+            'outstanding' => max(0, $totalCredit - $totalPaid),
+        ];
     }
 
     /**

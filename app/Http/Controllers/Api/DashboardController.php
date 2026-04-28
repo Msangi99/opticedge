@@ -42,6 +42,8 @@ class DashboardController extends Controller
 
         $financialMetrics = $this->financialService->getMetrics();
         $salesMetrics = $this->financialService->getSalesMetrics();
+        $distributionReceivables = $this->financialService->distributionReceivables();
+        $agentCreditReceivables = $this->financialService->getAgentCreditReceivableSummary();
 
         $startDate = $request->has('start_date')
             ? Carbon::parse($request->input('start_date'))->startOfDay()
@@ -68,6 +70,10 @@ class DashboardController extends Controller
                 'total_products' => $totalProducts,
                 'recent_orders' => $recentOrders,
                 'financial_metrics' => $financialMetrics,
+                'receivables_breakdown' => [
+                    'distribution' => $distributionReceivables,
+                    'agent_credit' => $agentCreditReceivables,
+                ],
                 'sales_metrics' => $salesMetrics,
                 'payment_options' => $paymentOptions,
                 'top_products' => $topProducts,

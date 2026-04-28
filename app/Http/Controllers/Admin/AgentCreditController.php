@@ -52,7 +52,22 @@ class AgentCreditController extends Controller
             ? PaymentOption::visible()->find((int) $defaultWatuChannelId)
             : null;
 
-        return view('admin.stock.agent-credits', compact('credits', 'paymentOptions', 'agentCreditsDashboard', 'defaultWatuChannel'));
+        $paymentHistory = AgentCreditPayment::query()
+            ->with(['agentCredit.agent', 'agentCredit.product.category', 'paymentOption'])
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('paid_date', '>=', $request->date_from))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('paid_date', '<=', $request->date_to))
+            ->orderByDesc('paid_date')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get();
+
+        return view('admin.stock.agent-credits', compact(
+            'credits',
+            'paymentOptions',
+            'agentCreditsDashboard',
+            'defaultWatuChannel',
+            'paymentHistory'
+        ));
     }
 
     public function exportCsv(Request $request)
