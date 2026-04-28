@@ -551,6 +551,9 @@
                                 <a href="{{ route('admin.agents.index') }}"
                                     @if (request()->routeIs('admin.agents.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.agents.*') ? 'admin-sidebar-sublink-active' : '' }}">Agents</a>
+                                <a href="{{ route('admin.branches.index') }}"
+                                    @if (request()->routeIs('admin.branches.*')) aria-current="page" @endif
+                                    class="admin-sidebar-sublink {{ request()->routeIs('admin.branches.*') ? 'admin-sidebar-sublink-active' : '' }}">Branches</a>
                                 <a href="{{ route('admin.subadmins.index') }}"
                                     @if (request()->routeIs('admin.subadmins.*')) aria-current="page" @endif
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.subadmins.*') ? 'admin-sidebar-sublink-active' : '' }}">Leaders</a>
@@ -562,7 +565,6 @@
                                     class="admin-sidebar-sublink {{ request()->routeIs('admin.vendors.*') ? 'admin-sidebar-sublink-active' : '' }}">Vendors</a>
                             </div>
                         </div>
-
                     </div>
                 </div>
 

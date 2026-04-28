@@ -148,4 +148,19 @@ class AgentController extends Controller
 
         return redirect()->route('admin.subadmins.index')->with('success', 'Leader created successfully.');
     }
+
+    public function transferBranch(Request $request, User $agent)
+    {
+        if ($agent->role !== 'agent') {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'branch_id' => 'nullable|exists:branches,id',
+        ]);
+
+        $agent->update(['branch_id' => $validated['branch_id'] ?? null]);
+
+        return redirect()->route('admin.agents.index')->with('success', 'Agent transferred successfully.');
+    }
 }

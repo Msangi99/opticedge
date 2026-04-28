@@ -121,12 +121,6 @@ class AgentCreditController extends Controller
     {
         $credit = AgentCredit::with(['agent', 'product.category', 'productListItem'])->findOrFail($id);
 
-        if (($credit->payment_status ?? 'pending') !== 'paid') {
-            return redirect()
-                ->route('admin.stock.agent-credits')
-                ->with('info', 'Invoice is available after this credit is fully paid.');
-        }
-
         $invoiceNo = 'AC-' . str_pad((string) $credit->id, 6, '0', STR_PAD_LEFT);
         $invoiceDate = $credit->paid_date ?? $credit->date ?? now();
         $filename = 'agent-credit-invoice-' . strtolower($invoiceNo) . '-' . $invoiceDate->format('Ymd') . '.pdf';

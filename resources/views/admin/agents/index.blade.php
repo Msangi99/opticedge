@@ -58,6 +58,23 @@
                                         <a href="{{ route('admin.agents.show', $agent) }}" class="admin-prod-link">View &amp; assign</a>
                                         <details class="w-full">
                                             <summary class="cursor-pointer text-xs font-semibold text-slate-600 hover:text-[#fa8900] list-none">
+                                                Transfer branch
+                                            </summary>
+                                            <form method="POST" action="{{ route('admin.agents.transfer-branch', $agent) }}"
+                                                class="mt-2 flex flex-wrap items-center justify-end gap-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <select name="branch_id" class="admin-prod-input w-40 py-1.5 text-sm">
+                                                    <option value="">No branch</option>
+                                                    @foreach(\App\Models\Branch::orderBy('name')->get() as $branch)
+                                                        <option value="{{ $branch->id }}" {{ $agent->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Transfer</button>
+                                            </form>
+                                        </details>
+                                        <details class="w-full">
+                                            <summary class="cursor-pointer text-xs font-semibold text-slate-600 hover:text-[#fa8900] list-none">
                                                 Reset password
                                             </summary>
                                             <form method="POST" action="{{ route('admin.users.reset-password', $agent) }}"
