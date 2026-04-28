@@ -125,14 +125,7 @@
                                 </td>
                                 <td class="font-variant-numeric font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
                                 <td>
-                                    @php
-                                        $paidNow = (float) ($credit->paid_amount ?? 0);
-                                        $statusComputed = $paidNow >= $t - 0.0001 ? 'paid' : ($paidNow > 0.0001 ? 'partial' : 'pending');
-                                    @endphp
-                                    <span
-                                        class="admin-prod-dealer-status {{ $statusComputed === 'paid' ? 'admin-prod-dealer-status--active' : ($statusComputed === 'partial' ? 'admin-prod-dealer-status--pending' : 'admin-prod-dealer-status--suspended') }}">
-                                        {{ $statusComputed }}
-                                    </span>
+                                    <span class="admin-prod-dealer-status admin-prod-dealer-status--active">sold</span>
                                 </td>
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
                                     @if($pend > 0.0001 && $paymentOptions->count() > 0)
