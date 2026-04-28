@@ -56,7 +56,8 @@ class ReportController extends Controller
                         ->whereNull('sold_at')
                         ->whereHas('purchase', fn ($p) => $p->where('branch_id', $b->id))
                         ->count();
-                    $openingStock = max(0, $closingStock - $rows->count() + $salesCount);
+                    $purchaseQuantity = $rows->sum('quantity');
+                    $openingStock = max(0, $closingStock - $purchaseQuantity + $salesCount);
 
                     return (object) [
                         'id' => $b->id,
@@ -70,6 +71,7 @@ class ReportController extends Controller
                 });
 
             $noBranch = Purchase::whereNull('branch_id')->get();
+            $unassignedPurchaseQuantity = $noBranch->sum('quantity');
             $unassignedPurchases = $noBranch->count();
             $unassignedPurchaseTotal = (float) $noBranch->sum(function ($p) {
                 return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
@@ -94,7 +96,8 @@ class ReportController extends Controller
                     ->whereNull('sold_at')
                     ->whereHas('purchase', fn ($p) => $p->where('branch_id', $bid))
                     ->count();
-                $openingStock = max(0, $closingStock - $rows->count() + $salesCount);
+                $purchaseQuantity = $rows->sum('quantity');
+                $openingStock = max(0, $closingStock - $purchaseQuantity + $salesCount);
                 $selectedBranchDetail = (object) [
                     'branch' => $branch,
                     'purchase_count' => $rows->count(),
@@ -124,7 +127,7 @@ class ReportController extends Controller
                     ->orWhereHas('purchase', fn ($p) => $p->whereNull('branch_id'));
             })
             ->count();
-        $unassignedOpeningStock = max(0, $unassignedClosingStock - $unassignedPurchases + $unassignedSales);
+        $unassignedOpeningStock = max(0, $unassignedClosingStock - $unassignedPurchaseQuantity + $unassignedSales);
 
         $reportBranchOptions = Schema::hasTable('branches')
             ? Branch::orderBy('name')->get()

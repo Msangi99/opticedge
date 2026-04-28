@@ -67,7 +67,7 @@
                             <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
                             <strong>Sales</strong> = units sold on the <strong>report date</strong> only.
                             <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
-                            <strong>Total</strong> = opening − sales + net transfer (unassigned stock).
+                            <strong>Total</strong> = opening − sales (unassigned stock).
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -146,7 +146,7 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Price (TZS)</th>
-                                    <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="4">Total</th>
+                                    <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="3">Total</th>
                                     @foreach($asr['agents'] as $agent)
                                         @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
                                         <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agent->name }}</th>
@@ -155,7 +155,6 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Opening</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Sales</th>
-                                    <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Transfer</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Closing</th>
                                     @foreach($asr['agents'] as $agent)
                                         @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
@@ -172,7 +171,6 @@
                                         <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['price'], 0) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['opening']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['sales']) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($row['shop']['transfer']) }}</td>
                                         <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($row['shop']['closing']) }}</td>
                                         @foreach($asr['agents'] as $agent)
                                             @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
@@ -189,7 +187,6 @@
                                     <td class="text-right bg-slate-100 px-3 py-3">—</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['opening']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['sales']) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['transfer']) }}</td>
                                     <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($tot['shop']['closing']) }}</td>
                                     @foreach($asr['agents'] as $agent)
                                         @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
@@ -202,7 +199,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>opening</strong> = yesterday’s <strong>closing</strong> (fixed until the day rolls over). <strong>Sales</strong> = today’s sale count on the report date. <strong>Closing</strong> = opening − sales (not below 0). Total: <strong>closing</strong> = opening − sales + transfer (not below 0).</p>
+                    <p class="mt-3 text-xs text-slate-500">Agent: <strong>opening</strong> = yesterday’s <strong>closing</strong> (fixed until the day rolls over). <strong>Sales</strong> = today’s sale count on the report date. <strong>Closing</strong> = opening − sales (not below 0). Total: <strong>closing</strong> = opening − sales (not below 0).</p>
                 @endif
             </div>
         </div>
