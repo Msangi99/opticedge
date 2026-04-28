@@ -108,14 +108,14 @@
                                 <td class="font-variant-numeric">{{ number_format($t, 2) }}</td>
                                 <td class="align-middle">
                                     <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? $defaultWatuChannel?->name ?? '—' }}</span>
-                                    @if($pend > 0.0001 && $defaultWatuChannel)
+                                    {{-- @if($pend > 0.0001 && $defaultWatuChannel)
                                         <form method="POST" action="{{ route('admin.stock.agent-credit-pay-remaining', $credit->id) }}"
                                             class="inline-block mt-1">
                                             @csrf
                                             <input type="hidden" name="payment_option_id" value="{{ $defaultWatuChannel->id }}">
                                             <button type="submit" class="admin-prod-btn-primary text-xs py-1 px-2 shrink-0">Pay remaining</button>
                                         </form>
-                                    @endif
+                                    @endif --}}
                                 </td>
                                 <td class="admin-prod-cell-actions min-w-[190px]">
                                     <form action="{{ route('admin.stock.agent-credits-update-commission', ['id' => $credit->id] + request()->query()) }}" method="POST"
