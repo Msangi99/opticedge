@@ -84,6 +84,8 @@
                                 <td>
                                     @if(($stock->stock_status ?? '') === 'in_stock')
                                         <span class="admin-prod-status admin-prod-status--ok">In stock</span>
+                                    @elseif(($stock->stock_status ?? '') === 'pending')
+                                        <span class="admin-prod-dealer-status admin-prod-dealer-status--pending">Pending</span>
                                     @else
                                         <span class="admin-prod-dealer-status admin-prod-dealer-status--inactive" style="background:#f1f5f9;color:#64748b;">Sold out</span>
                                     @endif

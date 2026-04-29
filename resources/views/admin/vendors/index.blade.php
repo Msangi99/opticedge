@@ -155,11 +155,12 @@
              x-transition:leave-end="opacity-0"
              @click.self="editingVendor = null">
             <div
-                class="w-full max-w-lg rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
-                <div class="admin-dash-section-head flex items-start justify-between">
+                class="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)]">
+                <div class="admin-dash-section-head flex items-start justify-between border-b border-slate-200/70">
                     <div>
                         <h3 class="admin-dash-section-title">Edit vendor</h3>
-                        <p class="admin-dash-section-desc" x-text="editingVendor ? editingVendor.name : ''"></p>
+                        <p class="admin-dash-section-desc">Update supplier details used in purchases.</p>
+                        <p class="text-xs font-semibold text-slate-500 mt-1" x-text="editingVendor ? editingVendor.name : ''"></p>
                     </div>
                     <button type="button" class="ml-4 rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/80"
                             @click="editingVendor = null">
@@ -170,46 +171,46 @@
                         </svg>
                     </button>
                 </div>
-                <div class="admin-dash-body">
+                <div class="admin-dash-body !pt-5">
                     <form x-bind:action="editingVendor ? '{{ url('admin/vendors') }}/' + editingVendor.id : '#'"
-                          method="POST" class="space-y-4">
+                          method="POST" class="space-y-5">
                         @csrf
                         @method('PUT')
-                        <div class="grid grid-cols-1 gap-3">
+                        <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <label class="admin-prod-label">Vendor name</label>
                                 <input type="text" name="name" class="admin-prod-input"
-                                       x-model="editingVendor.name">
+                                       x-model="editingVendor.name" placeholder="e.g. ABC Distributors Ltd" required>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="admin-prod-label">Phone</label>
                                     <input type="text" name="phone" class="admin-prod-input"
-                                           x-model="editingVendor.phone">
+                                           x-model="editingVendor.phone" placeholder="+255 7xx xxx xxx">
                                 </div>
                                 <div>
                                     <label class="admin-prod-label">Email</label>
                                     <input type="email" name="email" class="admin-prod-input"
-                                           x-model="editingVendor.email">
+                                           x-model="editingVendor.email" placeholder="vendor@example.com">
                                 </div>
                             </div>
                             <div>
                                 <label class="admin-prod-label">Office name</label>
                                 <input type="text" name="office_name" class="admin-prod-input"
-                                       x-model="editingVendor.office_name">
+                                       x-model="editingVendor.office_name" placeholder="e.g. Kariakoo branch">
                             </div>
                             <div>
                                 <label class="admin-prod-label">Location / address</label>
                                 <input type="text" name="location" class="admin-prod-input"
-                                       x-model="editingVendor.location">
+                                       x-model="editingVendor.location" placeholder="City, street, building">
                             </div>
                         </div>
-                        <div class="admin-prod-form-footer !mt-4 flex flex-wrap items-center justify-end gap-3">
-                            <button type="button" class="admin-prod-btn-ghost px-4"
+                        <div class="admin-prod-form-footer !mt-2 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200/70 pt-4">
+                            <button type="button" class="admin-prod-btn-ghost px-5"
                                     @click="editingVendor = null">
                                 Cancel
                             </button>
-                            <button type="submit" class="admin-prod-btn-primary px-8">
+                            <button type="submit" class="admin-prod-btn-primary px-8 min-w-[9.5rem]">
                                 Save changes
                             </button>
                         </div>

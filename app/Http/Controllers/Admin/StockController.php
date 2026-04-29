@@ -41,20 +41,18 @@ class StockController extends Controller
             
             $stocksData = $stocks->map(function ($stock) {
                 try {
-                    // Calculate added quantity from purchases for this stock
-                    $added = (float) Purchase::where('stock_id', $stock->id)->sum('quantity');
-                    if (is_null($added) || $added < 0) {
-                        $added = 0;
-                    }
+                    // Added quantity must reflect real devices already entered (IMEI rows),
+                    // not purchase target quantity.
+                    $added = (int) ProductListItem::where('stock_id', $stock->id)->count();
                 } catch (\Exception $e) {
                     Log::warning('Error calculating added quantity for stock ' . $stock->id . ': ' . $e->getMessage());
                     $added = 0;
                 }
-                
+
                 $stockQuantity = (int) ($stock->stock_limit ?? 0);
                 $status = ($stockQuantity > 0 && $stockQuantity == $added) ? 'complete' : 'pending';
 
-                $imeiCount = (int) ProductListItem::where('stock_id', $stock->id)->count();
+                $imeiCount = $added;
                 $unsoldCount = (int) ProductListItem::where('stock_id', $stock->id)->whereNull('sold_at')->count();
 
                 return (object) [
@@ -63,7 +61,9 @@ class StockController extends Controller
                     'stock_quantity' => $stockQuantity,
                     'added' => (int) $added,
                     'status' => $status,
-                    'stock_status' => $unsoldCount > 0 ? 'in_stock' : 'sold_out',
+                    'stock_status' => $imeiCount === 0
+                        ? 'pending'
+                        : ($unsoldCount > 0 ? 'in_stock' : 'sold_out'),
                     'imei_count' => $imeiCount,
                 ];
             });
@@ -92,7 +92,9 @@ class StockController extends Controller
                             'stock_quantity' => $limit,
                             'added' => $added,
                             'status' => $status,
-                            'stock_status' => $unsoldCount > 0 ? 'in_stock' : 'sold_out',
+                            'stock_status' => $added === 0
+                                ? 'pending'
+                                : ($unsoldCount > 0 ? 'in_stock' : 'sold_out'),
                             'imei_count' => $added,
                         ];
                     });

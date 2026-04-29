@@ -120,7 +120,8 @@
 
     // Determine payment status label
     if ($isCredit) {
-        $paymentStatus = ($credit->payment_status ?? 'pending');
+        // Credit receipts should always print as PAID in the status badge.
+        $paymentStatus = 'paid';
     } else {
         if ($remaining <= 0.0001) {
             $paymentStatus = 'paid';

@@ -448,6 +448,14 @@ class ProductListController extends Controller
             ], 422);
         }
 
+        $sellingPrice = (float) $validated['selling_price'];
+        $minimumSellPrice = $this->resolveMinimumAllowedSellPrice($item);
+        if ($sellingPrice + 0.0001 < $minimumSellPrice) {
+            return response()->json([
+                'message' => 'Selling price cannot be lower than ' . number_format($minimumSellPrice, 2) . '.',
+            ], 422);
+        }
+
         $product = $item->product;
         if (! $product) {
             $product = Product::firstOrCreate(
@@ -491,7 +499,7 @@ class ProductListController extends Controller
         $sale = $this->createDirectAgentSale(
             $item, $product, $agent,
             $validated['customer_name'],
-            (float) $validated['selling_price'],
+            $sellingPrice,
             $paymentOpt
         );
 
@@ -557,6 +565,14 @@ class ProductListController extends Controller
             ], 422);
         }
 
+        $minimumSellPrice = $this->resolveMinimumAllowedSellPrice($item);
+        $requestedSellingPrice = (float) $validated['selling_price'];
+        if ($requestedSellingPrice + 0.0001 < $minimumSellPrice) {
+            return response()->json([
+                'message' => 'Selling price cannot be lower than ' . number_format($minimumSellPrice, 2) . '.',
+            ], 422);
+        }
+
         $product = $item->product;
         if (!$product) {
             $product = Product::firstOrCreate(
@@ -575,7 +591,7 @@ class ProductListController extends Controller
             $item->update(['product_id' => $product->id]);
         }
 
-        $totalCredit = (float) $validated['selling_price'];
+        $totalCredit = $requestedSellingPrice;
         $down = (float) ($validated['down_payment'] ?? 0);
         if ($down > $totalCredit + 0.0001) {
             return response()->json([
@@ -835,5 +851,45 @@ class ProductListController extends Controller
 
             return $sale;
         });
+    }
+
+    /**
+     * Minimum sell price allowed for an item:
+     * purchase sell_price -> latest stock/product sell_price -> product price.
+     */
+    private function resolveMinimumAllowedSellPrice(ProductListItem $item): float
+    {
+        $sellPrice = null;
+
+        if ($item->purchase_id) {
+            $purchase = $item->relationLoaded('purchase')
+                ? $item->purchase
+                : Purchase::find($item->purchase_id);
+            if ($purchase && $purchase->sell_price !== null) {
+                $sellPrice = (float) $purchase->sell_price;
+            }
+        }
+
+        if ($sellPrice === null && $item->stock_id && $item->product_id) {
+            $purchase = Purchase::where('stock_id', $item->stock_id)
+                ->where('product_id', $item->product_id)
+                ->whereNotNull('sell_price')
+                ->latest('date')
+                ->first();
+            if ($purchase) {
+                $sellPrice = (float) $purchase->sell_price;
+            }
+        }
+
+        if ($sellPrice === null && $item->product_id) {
+            $product = $item->relationLoaded('product')
+                ? $item->product
+                : Product::find($item->product_id);
+            if ($product && (float) $product->price > 0) {
+                $sellPrice = (float) $product->price;
+            }
+        }
+
+        return max(0, (float) ($sellPrice ?? 0));
     }
 }
