@@ -660,4 +660,14 @@ class AgentCreditController extends Controller
             ->route('admin.stock.edit-agent-credit', $credit->id)
             ->with('success', 'Agent credit updated successfully.');
     }
+
+    public function destroy(Request $request, int $id)
+    {
+        $credit = AgentCredit::findOrFail($id);
+        $credit->delete();
+
+        return redirect()
+            ->route('admin.stock.agent-credits', $request->query())
+            ->with('success', 'Agent credit deleted successfully.');
+    }
 }

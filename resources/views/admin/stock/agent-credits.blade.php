@@ -34,7 +34,7 @@
         @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mb-6">
-            <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <dl class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Credits</dt>
                     <dd class="text-lg font-semibold text-slate-900">{{ number_format($agentCreditsDashboard['count']) }}</dd>
@@ -46,6 +46,10 @@
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Total paid</dt>
                     <dd class="text-lg font-semibold text-green-700">{{ number_format($agentCreditsDashboard['total_paid'], 2) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total pending</dt>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($agentCreditsDashboard['total_pending'], 2) }} TZS</dd>
                 </div>
             </dl>
         </x-admin-page-dashboard>
@@ -124,7 +128,15 @@
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
                                     <a href="{{ route('admin.stock.edit-agent-credit', $credit->id) }}" class="admin-prod-link">Edit</a>
                                     <span class="text-slate-300 mx-1">|</span>
-                                    <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download invoice</a>
+                                    <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download receipt</a>
+                                    <span class="text-slate-300 mx-1">|</span>
+                                    <form action="{{ route('admin.stock.destroy-agent-credit', ['id' => $credit->id] + request()->query()) }}" method="POST"
+                                        class="inline-block"
+                                        onsubmit="return confirm('Delete this agent credit record?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="admin-prod-link text-rose-600">Delete</button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

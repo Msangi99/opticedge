@@ -280,6 +280,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::post('agent-credits/pay', [App\Http\Controllers\Admin\AgentCreditController::class, 'pay'])->name('agent-credits-pay');
             Route::post('agent-credits/{id}/pay-remaining', [App\Http\Controllers\Admin\AgentCreditController::class, 'payRemaining'])->name('agent-credit-pay-remaining');
             Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
+            Route::delete('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'destroy'])->name('destroy-agent-credit');
 
             Route::get('shop-records', [App\Http\Controllers\Admin\StockController::class , 'shopRecords'])->name('shop-records');
             Route::get('payables', [App\Http\Controllers\Admin\StockController::class , 'payables'])->name('payables');
