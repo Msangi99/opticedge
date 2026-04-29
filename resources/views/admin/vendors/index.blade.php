@@ -155,15 +155,15 @@
              x-transition:leave-end="opacity-0"
              @click.self="editingVendor = null">
             <div
-                class="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)] sm:max-h-[calc(100vh-3rem)]">
-                <div class="admin-dash-section-head flex items-start justify-between border-b border-slate-200/70 pb-4">
-                    <div class="pr-4">
+                class="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-x-hidden overflow-y-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)] sm:max-h-[calc(100vh-3rem)]">
+                <div class="admin-dash-section-head relative border-b border-slate-200/70 pb-4 text-center">
+                    <div class="mx-auto max-w-xl">
                         <h3 class="admin-dash-section-title text-xl">Edit vendor details</h3>
                         <p class="admin-dash-section-desc mt-1">Update supplier details used in purchases.</p>
                         <p class="mt-2 inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-600"
                            x-text="editingVendor ? editingVendor.name : ''"></p>
                     </div>
-                    <button type="button" class="ml-4 rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
+                    <button type="button" class="absolute right-0 top-0 rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
                             @click="editingVendor = null">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
@@ -172,7 +172,7 @@
                         </svg>
                     </button>
                 </div>
-                <div class="admin-dash-body flex-1 overflow-y-auto !pt-5">
+                <div class="admin-dash-body flex-1 overflow-y-auto px-1 !pt-5">
                     <form x-bind:action="editingVendor ? '{{ url('admin/vendors') }}/' + editingVendor.id : '#'"
                           method="POST" class="space-y-5">
                         @csrf
@@ -208,15 +208,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="admin-prod-form-footer sticky bottom-0 -mx-1 !mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-white/90 px-1 pt-4 pb-1 backdrop-blur-sm">
+                        <div class="admin-prod-form-footer sticky bottom-0 !mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-white/90 pt-4 pb-1 backdrop-blur-sm">
                             <p class="text-xs text-slate-500">Changes apply immediately to future purchases.</p>
-                            <button type="button" class="admin-prod-btn-ghost px-5"
-                                    @click="editingVendor = null">
-                                Cancel
-                            </button>
-                            <button type="submit" class="admin-prod-btn-primary px-8 min-w-[9.5rem]">
-                                Save changes
-                            </button>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="admin-prod-btn-ghost px-5"
+                                        @click="editingVendor = null">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="admin-prod-btn-primary px-8 min-w-[9.5rem]">
+                                    Save changes
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
