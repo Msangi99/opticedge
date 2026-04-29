@@ -109,6 +109,7 @@ class SettingController extends Controller
 
                 return ['module' => $module, 'action' => $action];
             })
+            ->unique(fn (array $permission) => $permission['module'] . '.' . $permission['action'])
             ->values();
 
         $role->permissions()->delete();
