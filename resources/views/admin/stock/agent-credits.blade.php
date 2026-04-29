@@ -171,7 +171,6 @@
                                 <tr>
                                     <th scope="col" class="admin-prod-th">Paid date</th>
                                     <th scope="col" class="admin-prod-th">Credit #</th>
-                                    <th scope="col" class="admin-prod-th">Customer</th>
                                     <th scope="col" class="admin-prod-th">Channel</th>
                                     <th scope="col" class="admin-prod-th">Amount</th>
                                 </tr>
@@ -181,13 +180,12 @@
                                     <tr>
                                         <td class="text-slate-600 text-sm">{{ $payment->paid_date?->format('Y-m-d') ?? '—' }}</td>
                                         <td class="font-medium text-[#232f3e]">#{{ $payment->agent_credit_id }}</td>
-                                        <td class="text-slate-700">{{ $payment->agentCredit?->customer_name ?? '—' }}</td>
                                         <td class="text-slate-700">{{ $payment->paymentOption?->name ?? '—' }}</td>
                                         <td class="font-variant-numeric font-semibold text-emerald-800">{{ number_format((float) $payment->amount, 2) }} TZS</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-slate-500 py-10">No payment history for the selected filter.</td>
+                                        <td colspan="4" class="text-center text-slate-500 py-10">No payment history for the selected filter.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -216,20 +214,16 @@
                 </div>
                 <form method="POST" action="{{ route('admin.stock.agent-credits-pay', request()->query()) }}" class="admin-prod-form-body space-y-4">
                     @csrf
-                    <div>
-                        <label for="agent_credit_id" class="admin-prod-label">Credit</label>
-                        <select name="agent_credit_id" id="agent_credit_id" required class="admin-prod-input">
-                            <option value="">Select credit</option>
-                            @foreach($payableCredits as $payableCredit)
-                                @php
-                                    $remaining = max(0, (float) $payableCredit->total_amount - (float) ($payableCredit->paid_amount ?? 0));
-                                @endphp
-                                <option value="{{ $payableCredit->id }}" @selected((string) old('agent_credit_id') === (string) $payableCredit->id)>
-                                    #{{ $payableCredit->id }} - {{ $payableCredit->agent?->name ?? '—' }} - {{ $payableCredit->customer_name }} (Pending {{ number_format($remaining, 2) }} TZS)
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @php
+                        $defaultPayableCreditId = old('agent_credit_id')
+                            ?: optional($payableCredits->first())->id;
+                    @endphp
+                    <input type="hidden" name="agent_credit_id" value="{{ $defaultPayableCreditId }}">
+                    @if(!$defaultPayableCreditId)
+                        <div class="admin-prod-alert admin-prod-alert--warning mb-0">
+                            No pending credits available to pay.
+                        </div>
+                    @endif
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="paid_date" class="admin-prod-label">Date</label>
@@ -242,7 +236,7 @@
                     </div>
                     <div class="flex items-center justify-end gap-2">
                         <button type="button" class="admin-prod-btn-ghost" @click="payModalOpen = false">Cancel</button>
-                        <button type="submit" class="admin-prod-btn-primary">Submit payment</button>
+                        <button type="submit" class="admin-prod-btn-primary" @disabled(!$defaultPayableCreditId)>Submit payment</button>
                     </div>
                 </form>
             </div>
