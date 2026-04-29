@@ -34,7 +34,7 @@
         @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mb-6">
-            <dl class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Credits</dt>
                     <dd class="text-lg font-semibold text-slate-900">{{ number_format($agentCreditsDashboard['count']) }}</dd>
@@ -46,10 +46,6 @@
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Total paid</dt>
                     <dd class="text-lg font-semibold text-green-700">{{ number_format($agentCreditsDashboard['total_paid'], 2) }} TZS</dd>
-                </div>
-                <div>
-                    <dt class="text-xs uppercase text-slate-500">Pending</dt>
-                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($agentCreditsDashboard['total_pending'], 2) }} TZS</dd>
                 </div>
             </dl>
         </x-admin-page-dashboard>
@@ -90,8 +86,7 @@
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Total</th>
                             <th scope="col" class="admin-prod-th">Channel</th>
-                            <th scope="col" class="admin-prod-th min-w-[180px]">Comm.</th>
-                            <th scope="col" class="admin-prod-th">Pending</th>
+                            <th scope="col" class="admin-prod-th min-w-[180px]">Commision</th>
                             <th scope="col" class="admin-prod-th">Status</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
@@ -100,7 +95,6 @@
                         @forelse($credits as $credit)
                             @php
                                 $t = (float) $credit->total_amount;
-                                $pend = max(0, $t - (float) ($credit->paid_amount ?? 0));
                             @endphp
                             <tr>
                                 <td class="text-slate-600 text-sm">
@@ -124,7 +118,6 @@
                                         <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save</button>
                                     </form>
                                 </td>
-                                <td class="font-variant-numeric font-medium text-amber-800">{{ number_format($pend, 2) }}</td>
                                 <td>
                                     <span class="admin-prod-dealer-status admin-prod-dealer-status--active">sold</span>
                                 </td>
@@ -136,7 +129,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
+                                <td colspan="10" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
                             </tr>
                         @endforelse
                     </tbody>
