@@ -155,14 +155,15 @@
              x-transition:leave-end="opacity-0"
              @click.self="editingVendor = null">
             <div
-                class="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/98 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)] sm:max-h-[calc(100vh-3rem)]">
+                class="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-slate-100/90 shadow-[18px_22px_45px_rgba(15,23,42,0.32),-6px_-8px_24px_rgba(255,255,255,0.95)] sm:max-h-[calc(100vh-3rem)]">
                 <div class="admin-dash-section-head flex items-start justify-between border-b border-slate-200/70 pb-4">
-                    <div>
-                        <h3 class="admin-dash-section-title">Edit vendor</h3>
-                        <p class="admin-dash-section-desc">Update supplier details used in purchases.</p>
-                        <p class="text-xs font-semibold text-slate-500 mt-1" x-text="editingVendor ? editingVendor.name : ''"></p>
+                    <div class="pr-4">
+                        <h3 class="admin-dash-section-title text-xl">Edit vendor details</h3>
+                        <p class="admin-dash-section-desc mt-1">Update supplier details used in purchases.</p>
+                        <p class="mt-2 inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                           x-text="editingVendor ? editingVendor.name : ''"></p>
                     </div>
-                    <button type="button" class="ml-4 rounded-full p-1.5 text-slate-500 transition-colors duration-200 hover:bg-white/80 hover:text-slate-800"
+                    <button type="button" class="ml-4 rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
                             @click="editingVendor = null">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                              stroke="currentColor">
@@ -176,36 +177,39 @@
                           method="POST" class="space-y-5">
                         @csrf
                         @method('PUT')
-                        <div class="grid grid-cols-1 gap-4">
-                            <div class="space-y-1.5">
-                                <label for="edit_vendor_name" class="admin-prod-label">Vendor name</label>
-                                <input id="edit_vendor_name" type="text" name="name" class="admin-prod-input"
-                                       x-model="editingVendor.name" placeholder="e.g. ABC Distributors Ltd" required>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="rounded-2xl border border-slate-200/70 bg-white/75 p-4 sm:p-5">
+                            <div class="grid grid-cols-1 gap-4">
                                 <div class="space-y-1.5">
-                                    <label for="edit_vendor_phone" class="admin-prod-label">Phone</label>
-                                    <input id="edit_vendor_phone" type="text" name="phone" class="admin-prod-input"
-                                           x-model="editingVendor.phone" placeholder="+255 7xx xxx xxx">
+                                    <label for="edit_vendor_name" class="admin-prod-label">Vendor name</label>
+                                    <input id="edit_vendor_name" type="text" name="name" class="admin-prod-input"
+                                           x-model="editingVendor.name" placeholder="e.g. ABC Distributors Ltd" required>
+                                </div>
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div class="space-y-1.5">
+                                        <label for="edit_vendor_phone" class="admin-prod-label">Phone</label>
+                                        <input id="edit_vendor_phone" type="text" name="phone" class="admin-prod-input"
+                                               x-model="editingVendor.phone" placeholder="+255 7xx xxx xxx">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label for="edit_vendor_email" class="admin-prod-label">Email</label>
+                                        <input id="edit_vendor_email" type="email" name="email" class="admin-prod-input"
+                                               x-model="editingVendor.email" placeholder="vendor@example.com">
+                                    </div>
                                 </div>
                                 <div class="space-y-1.5">
-                                    <label for="edit_vendor_email" class="admin-prod-label">Email</label>
-                                    <input id="edit_vendor_email" type="email" name="email" class="admin-prod-input"
-                                           x-model="editingVendor.email" placeholder="vendor@example.com">
+                                    <label for="edit_vendor_office_name" class="admin-prod-label">Office name</label>
+                                    <input id="edit_vendor_office_name" type="text" name="office_name" class="admin-prod-input"
+                                           x-model="editingVendor.office_name" placeholder="e.g. Kariakoo branch">
                                 </div>
-                            </div>
-                            <div class="space-y-1.5">
-                                <label for="edit_vendor_office_name" class="admin-prod-label">Office name</label>
-                                <input id="edit_vendor_office_name" type="text" name="office_name" class="admin-prod-input"
-                                       x-model="editingVendor.office_name" placeholder="e.g. Kariakoo branch">
-                            </div>
-                            <div class="space-y-1.5">
-                                <label for="edit_vendor_location" class="admin-prod-label">Location / address</label>
-                                <input id="edit_vendor_location" type="text" name="location" class="admin-prod-input"
-                                       x-model="editingVendor.location" placeholder="City, street, building">
+                                <div class="space-y-1.5">
+                                    <label for="edit_vendor_location" class="admin-prod-label">Location / address</label>
+                                    <input id="edit_vendor_location" type="text" name="location" class="admin-prod-input"
+                                           x-model="editingVendor.location" placeholder="City, street, building">
+                                </div>
                             </div>
                         </div>
-                        <div class="admin-prod-form-footer sticky bottom-0 -mx-1 !mt-2 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200/80 bg-white/90 px-1 pt-4 pb-1 backdrop-blur-sm">
+                        <div class="admin-prod-form-footer sticky bottom-0 -mx-1 !mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-white/90 px-1 pt-4 pb-1 backdrop-blur-sm">
+                            <p class="text-xs text-slate-500">Changes apply immediately to future purchases.</p>
                             <button type="button" class="admin-prod-btn-ghost px-5"
                                     @click="editingVendor = null">
                                 Cancel
