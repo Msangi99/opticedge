@@ -135,14 +135,14 @@
                                         </form>
                                     @endif
                                 </td>
-                                <td class="admin-prod-cell-actions">
-                                    <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs">Download receipt</a>
-                                    <span class="text-slate-300 mx-1">|</span>
+                                <td class="admin-prod-cell-actions whitespace-nowrap">
+                                    <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs whitespace-nowrap inline-flex">Download receipt</a>
+                                    <span class="text-slate-300 mx-1 inline-flex">|</span>
                                     <form action="{{ route('admin.stock.destroy-agent-sale', $sale->id) }}" method="POST" class="inline-block"
                                         onsubmit="return confirm('Delete this agent sale record?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="admin-prod-link text-xs text-rose-600">Delete</button>
+                                        <button type="submit" class="admin-prod-link text-xs text-rose-600 whitespace-nowrap">Delete</button>
                                     </form>
                                 </td>
                             </tr>
