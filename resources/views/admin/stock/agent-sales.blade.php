@@ -28,6 +28,11 @@
         @if(session('info'))
             <div class="admin-prod-alert admin-prod-alert--warning mb-4" role="status">{{ session('info') }}</div>
         @endif
+        @if($errors->any())
+            <div class="admin-prod-alert admin-prod-alert--warning mb-4" role="alert">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mt-2">
             <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -85,7 +90,7 @@
                             <th scope="col" class="admin-prod-th">Total buy</th>
                             <th scope="col" class="admin-prod-th">Total sell</th>
                             <th scope="col" class="admin-prod-th">Profit</th>
-                            <th scope="col" class="admin-prod-th">Comm.</th>
+                            <th scope="col" class="admin-prod-th">Commission</th>
                             <th scope="col" class="admin-prod-th">Channel</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
@@ -111,7 +116,7 @@
                                         @method('PATCH')
                                         <input type="number" name="commission_paid" value="{{ $sale->commission_paid ?? 0 }}" step="0.01" min="0"
                                             class="admin-prod-input w-32 py-1.5 text-sm">
-                                        <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save</button>
+                                        <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save commission</button>
                                     </form>
                                 </td>
                                 <td>

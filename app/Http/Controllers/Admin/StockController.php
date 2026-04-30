@@ -517,26 +517,29 @@ class StockController extends Controller
         $validated = $request->validate(['commission_paid' => 'required|numeric|min:0']);
         $newCommission = (float) $validated['commission_paid'];
         $eps = 0.0001;
-
-        if ($newCommission > $eps && ! Schema::hasColumn('agent_sales', 'commission_expense_id')) {
-            return redirect()->route('admin.stock.agent-sales')
-                ->withErrors(['error' => 'Run php artisan migrate so agent sale commission can be linked to expenses.']);
-        }
+        $canStoreExpenseId = Schema::hasColumn('agent_sales', 'commission_expense_id');
 
         $defaultChannelRaw = Setting::query()->where('key', 'default_agent_commission_channel_id')->value('value');
         $defaultChannelId = $defaultChannelRaw !== null && $defaultChannelRaw !== '' ? (int) $defaultChannelRaw : null;
         if ($newCommission > $eps && ! $defaultChannelId) {
-            return redirect()->route('admin.stock.agent-sales')
+            return redirect()->route('admin.stock.agent-sales', $request->query())
                 ->withErrors(['error' => 'Choose a default commission channel in Store settings before saving commission.']);
         }
 
         try {
-            DB::transaction(function () use ($sale, $newCommission, $defaultChannelId, $eps) {
+            DB::transaction(function () use ($sale, $newCommission, $defaultChannelId, $eps, $canStoreExpenseId) {
                 $sale->refresh();
 
                 $linkedExpense = null;
-                if (Schema::hasColumn('agent_sales', 'commission_expense_id') && $sale->commission_expense_id) {
+                if ($canStoreExpenseId && $sale->commission_expense_id) {
                     $linkedExpense = Expense::query()->lockForUpdate()->find($sale->commission_expense_id);
+                }
+                if (! $linkedExpense) {
+                    $linkedExpense = Expense::query()
+                        ->lockForUpdate()
+                        ->where('activity', 'Agent sale commission (sale #' . $sale->id . ')')
+                        ->latest('id')
+                        ->first();
                 }
 
                 if ($linkedExpense) {
@@ -551,7 +554,6 @@ class StockController extends Controller
 
                 $commissionExpenseId = null;
                 if ($newCommission > $eps) {
-                    $agentName = trim((string) ($sale->agent?->name ?? $sale->seller_name ?? 'Unknown agent'));
                     $option = PaymentOption::query()
                         ->visible()
                         ->whereKey($defaultChannelId)
@@ -569,7 +571,7 @@ class StockController extends Controller
                     $option->decrement('balance', $newCommission);
 
                     $expense = Expense::create([
-                        'activity' => 'Agent commission - ' . $agentName . ' (sale #' . $sale->id . ')',
+                        'activity' => 'Agent sale commission (sale #' . $sale->id . ')',
                         'amount' => $newCommission,
                         'cash_used' => null,
                         'payment_option_id' => $option->id,
@@ -579,22 +581,22 @@ class StockController extends Controller
                 }
 
                 $payload = ['commission_paid' => $newCommission];
-                if (Schema::hasColumn('agent_sales', 'commission_expense_id')) {
+                if ($canStoreExpenseId) {
                     $payload['commission_expense_id'] = $commissionExpenseId;
                 }
                 $sale->update($payload);
             });
         } catch (\InvalidArgumentException $e) {
-            return redirect()->route('admin.stock.agent-sales')
+            return redirect()->route('admin.stock.agent-sales', $request->query())
                 ->withErrors(['error' => $e->getMessage()]);
         } catch (\Throwable $e) {
             Log::error('Agent sale commission save failed: ' . $e->getMessage(), ['exception' => $e]);
 
-            return redirect()->route('admin.stock.agent-sales')
+            return redirect()->route('admin.stock.agent-sales', $request->query())
                 ->withErrors(['error' => 'Could not save commission. Try again or check logs.']);
         }
 
-        return redirect()->route('admin.stock.agent-sales')->with('success', 'Commission updated.');
+        return redirect()->route('admin.stock.agent-sales', $request->query())->with('success', 'Commission updated and expense synced.');
     }
 
     public function destroyAgentSale($id)
@@ -679,14 +681,6 @@ class StockController extends Controller
     public function addProductForm()
     {
         $stocks = Stock::query()
-            ->where(function ($q) {
-                $q->whereHas('purchases', function ($p) {
-                    $p->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
-                })->orWhereHas('productListItems')
-                    ->orWhere(function ($s) {
-                        $s->whereNotNull('default_model')->whereNotNull('default_category_id');
-                    });
-            })
             ->orderBy('name')
             ->get(['id', 'name']);
         return view('admin.stock.add-product', compact('stocks'));
@@ -697,25 +691,47 @@ class StockController extends Controller
      */
     public function modelsForStock(Stock $stock)
     {
-        $fromList = \App\Models\ProductListItem::where('stock_id', $stock->id)
-            ->select('model', 'category_id')
-            ->distinct()
+        $fromList = \App\Models\ProductListItem::query()
+            ->where('stock_id', $stock->id)
+            ->with('product:id,name,category_id')
             ->get()
-            ->map(fn ($r) => ['model' => $r->model, 'category_id' => $r->category_id]);
-        $fromPurchases = Purchase::where('stock_id', $stock->id)
-            ->with('product:id,category_id,name')
-            ->get()
-            ->map(function ($p) {
-                return $p->product ? ['model' => $p->product->name, 'category_id' => $p->product->category_id] : null;
+            ->map(function ($r) {
+                $model = trim((string) ($r->model ?: ($r->product->name ?? '')));
+                $categoryId = $r->category_id ?: ($r->product->category_id ?? null);
+                if ($model === '' || empty($categoryId)) {
+                    return null;
+                }
+
+                return ['model' => $model, 'category_id' => (int) $categoryId];
             })
             ->filter()
             ->unique('model')
             ->values();
-        $combined = $fromList->concat($fromPurchases)->unique('model')->values();
+
+        $fromPurchases = Purchase::where('stock_id', $stock->id)
+            ->with('product:id,category_id,name')
+            ->get()
+            ->map(function ($p) {
+                $model = trim((string) ($p->product->name ?? ''));
+                $categoryId = $p->product->category_id ?? null;
+                if ($model === '' || empty($categoryId)) {
+                    return null;
+                }
+
+                return ['model' => $model, 'category_id' => (int) $categoryId];
+            })
+            ->filter()
+            ->unique('model')
+            ->values();
+        $combined = $fromList
+            ->concat($fromPurchases)
+            ->unique('model')
+            ->sortBy('model', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
         if ($combined->isEmpty() && ! empty($stock->default_model) && ! empty($stock->default_category_id)) {
             $combined = collect([[
                 'model' => $stock->default_model,
-                'category_id' => $stock->default_category_id,
+                'category_id' => (int) $stock->default_category_id,
             ]]);
         }
 
