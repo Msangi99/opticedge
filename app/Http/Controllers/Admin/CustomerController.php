@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 
 class CustomerController extends Controller
 {
@@ -40,5 +41,28 @@ class CustomerController extends Controller
 
         return redirect()->route('admin.customers.index', request()->query())
             ->with('success', 'User deactivated successfully.');
+    }
+
+    public function destroy(User $user)
+    {
+        if (($user->role ?? '') === 'admin') {
+            return redirect()->route('admin.customers.index', request()->query())
+                ->withErrors(['error' => 'Admin account cannot be deleted here.']);
+        }
+
+        if ((int) $user->id === (int) auth()->id()) {
+            return redirect()->route('admin.customers.index', request()->query())
+                ->withErrors(['error' => 'You cannot delete your own account.']);
+        }
+
+        try {
+            $user->delete();
+        } catch (QueryException $e) {
+            return redirect()->route('admin.customers.index', request()->query())
+                ->withErrors(['error' => 'Cannot delete this user because it is linked to existing records.']);
+        }
+
+        return redirect()->route('admin.customers.index', request()->query())
+            ->with('success', 'User deleted successfully.');
     }
 }

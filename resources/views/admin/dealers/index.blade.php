@@ -121,6 +121,15 @@
                                                 <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Save</button>
                                             </form>
                                         </details>
+                                        <form action="{{ route('admin.dealers.destroy', $dealer->id) }}" method="POST"
+                                            class="w-full flex justify-end"
+                                            onsubmit="return confirm('Delete this dealer permanently? This cannot be undone.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="admin-prod-link text-sm text-rose-700 hover:text-rose-800">
+                                                Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

@@ -13,6 +13,7 @@ use App\Services\AgentProductAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\QueryException;
 
 class AgentController extends Controller
 {
@@ -194,5 +195,30 @@ class AgentController extends Controller
         $label = $user->role === 'agent' ? 'Agent' : 'Leader';
 
         return redirect()->route($targetRoute)->with('success', $label . ' activated successfully.');
+    }
+
+    public function destroy(User $user)
+    {
+        if (! in_array($user->role, ['agent', 'subadmin'], true)) {
+            abort(404);
+        }
+
+        if ((int) $user->id === (int) auth()->id()) {
+            $targetRoute = $user->role === 'agent' ? 'admin.agents.index' : 'admin.subadmins.index';
+            return redirect()->route($targetRoute)
+                ->withErrors(['error' => 'You cannot delete your own account.']);
+        }
+
+        $targetRoute = $user->role === 'agent' ? 'admin.agents.index' : 'admin.subadmins.index';
+        $label = $user->role === 'agent' ? 'Agent' : 'Leader';
+
+        try {
+            $user->delete();
+        } catch (QueryException $e) {
+            return redirect()->route($targetRoute)
+                ->withErrors(['error' => 'Cannot delete this ' . strtolower($label) . ' because it is linked to existing records.']);
+        }
+
+        return redirect()->route($targetRoute)->with('success', $label . ' deleted successfully.');
     }
 }

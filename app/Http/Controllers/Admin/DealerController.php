@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
 
 class DealerController extends Controller
@@ -89,5 +90,26 @@ class DealerController extends Controller
         $user->load('addresses');
 
         return view('admin.dealers.show', compact('user'));
+    }
+
+    public function destroy(User $user)
+    {
+        if ($user->role !== 'dealer') {
+            abort(404);
+        }
+
+        if ((int) $user->id === (int) auth()->id()) {
+            return redirect()->route('admin.dealers.index')
+                ->withErrors(['error' => 'You cannot delete your own account.']);
+        }
+
+        try {
+            $user->delete();
+        } catch (QueryException $e) {
+            return redirect()->route('admin.dealers.index')
+                ->withErrors(['error' => 'Cannot delete this dealer because it is linked to existing records.']);
+        }
+
+        return redirect()->route('admin.dealers.index')->with('success', 'Dealer deleted successfully.');
     }
 }

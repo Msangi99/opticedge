@@ -117,6 +117,13 @@
                                                     <button type="submit" class="admin-prod-link text-sm text-emerald-700 hover:text-emerald-800">Activate</button>
                                                 </form>
                                             @endif
+                                            <form method="POST" action="{{ route('admin.customers.destroy', ['user' => $user->id] + request()->query()) }}"
+                                                class="w-full flex justify-end"
+                                                onsubmit="return confirm('Delete this user permanently? This cannot be undone.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="admin-prod-link text-sm text-rose-700 hover:text-rose-800">Delete</button>
+                                            </form>
                                         @endif
                                     </div>
                                 </td>

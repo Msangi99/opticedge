@@ -158,6 +158,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::get('dealers/{user}', [App\Http\Controllers\Admin\DealerController::class , 'show'])->name('dealers.show');
         Route::patch('dealers/{user}/approve', [App\Http\Controllers\Admin\DealerController::class , 'approve'])->name('dealers.approve');
         Route::patch('dealers/{user}/reject', [App\Http\Controllers\Admin\DealerController::class , 'reject'])->name('dealers.reject');
+        Route::delete('dealers/{user}', [App\Http\Controllers\Admin\DealerController::class, 'destroy'])->name('dealers.destroy');
 
         // Agents Management
         Route::get('agents', [App\Http\Controllers\Admin\AgentController::class, 'index'])->name('agents.index');
@@ -173,8 +174,10 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::patch('agents/{agent}/transfer-branch', [App\Http\Controllers\Admin\AgentController::class, 'transferBranch'])->name('agents.transfer-branch');
         Route::patch('agents/{user}/activate', [App\Http\Controllers\Admin\AgentController::class, 'activate'])->name('agents.activate');
         Route::patch('agents/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('agents.deactivate');
+        Route::delete('agents/{user}', [App\Http\Controllers\Admin\AgentController::class, 'destroy'])->name('agents.destroy');
         Route::patch('subadmins/{user}/activate', [App\Http\Controllers\Admin\AgentController::class, 'activate'])->name('subadmins.activate');
         Route::patch('subadmins/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('subadmins.deactivate');
+        Route::delete('subadmins/{user}', [App\Http\Controllers\Admin\AgentController::class, 'destroy'])->name('subadmins.destroy');
 
         // Orders
         Route::resource('orders', App\Http\Controllers\Admin\OrderController::class)->only(['index', 'show', 'update']);
@@ -183,6 +186,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::get('customers', [App\Http\Controllers\Admin\CustomerController::class , 'index'])->name('customers.index');
         Route::patch('customers/{user}/activate', [App\Http\Controllers\Admin\CustomerController::class, 'activate'])->name('customers.activate');
         Route::patch('customers/{user}/deactivate', [App\Http\Controllers\Admin\CustomerController::class, 'deactivate'])->name('customers.deactivate');
+        Route::delete('customers/{user}', [App\Http\Controllers\Admin\CustomerController::class, 'destroy'])->name('customers.destroy');
         Route::post('users/{user}/reset-password', [App\Http\Controllers\Admin\UserPasswordController::class, 'reset'])
             ->name('users.reset-password');
 
@@ -235,6 +239,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::post('add-product', [App\Http\Controllers\Admin\StockController::class, 'storeProductFromForm'])->name('store-add-product');
             Route::post('decode-barcodes', [App\Http\Controllers\Admin\StockController::class, 'decodeBarcodeImages'])->name('decode-barcodes');
             Route::get('purchase/{id}', [App\Http\Controllers\Admin\StockController::class, 'showPurchase'])->name('purchase.show');
+            Route::delete('purchase/{purchase}/items/{productListItem}', [App\Http\Controllers\Admin\StockController::class, 'destroyPurchaseItem'])->name('purchase.item.destroy');
             Route::get('purchases', [App\Http\Controllers\Admin\StockController::class , 'purchases'])->name('purchases');
             Route::get('purchases/export-csv', [App\Http\Controllers\Admin\StockController::class, 'exportPurchasesCsv'])->name('purchases.export-csv');
             Route::get('purchases/receipts', [App\Http\Controllers\Admin\StockController::class , 'viewAllReceipts'])->name('purchases.receipts');

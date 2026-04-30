@@ -53,6 +53,18 @@
                     @enderror
                 </div>
 
+                <div>
+                    <label for="shrink_amount" class="admin-prod-label">Shrink amount (TZS)</label>
+                    <input type="number" name="shrink_amount" id="shrink_amount" value="{{ old('shrink_amount') }}" min="0"
+                        step="0.01" placeholder="0.00" class="admin-prod-input">
+                    <p class="text-xs text-slate-500 mt-1.5">
+                        Use this to reduce channel balance from Edit.
+                    </p>
+                    @error('shrink_amount')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
                     <a href="{{ route('admin.payment-options.index') }}" class="admin-prod-btn-ghost">Cancel</a>
                     <button type="submit" class="admin-prod-btn-primary px-8">Update channel</button>

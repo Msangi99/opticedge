@@ -149,6 +149,51 @@ class StockController extends Controller
     }
 
     /**
+     * Delete one IMEI row from a purchase details page.
+     */
+    public function destroyPurchaseItem(Purchase $purchase, ProductListItem $productListItem)
+    {
+        if ((int) $productListItem->purchase_id !== (int) $purchase->id) {
+            return redirect()
+                ->route('admin.stock.purchase.show', $purchase->id)
+                ->withErrors(['error' => 'This IMEI does not belong to the selected purchase.']);
+        }
+
+        if ($productListItem->sold_at || $productListItem->agent_sale_id || $productListItem->agent_credit_id || $productListItem->pending_sale_id) {
+            return redirect()
+                ->route('admin.stock.purchase.show', $purchase->id)
+                ->withErrors(['error' => 'Cannot delete IMEI that is already linked to a sale or credit.']);
+        }
+
+        if ($productListItem->agentProductListAssignment()->exists()) {
+            return redirect()
+                ->route('admin.stock.purchase.show', $purchase->id)
+                ->withErrors(['error' => 'Cannot delete IMEI that is assigned to an agent.']);
+        }
+
+        DB::transaction(function () use ($purchase, $productListItem) {
+            $productListItem->delete();
+
+            if (Schema::hasColumn('purchases', 'limit_remaining')) {
+                $currentRemaining = (int) ($purchase->limit_remaining ?? 0);
+                $maxLimit = (int) ($purchase->quantity ?? 0);
+                $nextRemaining = $maxLimit > 0
+                    ? min($maxLimit, $currentRemaining + 1)
+                    : ($currentRemaining + 1);
+                $update = ['limit_remaining' => $nextRemaining];
+                if (Schema::hasColumn('purchases', 'limit_status')) {
+                    $update['limit_status'] = $nextRemaining > 0 ? 'pending' : 'complete';
+                }
+                $purchase->update($update);
+            }
+        });
+
+        return redirect()
+            ->route('admin.stock.purchase.show', $purchase->id)
+            ->with('success', 'IMEI deleted successfully.');
+    }
+
+    /**
      * Show devices (product list items) for a stock: model and IMEI.
      */
     public function showStock(Stock $stock)

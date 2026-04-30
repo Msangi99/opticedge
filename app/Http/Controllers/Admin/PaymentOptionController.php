@@ -69,15 +69,33 @@ class PaymentOptionController extends Controller
             'type' => 'required|in:mobile,bank,cash',
             'name' => 'required|string|max:255',
             'add_amount' => 'nullable|numeric|min:0',
+            'shrink_amount' => 'nullable|numeric|min:0',
         ]);
 
         $addAmount = (float) ($validated['add_amount'] ?? 0);
+        $shrinkAmount = (float) ($validated['shrink_amount'] ?? 0);
         unset($validated['add_amount']);
+        unset($validated['shrink_amount']);
+
+        if ($addAmount > 0 && $shrinkAmount > 0) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Use either Add amount or Shrink amount in one update.']);
+        }
+
+        if ($shrinkAmount > 0 && (float) ($paymentOption->balance ?? 0) < $shrinkAmount) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['shrink_amount' => 'Insufficient channel balance to shrink that amount.']);
+        }
 
         $paymentOption->update($validated);
 
         if ($addAmount > 0) {
             $paymentOption->increment('balance', $addAmount);
+        }
+        if ($shrinkAmount > 0) {
+            $paymentOption->decrement('balance', $shrinkAmount);
         }
 
         return redirect()->route('admin.payment-options.index')

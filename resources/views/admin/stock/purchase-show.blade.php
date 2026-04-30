@@ -16,6 +16,9 @@
                 <p class="admin-prod-subtitle">Model, category and IMEI. Click a row to expand details.</p>
             </div>
         </div>
+        @if($errors->any())
+            <div class="admin-prod-alert admin-prod-alert--warning mb-4" role="alert">{{ $errors->first() }}</div>
+        @endif
 
         <div class="admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">
@@ -28,6 +31,7 @@
                             <th scope="col" class="admin-prod-th">Category</th>
                             <th scope="col" class="admin-prod-th">IMEI</th>
                             <th scope="col" class="admin-prod-th">Status</th>
+                            <th scope="col" class="admin-prod-th admin-prod-th--end">Action</th>
                         </tr>
                     </thead>
                     @forelse($items as $index => $item)
@@ -50,9 +54,23 @@
                                         <span class="admin-prod-status admin-prod-status--ok">Available</span>
                                     @endif
                                 </td>
+                                <td class="admin-prod-cell-actions" @click.stop>
+                                    @if($item->sold_at || $item->agent_sale_id || $item->agent_credit_id || $item->pending_sale_id || $item->agentProductListAssignment)
+                                        <span class="text-slate-400 text-xs">Locked</span>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.stock.purchase.item.destroy', ['purchase' => $purchase->id, 'productListItem' => $item->id]) }}" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="admin-prod-link text-xs text-rose-600"
+                                                onclick="return confirm('Delete this IMEI from this purchase?');">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                             <tr x-show="open" x-cloak class="!border-b border-slate-200/80">
-                                <td colspan="6" class="p-0">
+                                <td colspan="7" class="p-0">
                                     @include('admin.stock.partials.imei-full-info', ['item' => $item])
                                 </td>
                             </tr>
@@ -60,7 +78,7 @@
                     @empty
                         <tbody>
                             <tr>
-                                <td colspan="6" class="text-center text-slate-500 py-10">No items for this purchase yet.</td>
+                                <td colspan="7" class="text-center text-slate-500 py-10">No items for this purchase yet.</td>
                             </tr>
                         </tbody>
                     @endforelse
