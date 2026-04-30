@@ -179,4 +179,20 @@ class AgentController extends Controller
 
         return redirect()->route($targetRoute)->with('success', $label . ' deactivated successfully.');
     }
+
+    public function activate(User $user)
+    {
+        if (! in_array($user->role, ['agent', 'subadmin'], true)) {
+            abort(404);
+        }
+
+        $user->update(['status' => 'active']);
+
+        $targetRoute = $user->role === 'agent'
+            ? 'admin.agents.index'
+            : 'admin.subadmins.index';
+        $label = $user->role === 'agent' ? 'Agent' : 'Leader';
+
+        return redirect()->route($targetRoute)->with('success', $label . ' activated successfully.');
+    }
 }

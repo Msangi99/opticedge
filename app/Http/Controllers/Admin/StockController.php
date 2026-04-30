@@ -9,6 +9,7 @@ use App\Models\PurchasePayment;
 use App\Models\AgentSale;
 use App\Models\DistributionSale;
 use App\Models\DistributionSalePayment;
+use App\Models\Expense;
 use App\Models\PaymentOption;
 use App\Models\Product;
 use App\Models\ProductListItem;
@@ -514,8 +515,138 @@ class StockController extends Controller
     {
         $sale = AgentSale::findOrFail($id);
         $validated = $request->validate(['commission_paid' => 'required|numeric|min:0']);
-        $sale->update($validated);
+        $newCommission = (float) $validated['commission_paid'];
+        $eps = 0.0001;
+
+        if ($newCommission > $eps && ! Schema::hasColumn('agent_sales', 'commission_expense_id')) {
+            return redirect()->route('admin.stock.agent-sales')
+                ->withErrors(['error' => 'Run php artisan migrate so agent sale commission can be linked to expenses.']);
+        }
+
+        $defaultChannelRaw = Setting::query()->where('key', 'default_agent_commission_channel_id')->value('value');
+        $defaultChannelId = $defaultChannelRaw !== null && $defaultChannelRaw !== '' ? (int) $defaultChannelRaw : null;
+        if ($newCommission > $eps && ! $defaultChannelId) {
+            return redirect()->route('admin.stock.agent-sales')
+                ->withErrors(['error' => 'Choose a default commission channel in Store settings before saving commission.']);
+        }
+
+        try {
+            DB::transaction(function () use ($sale, $newCommission, $defaultChannelId, $eps) {
+                $sale->refresh();
+
+                $linkedExpense = null;
+                if (Schema::hasColumn('agent_sales', 'commission_expense_id') && $sale->commission_expense_id) {
+                    $linkedExpense = Expense::query()->lockForUpdate()->find($sale->commission_expense_id);
+                }
+
+                if ($linkedExpense) {
+                    $opt = $linkedExpense->paymentOption;
+                    if ($opt) {
+                        $opt->increment('balance', (float) $linkedExpense->amount);
+                    }
+                    $sale->commission_expense_id = null;
+                    $sale->saveQuietly();
+                    $linkedExpense->delete();
+                }
+
+                $commissionExpenseId = null;
+                if ($newCommission > $eps) {
+                    $agentName = trim((string) ($sale->agent?->name ?? $sale->seller_name ?? 'Unknown agent'));
+                    $option = PaymentOption::query()
+                        ->visible()
+                        ->whereKey($defaultChannelId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $option) {
+                        throw new \InvalidArgumentException('The default commission channel is invalid or hidden. Update Store settings.');
+                    }
+
+                    if ((float) $option->balance + $eps < $newCommission) {
+                        throw new \InvalidArgumentException('Insufficient balance in the default commission channel for this amount.');
+                    }
+
+                    $option->decrement('balance', $newCommission);
+
+                    $expense = Expense::create([
+                        'activity' => 'Agent commission - ' . $agentName . ' (sale #' . $sale->id . ')',
+                        'amount' => $newCommission,
+                        'cash_used' => null,
+                        'payment_option_id' => $option->id,
+                        'date' => now()->toDateString(),
+                    ]);
+                    $commissionExpenseId = $expense->id;
+                }
+
+                $payload = ['commission_paid' => $newCommission];
+                if (Schema::hasColumn('agent_sales', 'commission_expense_id')) {
+                    $payload['commission_expense_id'] = $commissionExpenseId;
+                }
+                $sale->update($payload);
+            });
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->route('admin.stock.agent-sales')
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('Agent sale commission save failed: ' . $e->getMessage(), ['exception' => $e]);
+
+            return redirect()->route('admin.stock.agent-sales')
+                ->withErrors(['error' => 'Could not save commission. Try again or check logs.']);
+        }
+
         return redirect()->route('admin.stock.agent-sales')->with('success', 'Commission updated.');
+    }
+
+    public function destroyAgentSale($id)
+    {
+        $sale = AgentSale::findOrFail($id);
+        $product = $sale->product;
+        $qty = (int) ($sale->quantity_sold ?? 0);
+
+        try {
+            DB::transaction(function () use ($sale) {
+                if ($sale->payment_option_id) {
+                    $option = PaymentOption::find($sale->payment_option_id);
+                    $amount = (float) ($sale->total_selling_value ?? 0);
+                    if ($option && $amount > 0) {
+                        if ((float) $option->balance >= $amount) {
+                            $option->decrement('balance', $amount);
+                        } else {
+                            throw new \RuntimeException('Cannot delete sale because the linked channel balance is already lower than this sale amount.');
+                        }
+                    }
+                }
+
+                if (Schema::hasColumn('agent_sales', 'commission_expense_id') && ! empty($sale->commission_expense_id)) {
+                    $expense = Expense::find($sale->commission_expense_id);
+                    if ($expense) {
+                        if ($expense->payment_option_id) {
+                            $expOpt = PaymentOption::find($expense->payment_option_id);
+                            if ($expOpt) {
+                                $expOpt->increment('balance', (float) $expense->amount);
+                            }
+                        }
+                        $expense->delete();
+                    }
+                }
+
+                \App\Models\ProductListItem::where('agent_sale_id', $sale->id)->update([
+                    'agent_sale_id' => null,
+                    'sold_at' => null,
+                ]);
+
+                $sale->delete();
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.stock.agent-sales')
+                ->withErrors(['error' => $e->getMessage()]);
+        }
+
+        if ($product && $qty > 0) {
+            $product->increment('stock_quantity', $qty);
+        }
+
+        return redirect()->route('admin.stock.agent-sales')->with('success', 'Agent sale deleted successfully.');
     }
 
     public function downloadAgentSaleInvoice($id)
@@ -547,9 +678,17 @@ class StockController extends Controller
      */
     public function addProductForm()
     {
-        $stocks = Stock::whereHas('purchases', function ($q) {
-            $q->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
-        })->orderBy('name')->get(['id', 'name']);
+        $stocks = Stock::query()
+            ->where(function ($q) {
+                $q->whereHas('purchases', function ($p) {
+                    $p->where('limit_status', 'pending')->where('limit_remaining', '>', 0);
+                })->orWhereHas('productListItems')
+                    ->orWhere(function ($s) {
+                        $s->whereNotNull('default_model')->whereNotNull('default_category_id');
+                    });
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
         return view('admin.stock.add-product', compact('stocks'));
     }
 
@@ -572,8 +711,15 @@ class StockController extends Controller
             ->filter()
             ->unique('model')
             ->values();
-        $combined = $fromList->concat($fromPurchases)->unique('model')->values()->all();
-        return response()->json(['data' => $combined]);
+        $combined = $fromList->concat($fromPurchases)->unique('model')->values();
+        if ($combined->isEmpty() && ! empty($stock->default_model) && ! empty($stock->default_category_id)) {
+            $combined = collect([[
+                'model' => $stock->default_model,
+                'category_id' => $stock->default_category_id,
+            ]]);
+        }
+
+        return response()->json(['data' => $combined->all()]);
     }
 
     /**

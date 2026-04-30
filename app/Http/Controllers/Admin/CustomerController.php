@@ -20,4 +20,25 @@ class CustomerController extends Controller
 
         return view('admin.customers.index', compact('customers'));
     }
+
+    public function activate(User $user)
+    {
+        $user->update(['status' => 'active']);
+
+        return redirect()->route('admin.customers.index', request()->query())
+            ->with('success', 'User activated successfully.');
+    }
+
+    public function deactivate(User $user)
+    {
+        if (($user->role ?? '') === 'admin') {
+            return redirect()->route('admin.customers.index', request()->query())
+                ->withErrors(['error' => 'Admin account cannot be deactivated here.']);
+        }
+
+        $user->update(['status' => 'inactive']);
+
+        return redirect()->route('admin.customers.index', request()->query())
+            ->with('success', 'User deactivated successfully.');
+    }
 }

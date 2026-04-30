@@ -104,7 +104,16 @@
                                 <td class="font-variant-numeric text-sm">{{ number_format($sale->total_purchase_value ?? 0, 0) }}</td>
                                 <td class="font-variant-numeric font-bold">{{ number_format($sale->total_selling_value ?? 0, 0) }}</td>
                                 <td class="font-variant-numeric text-green-700">{{ number_format($sale->profit ?? 0, 0) }}</td>
-                                <td class="font-variant-numeric text-sm">{{ number_format($sale->commission_paid ?? 0, 0) }}</td>
+                                <td class="admin-prod-cell-actions">
+                                    <form action="{{ route('admin.stock.agent-sales-update-commission', $sale->id) }}" method="POST"
+                                        class="inline-flex items-center gap-2 flex-wrap justify-end">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="number" name="commission_paid" value="{{ $sale->commission_paid ?? 0 }}" step="0.01" min="0"
+                                            class="admin-prod-input w-32 py-1.5 text-sm">
+                                        <button type="submit" class="admin-prod-link text-sm whitespace-nowrap">Save</button>
+                                    </form>
+                                </td>
                                 <td>
                                     @if($sale->payment_option_id)
                                         <span class="text-slate-600 text-sm">{{ $sale->paymentOption?->name ?? '—' }}</span>
@@ -123,6 +132,13 @@
                                 </td>
                                 <td class="admin-prod-cell-actions">
                                     <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs">Download receipt</a>
+                                    <span class="text-slate-300 mx-1">|</span>
+                                    <form action="{{ route('admin.stock.destroy-agent-sale', $sale->id) }}" method="POST" class="inline-block"
+                                        onsubmit="return confirm('Delete this agent sale record?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="admin-prod-link text-xs text-rose-600">Delete</button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

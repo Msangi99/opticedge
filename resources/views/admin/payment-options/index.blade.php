@@ -67,6 +67,14 @@
                                 <td class="admin-prod-cell-actions">
                                     <div class="admin-prod-actions flex-wrap gap-x-3 gap-y-1 justify-end">
                                         <a href="{{ route('admin.payment-options.edit', $option) }}" class="admin-prod-link">Edit</a>
+                                        <form action="{{ route('admin.payment-options.shrink-balance', $option) }}" method="POST"
+                                            class="inline-flex items-center gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="number" name="shrink_amount" min="0.01" step="0.01" placeholder="Shrink amount"
+                                                class="admin-prod-input w-32 py-1 text-xs">
+                                            <button type="submit" class="admin-prod-btn-inline admin-prod-link--danger">Shrink</button>
+                                        </form>
                                         <form action="{{ route('admin.payment-options.toggle-visibility', $option) }}" method="POST" class="inline">
                                             @csrf
                                             @method('PATCH')

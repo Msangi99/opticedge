@@ -104,4 +104,27 @@ class PaymentOptionController extends Controller
         return redirect()->route('admin.payment-options.index')
             ->with('success', $message);
     }
+
+    /**
+     * Reduce (shrink) channel balance by a manual amount.
+     */
+    public function shrinkBalance(Request $request, PaymentOption $paymentOption)
+    {
+        $validated = $request->validate([
+            'shrink_amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $shrinkAmount = (float) $validated['shrink_amount'];
+        $currentBalance = (float) ($paymentOption->balance ?? 0);
+
+        if ($currentBalance < $shrinkAmount) {
+            return redirect()->route('admin.payment-options.index')
+                ->withErrors(['error' => 'Insufficient channel balance to shrink that amount.']);
+        }
+
+        $paymentOption->decrement('balance', $shrinkAmount);
+
+        return redirect()->route('admin.payment-options.index')
+            ->with('success', 'Channel balance reduced successfully.');
+    }
 }

@@ -171,7 +171,9 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
         Route::get('agents/assignable-imeis', [App\Http\Controllers\Admin\AgentController::class, 'assignableImeis'])->name('assignable-imeis');
         Route::get('agents/{agent}', [App\Http\Controllers\Admin\AgentController::class, 'show'])->name('agents.show');
         Route::patch('agents/{agent}/transfer-branch', [App\Http\Controllers\Admin\AgentController::class, 'transferBranch'])->name('agents.transfer-branch');
+        Route::patch('agents/{user}/activate', [App\Http\Controllers\Admin\AgentController::class, 'activate'])->name('agents.activate');
         Route::patch('agents/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('agents.deactivate');
+        Route::patch('subadmins/{user}/activate', [App\Http\Controllers\Admin\AgentController::class, 'activate'])->name('subadmins.activate');
         Route::patch('subadmins/{user}/deactivate', [App\Http\Controllers\Admin\AgentController::class, 'deactivate'])->name('subadmins.deactivate');
 
         // Orders
@@ -179,6 +181,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
 
         // Customers
         Route::get('customers', [App\Http\Controllers\Admin\CustomerController::class , 'index'])->name('customers.index');
+        Route::patch('customers/{user}/activate', [App\Http\Controllers\Admin\CustomerController::class, 'activate'])->name('customers.activate');
+        Route::patch('customers/{user}/deactivate', [App\Http\Controllers\Admin\CustomerController::class, 'deactivate'])->name('customers.deactivate');
         Route::post('users/{user}/reset-password', [App\Http\Controllers\Admin\UserPasswordController::class, 'reset'])
             ->name('users.reset-password');
 
@@ -209,6 +213,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
 
         // Payment Options
         Route::patch('payment-options/{payment_option}/toggle-visibility', [App\Http\Controllers\Admin\PaymentOptionController::class, 'toggleVisibility'])->name('payment-options.toggle-visibility');
+        Route::patch('payment-options/{payment_option}/shrink-balance', [App\Http\Controllers\Admin\PaymentOptionController::class, 'shrinkBalance'])->name('payment-options.shrink-balance');
         Route::resource('payment-options', App\Http\Controllers\Admin\PaymentOptionController::class)->except(['show']);
 
         // Payment Transfers
@@ -260,6 +265,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::get('agent-sales/{id}/invoice', [App\Http\Controllers\Admin\StockController::class, 'downloadAgentSaleInvoice'])->name('agent-sale-invoice');
             Route::patch('agent-sales/{id}/commission', [App\Http\Controllers\Admin\StockController::class, 'updateAgentSaleCommission'])->name('agent-sales-update-commission');
             Route::post('agent-sales/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveAgentSaleChannel'])->name('agent-sales-save-channel');
+            Route::delete('agent-sales/{id}', [App\Http\Controllers\Admin\StockController::class, 'destroyAgentSale'])->name('destroy-agent-sale');
 
             Route::get('agent-transfers', [App\Http\Controllers\Admin\AgentTransferController::class, 'index'])->name('agent-transfers');
             Route::get('agent-transfers/{agent_product_transfer}', [App\Http\Controllers\Admin\AgentTransferController::class, 'show'])->name('agent-transfers.show');

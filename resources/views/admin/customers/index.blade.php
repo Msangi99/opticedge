@@ -99,6 +99,25 @@
                                                 <button type="submit" class="admin-prod-link whitespace-nowrap text-sm">Save</button>
                                             </form>
                                         </details>
+                                        @if(($user->role ?? '') !== 'admin')
+                                            @if($isActive)
+                                                <form method="POST" action="{{ route('admin.customers.deactivate', ['user' => $user->id] + request()->query()) }}"
+                                                    class="w-full flex justify-end"
+                                                    onsubmit="return confirm('Deactivate this user? They will not be able to log in until reactivated.');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="admin-prod-link text-sm text-red-600 hover:text-red-700">Deactivate</button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.customers.activate', ['user' => $user->id] + request()->query()) }}"
+                                                    class="w-full flex justify-end"
+                                                    onsubmit="return confirm('Activate this user? They will be able to log in again.');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="admin-prod-link text-sm text-emerald-700 hover:text-emerald-800">Activate</button>
+                                                </form>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

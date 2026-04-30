@@ -19,6 +19,7 @@ class AgentSale extends Model
         'total_selling_value',
         'profit',
         'commission_paid',
+        'commission_expense_id',
         'date_of_collection',
         'balance',
         'stock_remaining',

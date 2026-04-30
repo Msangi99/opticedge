@@ -74,6 +74,13 @@
                                                 @method('PATCH')
                                                 <button type="submit" class="admin-prod-link text-sm text-red-600 hover:text-red-700">Deactivate</button>
                                             </form>
+                                        @else
+                                            <form method="POST" action="{{ route('admin.subadmins.activate', $subadmin) }}" class="w-full flex justify-end"
+                                                onsubmit="return confirm('Activate this leader? They will be able to log in again.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="admin-prod-link text-sm text-emerald-700 hover:text-emerald-800">Activate</button>
+                                            </form>
                                         @endif
                                     </div>
                                 </td>
