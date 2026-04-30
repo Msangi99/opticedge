@@ -117,6 +117,8 @@
     $serial = $isCredit
         ? ($credit->productListItem?->imei_number ?? null)
         : ($sale->productListItem?->imei_number ?? null);
+    $displayDue = $isCredit ? 0 : $remaining;
+    $displayRemaining = $isCredit ? 0 : $remaining;
 
     // Determine payment status label
     if ($isCredit) {
@@ -203,7 +205,7 @@
         </div>
         <div class="summary-row total">
             <span>AMOUNT DUE:</span>
-            <span>{{ number_format($remaining, 2) }} TZS</span>
+            <span>{{ number_format($displayDue, 2) }} TZS</span>
         </div>
     </div>
 
@@ -218,7 +220,7 @@
         </div>
         <div class="summary-row">
             <span>Remaining:</span>
-            <span>{{ number_format($remaining, 2) }} TZS</span>
+            <span>{{ number_format($displayRemaining, 2) }} TZS</span>
         </div>
     </div>
 
