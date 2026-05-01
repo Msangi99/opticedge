@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductListItem;
+use App\Models\Purchase;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -80,8 +81,8 @@ class AgentDailyStockReportService
             $openingShop = (int) ($prevClosingShop[$pid] ?? 0);
             $sShop = (int) ($salesShop[$pid] ?? 0);
             $tShop = (int) ($transferNetShop[$pid] ?? 0);
-            $closingShop = max(0, $openingShop - $sShop + $tShop);
             $recv = (int) ($receivedToday[$pid] ?? 0);
+            $closingShop = max(0, $openingShop - $sShop + $tShop + $recv);
 
             $rowHasActivity = $sShop > 0 || $tShop !== 0 || $recv > 0 || $openingShop > 0 || $closingShop > 0;
             foreach ($agents as $agent) {
@@ -105,6 +106,8 @@ class AgentDailyStockReportService
             ? collect()
             : Product::query()->whereIn('id', $activeProductIds)->orderBy('name')->get(['id', 'name', 'price']);
 
+        $purchaseUnitPrices = $this->latestPurchaseUnitPricesByProduct($activeProductIds);
+
         $rows = [];
         foreach ($products as $product) {
             $pid = (int) $product->id;
@@ -114,8 +117,9 @@ class AgentDailyStockReportService
             $sShop = (int) ($salesShop[$pid] ?? 0);
             // TRANSFER: Net transfers TODAY
             $tShop = (int) ($transferNetShop[$pid] ?? 0);
-            // CLOSING: Calculated as Opening - Sales + Transfers
-            $closingShop = max(0, $openingShop - $sShop + $tShop);
+            $recv = (int) ($receivedToday[$pid] ?? 0);
+            // CLOSING: Opening − sales + transfers + units received (scanned) today
+            $closingShop = max(0, $openingShop - $sShop + $tShop + $recv);
 
             $agentCells = [];
             foreach ($agents as $agent) {
@@ -137,8 +141,8 @@ class AgentDailyStockReportService
             $rows[] = [
                 'product_id' => $pid,
                 'name' => $product->name,
-                'price' => (float) ($product->price ?? 0),
-                'purchased_today' => (int) ($receivedToday[$pid] ?? 0),
+                'price' => $this->displayUnitPriceTzs($product, $purchaseUnitPrices[$pid] ?? null),
+                'purchased_today' => $recv,
                 'shop' => [
                     'opening' => $openingShop,
                     'sales' => $sShop,
@@ -167,7 +171,7 @@ class AgentDailyStockReportService
         $rows = $payload['rows'];
         $lines = [];
 
-        $header = ['Product', 'Price', 'Purchased today', 'Shop opening', 'Shop sales', 'Shop transfer', 'Shop closing'];
+        $header = ['Product', 'Price', 'Purchased today', 'Total opening', 'Total sales', 'Total closing', 'Shop transfer'];
         foreach ($agents as $a) {
             $n = str_replace('"', '""', $a->name);
             $header[] = "{$n} opening";
@@ -177,14 +181,18 @@ class AgentDailyStockReportService
         $lines[] = $this->csvLine($header);
 
         foreach ($rows as $r) {
+            $agentsCol = collect($r['agents'] ?? []);
+            $totalO = (int) ($r['shop']['opening'] ?? 0) + (int) $agentsCol->sum('opening');
+            $totalS = (int) ($r['shop']['sales'] ?? 0) + (int) $agentsCol->sum('sales');
+            $totalC = (int) ($r['shop']['closing'] ?? 0) + (int) $agentsCol->sum('closing');
             $line = [
                 $r['name'],
                 (string) $r['price'],
                 (string) $r['purchased_today'],
-                (string) $r['shop']['opening'],
-                (string) $r['shop']['sales'],
-                (string) $r['shop']['transfer'],
-                (string) $r['shop']['closing'],
+                (string) $totalO,
+                (string) $totalS,
+                (string) $totalC,
+                (string) ($r['shop']['transfer'] ?? 0),
             ];
             foreach ($agents as $a) {
                 $c = $r['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
@@ -196,7 +204,11 @@ class AgentDailyStockReportService
         }
 
         $t = $payload['totals'];
-        $tot = ['Total', '', (string) $t['purchased_today'], (string) $t['shop']['opening'], (string) $t['shop']['sales'], (string) $t['shop']['transfer'], (string) $t['shop']['closing']];
+        $totAgents = collect($t['agents'] ?? []);
+        $grandO = (int) ($t['shop']['opening'] ?? 0) + (int) $totAgents->sum('opening');
+        $grandS = (int) ($t['shop']['sales'] ?? 0) + (int) $totAgents->sum('sales');
+        $grandC = (int) ($t['shop']['closing'] ?? 0) + (int) $totAgents->sum('closing');
+        $tot = ['Total', '', (string) $t['purchased_today'], (string) $grandO, (string) $grandS, (string) $grandC, (string) ($t['shop']['transfer'] ?? 0)];
         foreach ($agents as $a) {
             $c = $t['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
             $tot[] = (string) $c['opening'];
@@ -650,5 +662,51 @@ class AgentDailyStockReportService
         }
 
         return $out;
+    }
+
+    /**
+     * @param  array<int>  $productIds
+     * @return array<int, float> product_id => unit price from most recent purchase row
+     */
+    private function latestPurchaseUnitPricesByProduct(array $productIds): array
+    {
+        if ($productIds === []) {
+            return [];
+        }
+
+        $out = [];
+        $rows = Purchase::query()
+            ->whereIn('product_id', $productIds)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get(['product_id', 'sell_price', 'unit_price']);
+
+        foreach ($rows as $row) {
+            $pid = (int) $row->product_id;
+            if (isset($out[$pid])) {
+                continue;
+            }
+            $sell = $row->sell_price;
+            $unit = $row->unit_price;
+            $v = (float) ($sell !== null && (float) $sell > 0 ? $sell : ($unit ?? 0));
+            if ($v > 0.00001) {
+                $out[$pid] = $v;
+            }
+        }
+
+        return $out;
+    }
+
+    private function displayUnitPriceTzs(Product $product, ?float $purchaseFallback): float
+    {
+        $catalog = (float) ($product->price ?? 0);
+        if ($catalog > 0.00001) {
+            return $catalog;
+        }
+        if ($purchaseFallback !== null && $purchaseFallback > 0.00001) {
+            return $purchaseFallback;
+        }
+
+        return 0.0;
     }
 }

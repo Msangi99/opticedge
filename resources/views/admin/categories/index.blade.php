@@ -27,7 +27,7 @@
                             <th scope="col" class="admin-prod-th admin-prod-th--image">Image</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--index">ID</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--desc">Name</th>
-                            <th scope="col" class="admin-prod-th">Products</th>
+                            <th scope="col" class="admin-prod-th">Model</th>
                             <th scope="col" class="admin-prod-th">Total stock</th>
                             <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                         </tr>
