@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductListItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -14,11 +16,32 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::withCount(['products' => function ($query) {
-            $query->where('stock_quantity', '>', 0);
-        }])->withSum('products', 'stock_quantity')
-            ->with(['products' => fn ($q) => $q->orderBy('name')])
+        $categoryTable = (new Category)->getTable();
+        $productTable = (new Product)->getTable();
+
+        // products_count = catalog SKUs in this brand (not filtered by denormalized stock_quantity).
+        // available_stock_count = unsold IMEI rows for this brand (by product_list.category_id or
+        // product linked to this category). Avoids negative totals when models.stock_quantity is wrong
+        // after deletes/sales while physical units are zero.
+        $categories = Category::query()
+            ->withCount('products')
+            ->addSelect([
+                'available_stock_count' => ProductListItem::query()
+                    ->selectRaw('COUNT(*)')
+                    ->whereNull('product_list.sold_at')
+                    ->where(function ($query) use ($categoryTable, $productTable) {
+                        $query->whereColumn('product_list.category_id', $categoryTable.'.id')
+                            ->orWhereIn(
+                                'product_list.product_id',
+                                Product::query()
+                                    ->select($productTable.'.id')
+                                    ->whereColumn($productTable.'.category_id', $categoryTable.'.id')
+                            );
+                    }),
+            ])
+            ->orderBy('name')
             ->get();
+
         return view('admin.categories.index', compact('categories'));
     }
 

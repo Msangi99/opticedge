@@ -463,7 +463,7 @@ class AgentCreditController extends Controller
                     }
                     $credit->commission_expense_id = null;
                     $credit->saveQuietly();
-                    $linkedExpense->delete();
+                    DB::table('expenses')->where('id', $linkedExpense->id)->delete();
                 }
 
                 $commissionExpenseId = null;
@@ -664,7 +664,7 @@ class AgentCreditController extends Controller
     public function destroy(Request $request, int $id)
     {
         $credit = AgentCredit::findOrFail($id);
-        $credit->delete();
+        DB::table('agent_credits')->where('id', $credit->id)->delete();
 
         return redirect()
             ->route('admin.stock.agent-credits', $request->query())

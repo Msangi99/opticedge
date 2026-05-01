@@ -172,7 +172,7 @@ class StockController extends Controller
         }
 
         DB::transaction(function () use ($purchase, $productListItem) {
-            $productListItem->delete();
+            DB::table('product_list')->where('id', $productListItem->id)->delete();
 
             if (Schema::hasColumn('purchases', 'limit_remaining')) {
                 $currentRemaining = (int) ($purchase->limit_remaining ?? 0);
@@ -594,7 +594,7 @@ class StockController extends Controller
                     }
                     $sale->commission_expense_id = null;
                     $sale->saveQuietly();
-                    $linkedExpense->delete();
+                    DB::table('expenses')->where('id', $linkedExpense->id)->delete();
                 }
 
                 $commissionExpenseId = null;
@@ -644,6 +644,45 @@ class StockController extends Controller
         return redirect()->route('admin.stock.agent-sales', $request->query())->with('success', 'Commission updated and expense synced.');
     }
 
+    /**
+     * Reverse payment channel / commission expense and clear product_list links for an agent sale.
+     * Caller is responsible for deleting $sale and restoring catalog stock_quantity.
+     *
+     * @throws \RuntimeException When channel balance cannot absorb the reversal
+     */
+    protected function applyAgentSaleRemovalEffects(AgentSale $sale): void
+    {
+        if ($sale->payment_option_id) {
+            $option = PaymentOption::find($sale->payment_option_id);
+            $amount = (float) ($sale->total_selling_value ?? 0);
+            if ($option && $amount > 0) {
+                if ((float) $option->balance >= $amount) {
+                    $option->decrement('balance', $amount);
+                } else {
+                    throw new \RuntimeException('Cannot delete sale because the linked channel balance is already lower than this sale amount.');
+                }
+            }
+        }
+
+        if (Schema::hasColumn('agent_sales', 'commission_expense_id') && ! empty($sale->commission_expense_id)) {
+            $expense = Expense::find($sale->commission_expense_id);
+            if ($expense) {
+                if ($expense->payment_option_id) {
+                    $expOpt = PaymentOption::find($expense->payment_option_id);
+                    if ($expOpt) {
+                        $expOpt->increment('balance', (float) $expense->amount);
+                    }
+                }
+                DB::table('expenses')->where('id', $expense->id)->delete();
+            }
+        }
+
+        ProductListItem::where('agent_sale_id', $sale->id)->update([
+            'agent_sale_id' => null,
+            'sold_at' => null,
+        ]);
+    }
+
     public function destroyAgentSale($id)
     {
         $sale = AgentSale::findOrFail($id);
@@ -652,37 +691,8 @@ class StockController extends Controller
 
         try {
             DB::transaction(function () use ($sale) {
-                if ($sale->payment_option_id) {
-                    $option = PaymentOption::find($sale->payment_option_id);
-                    $amount = (float) ($sale->total_selling_value ?? 0);
-                    if ($option && $amount > 0) {
-                        if ((float) $option->balance >= $amount) {
-                            $option->decrement('balance', $amount);
-                        } else {
-                            throw new \RuntimeException('Cannot delete sale because the linked channel balance is already lower than this sale amount.');
-                        }
-                    }
-                }
-
-                if (Schema::hasColumn('agent_sales', 'commission_expense_id') && ! empty($sale->commission_expense_id)) {
-                    $expense = Expense::find($sale->commission_expense_id);
-                    if ($expense) {
-                        if ($expense->payment_option_id) {
-                            $expOpt = PaymentOption::find($expense->payment_option_id);
-                            if ($expOpt) {
-                                $expOpt->increment('balance', (float) $expense->amount);
-                            }
-                        }
-                        $expense->delete();
-                    }
-                }
-
-                \App\Models\ProductListItem::where('agent_sale_id', $sale->id)->update([
-                    'agent_sale_id' => null,
-                    'sold_at' => null,
-                ]);
-
-                $sale->delete();
+                $this->applyAgentSaleRemovalEffects($sale);
+                DB::table('agent_sales')->where('id', $sale->id)->delete();
             });
         } catch (\RuntimeException $e) {
             return redirect()->route('admin.stock.agent-sales')
@@ -1416,21 +1426,71 @@ class StockController extends Controller
 
     public function destroyPurchase($id)
     {
-        $purchase = Purchase::with('product')->findOrFail($id);
-        $product = $purchase->product;
+        $purchase = Purchase::with(['product', 'productListItems'])->findOrFail($id);
+        $purchaseQty = (int) ($purchase->quantity ?? 0);
+        $productId = $purchase->product_id;
 
-        // Detach product list items linked to this purchase so they are not orphaned
-        // in reports. Sold items keep their sold_at history; unsold items are freed.
-        ProductListItem::where('purchase_id', $id)->update(['purchase_id' => null]);
+        try {
+            DB::transaction(function () use ($purchase, $id, $purchaseQty, $productId) {
+                if (! empty($purchase->payment_receipt_image) && Storage::disk('public')->exists($purchase->payment_receipt_image)) {
+                    try {
+                        Storage::disk('public')->delete($purchase->payment_receipt_image);
+                    } catch (\Throwable $e) {
+                        Log::warning('Purchase receipt delete failed: '.$e->getMessage());
+                    }
+                }
 
-        $purchase->delete();
+                $items = ProductListItem::where('purchase_id', $id)->get();
 
-        // Keep product.stock_quantity in sync
-        if ($product) {
-            $product->update(['stock_quantity' => max(0, $product->stock_quantity - $purchase->quantity)]);
+                $agentSaleIds = $items->pluck('agent_sale_id')->filter()->unique()->values();
+                foreach ($agentSaleIds as $saleId) {
+                    $sale = AgentSale::lockForUpdate()->find($saleId);
+                    if (! $sale) {
+                        continue;
+                    }
+                    $qty = (int) ($sale->quantity_sold ?? 0);
+                    $saleProductId = $sale->product_id;
+                    $this->applyAgentSaleRemovalEffects($sale);
+                    DB::table('agent_sales')->where('id', $sale->id)->delete();
+                    if ($saleProductId && $qty > 0) {
+                        Product::whereKey($saleProductId)->increment('stock_quantity', $qty);
+                    }
+                }
+
+                $pendingIds = $items->pluck('pending_sale_id')->filter()->unique()->values();
+                foreach ($pendingIds as $pid) {
+                    DB::table('pending_sales')->where('id', $pid)->delete();
+                }
+
+                $creditIds = $items->pluck('agent_credit_id')->filter()->unique()->values();
+                foreach ($creditIds as $cid) {
+                    DB::table('agent_credits')->where('id', $cid)->delete();
+                }
+
+                DB::table('product_list')->where('purchase_id', $id)->delete();
+
+                DB::table('purchases')->where('id', $id)->delete();
+
+                if ($productId && $purchaseQty > 0) {
+                    $p = Product::lockForUpdate()->find($productId);
+                    if ($p) {
+                        $p->update([
+                            'stock_quantity' => max(0, (int) $p->stock_quantity - $purchaseQty),
+                        ]);
+                    }
+                }
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.stock.purchases')
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('Purchase delete failed: '.$e->getMessage(), ['exception' => $e]);
+
+            return redirect()->route('admin.stock.purchases')
+                ->withErrors(['error' => 'Could not delete this purchase. It may be linked to records that block removal.']);
         }
 
-        return redirect()->route('admin.stock.purchases')->with('success', 'Purchase deleted successfully.');
+        return redirect()->route('admin.stock.purchases')->with('success', 'Purchase deleted, including linked stock and agent sale / credit / pending data.');
     }
 
     // Distribution Sales
@@ -1591,8 +1651,8 @@ class StockController extends Controller
         $sale = DistributionSale::findOrFail($id);
         $product = $sale->product;
         $quantitySold = $sale->quantity_sold;
-        
-        $sale->delete();
+
+        DB::table('distribution_sales')->where('id', $sale->id)->delete();
         
         // Keep product.stock_quantity in sync
         if ($product) {
@@ -1689,8 +1749,8 @@ class StockController extends Controller
                 'pending_sale_id' => null,
             ]);
 
-        // Delete from pending sales
-        $pendingSale->delete();
+        // Remove from pending sales (hard delete — row must not remain for reports)
+        DB::table('pending_sales')->where('id', $pendingSale->id)->delete();
 
         return redirect()->route('admin.stock.agent-sales')->with('success', 'Sale saved successfully. Amount added to payment option balance.');
     }

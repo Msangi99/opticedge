@@ -72,7 +72,7 @@
                                 </td>
                                 <td>
                                     <span class="admin-prod-count-pill admin-prod-count-pill--info">
-                                        {{ number_format($category->products_sum_stock_quantity ?? 0) }}
+                                        {{ number_format((int) ($category->available_stock_count ?? 0)) }}
                                     </span>
                                 </td>
                                 <td class="admin-prod-cell-actions">
