@@ -182,9 +182,10 @@ class AgentDailyStockReportService
 
         foreach ($rows as $r) {
             $agentsCol = collect($r['agents'] ?? []);
-            $totalO = (int) ($r['shop']['opening'] ?? 0) + (int) $agentsCol->sum('opening');
-            $totalS = (int) ($r['shop']['sales'] ?? 0) + (int) $agentsCol->sum('sales');
-            $totalC = (int) ($r['shop']['closing'] ?? 0) + (int) $agentsCol->sum('closing');
+            // Total columns = sum across agents only (shop / unassigned warehouse excluded).
+            $totalO = (int) $agentsCol->sum('opening');
+            $totalS = (int) $agentsCol->sum('sales');
+            $totalC = (int) $agentsCol->sum('closing');
             $line = [
                 $r['name'],
                 (string) $r['price'],
@@ -205,9 +206,9 @@ class AgentDailyStockReportService
 
         $t = $payload['totals'];
         $totAgents = collect($t['agents'] ?? []);
-        $grandO = (int) ($t['shop']['opening'] ?? 0) + (int) $totAgents->sum('opening');
-        $grandS = (int) ($t['shop']['sales'] ?? 0) + (int) $totAgents->sum('sales');
-        $grandC = (int) ($t['shop']['closing'] ?? 0) + (int) $totAgents->sum('closing');
+        $grandO = (int) $totAgents->sum('opening');
+        $grandS = (int) $totAgents->sum('sales');
+        $grandC = (int) $totAgents->sum('closing');
         $tot = ['Total', '', (string) $t['purchased_today'], (string) $grandO, (string) $grandS, (string) $grandC, (string) ($t['shop']['transfer'] ?? 0)];
         foreach ($agents as $a) {
             $c = $t['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];

@@ -67,7 +67,7 @@
                             <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
                             <strong>Sales</strong> = units sold on the <strong>report date</strong> only.
                             <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
-                            <strong>Total</strong> = <strong>shop</strong> (unassigned warehouse stock) <strong>+</strong> that product’s numbers summed across <strong>all agents</strong> (opening, sales, closing each added separately).
+                            <strong>Total</strong> = sum across <strong>all agents only</strong> for that product (opening, sales, closing each summed separately). Shop / unassigned warehouse stock is <strong>not</strong> included in Total.
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['report_date' => $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -96,7 +96,7 @@
                 </form>
 
                 @if($asr['agents']->isEmpty())
-                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — <strong>Total</strong> equals shop (warehouse) only. Add agents under Sales team to see per-agent columns.</p>
+                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — <strong>Total</strong> columns show agent sums only (0). Warehouse stock is not rolled into Total. Add agents under Sales team to see per-agent columns.</p>
                 @endif
                 @if(count($asr['rows']) === 0)
                     <p class="text-sm text-slate-500 py-6">No stock movement for this date and branch filter.</p>
@@ -167,9 +167,6 @@
                             <tbody>
                                 @foreach($asr['rows'] as $row)
                                     @php
-                                        $shopO = (int) ($row['shop']['opening'] ?? 0);
-                                        $shopS = (int) ($row['shop']['sales'] ?? 0);
-                                        $shopC = (int) ($row['shop']['closing'] ?? 0);
                                         $agentsO = collect($row['agents'] ?? [])->sum('opening');
                                         $agentsS = collect($row['agents'] ?? [])->sum('sales');
                                         $agentsC = collect($row['agents'] ?? [])->sum('closing');
@@ -177,9 +174,9 @@
                                     <tr class="h-12">
                                         <td class="font-medium text-[#232f3e] bg-white px-3 py-3">{{ $row['name'] }}</td>
                                         <td class="text-right font-variant-numeric text-slate-700 px-3 py-3">{{ number_format($row['price'], 0) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($shopO + $agentsO) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($shopS + $agentsS) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($shopC + $agentsC) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentsO) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentsS) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($agentsC) }}</td>
                                         @foreach($asr['agents'] as $agent)
                                             @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
                                             @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
@@ -198,9 +195,9 @@
                                 <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row h-12">
                                     <td class="bg-slate-100 px-3 py-3">Totals</td>
                                     <td class="text-right bg-slate-100 px-3 py-3">—</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format(($tot['shop']['opening'] ?? 0) + $totAgentsO) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format(($tot['shop']['sales'] ?? 0) + $totAgentsS) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format(($tot['shop']['closing'] ?? 0) + $totAgentsC) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsO) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsS) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsC) }}</td>
                                     @foreach($asr['agents'] as $agent)
                                         @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
                                         @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
@@ -209,10 +206,10 @@
                                         <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['closing']) }}</td>
                                     @endforeach
                                 </tr>
-                            </tbody>
+                            </tbody> 
                         </table>
                     </div>
-                    <p class="mt-3 text-xs text-slate-500"><strong>Total</strong> = shop (unassigned warehouse) + all agents for that product: each of opening, sales, and closing is the sum of the shop figure and every agent column. Agent cells are per rep. <strong>Price</strong> uses catalog price, or latest purchase sell/unit price when catalog price is zero.</p>
+                    <p class="mt-3 text-xs text-slate-500"><strong>Total</strong> = sum of every agent column for that product (opening, sales, closing each summed across agents). Shop / unassigned warehouse is excluded. Agent cells are per rep. <strong>Price</strong> uses catalog price, or latest purchase sell/unit price when catalog price is zero.</p>
                 @endif
             </div>
         </div>
