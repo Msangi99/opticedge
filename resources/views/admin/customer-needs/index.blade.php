@@ -55,9 +55,6 @@
                                 <td class="py-3 align-top break-words">{{ $n->product?->name ?? '—' }}</td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="7" class="py-10 text-center text-slate-500">No needs submitted yet.</td>
-                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -173,6 +170,7 @@
                         lengthMenu: 'Show _MENU_',
                         info: 'Showing _START_ to _END_ of _TOTAL_ leads',
                         infoEmpty: 'No leads found',
+                        emptyTable: 'No needs submitted yet.',
                         zeroRecords: 'No matching leads found'
                     }
                 });
