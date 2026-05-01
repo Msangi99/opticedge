@@ -42,19 +42,37 @@
                             @enderror
                         </div>
                         <div>
-                            <label for="stock_id" class="admin-prod-label">Stock</label>
-                            <select name="stock_id" id="stock_id" required class="admin-prod-select">
-                                <option value="">Select stock</option>
-                                @foreach($stocks as $s)
-                                    <option value="{{ $s->id }}" {{ old('stock_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('stock_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            @if(($addProductTarget ?? 'stock') === 'purchase')
+                                <label for="purchase_id" class="admin-prod-label">Purchase</label>
+                                <select name="purchase_id" id="add_product_target" required class="admin-prod-select"
+                                    data-models-mode="purchase"
+                                    data-models-url-template="{{ route('admin.stock.add-product.purchase.models', ['purchase' => '__ID__']) }}">
+                                    <option value="">Select purchase</option>
+                                    @foreach($purchasePickerRows ?? [] as $p)
+                                        <option value="{{ $p->id }}" {{ (string) old('purchase_id') === (string) $p->id ? 'selected' : '' }}>{{ $p->name ?? 'Purchase #'.$p->id }}</option>
+                                    @endforeach
+                                </select>
+                                @error('purchase_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                @if(($purchasePickerRows ?? collect())->isEmpty())
+                                    <p class="text-xs text-amber-700 mt-1">No purchases with remaining slots. Create a purchase with quantity / limit first.</p>
+                                @endif
+                            @else
+                                <label for="stock_id" class="admin-prod-label">Stock</label>
+                                <select name="stock_id" id="add_product_target" required class="admin-prod-select"
+                                    data-models-mode="stock"
+                                    data-models-url-template="{{ url('admin/stock/stocks') }}/__ID__/models">
+                                    <option value="">Select stock</option>
+                                    @foreach($stocks as $s)
+                                        <option value="{{ $s->id }}" {{ (string) old('stock_id') === (string) $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('stock_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            @endif
                         </div>
                         <div>
-                            <label for="model" class="admin-prod-label">Model (from selected stock)</label>
+                            <label for="model" class="admin-prod-label">Model (from selected {{ ($addProductTarget ?? 'stock') === 'purchase' ? 'purchase' : 'stock' }})</label>
                             <select name="model" id="model" required class="admin-prod-select">
-                                <option value="">Select stock first</option>
+                                <option value="">{{ ($addProductTarget ?? 'stock') === 'purchase' ? 'Select purchase first' : 'Select stock first' }}</option>
                             </select>
                             <input type="hidden" name="category_id" id="category_id" value="{{ old('category_id') }}">
                             @error('model') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -69,17 +87,21 @@
         </div>
     </div>
     <script>
-        document.getElementById('stock_id').addEventListener('change', function() {
-            const stockId = this.value;
+        document.getElementById('add_product_target').addEventListener('change', function() {
+            const targetId = this.value;
+            const mode = this.dataset.modelsMode || 'stock';
+            const urlTemplate = this.dataset.modelsUrlTemplate || '';
             const modelSelect = document.getElementById('model');
             const categoryInput = document.getElementById('category_id');
+            const emptyLabel = mode === 'purchase' ? 'Select purchase first' : 'Select stock first';
             modelSelect.innerHTML = '<option value="">Loading…</option>';
             categoryInput.value = '';
-            if (!stockId) {
-                modelSelect.innerHTML = '<option value="">Select stock first</option>';
+            if (!targetId) {
+                modelSelect.innerHTML = '<option value="">' + emptyLabel + '</option>';
                 return;
             }
-            fetch('{{ url("admin/stock/stocks") }}/' + stockId + '/models', {
+            const url = urlTemplate.replace('__ID__', encodeURIComponent(targetId));
+            fetch(url, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             }).then(r => r.json()).then(data => {
                 const list = data.data || [];
@@ -99,11 +121,11 @@
             const opt = this.selectedOptions[0];
             document.getElementById('category_id').value = opt && opt.dataset.categoryId ? opt.dataset.categoryId : '';
         });
-        @if(old('stock_id'))
-            document.getElementById('stock_id').dispatchEvent(new Event('change'));
+        @if(old('stock_id') || old('purchase_id'))
+            document.getElementById('add_product_target').dispatchEvent(new Event('change'));
             setTimeout(function() {
                 const modelSelect = document.getElementById('model');
-                const m = '{{ old('model') }}';
+                const m = @json(old('model'));
                 if (m && modelSelect.options.length) {
                     for (let i = 0; i < modelSelect.options.length; i++) {
                         if (modelSelect.options[i].value === m) {

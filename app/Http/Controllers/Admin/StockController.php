@@ -722,13 +722,54 @@ class StockController extends Controller
 
     /**
      * Form: scan IMEI, select stock (from pending purchases), select model from selected stock.
+     * When no rows exist in `stocks`, the stocks list page falls back to purchases; this form
+     * does the same so IMEIs can still be added against pending purchases (including purchases
+     * with a null stock_id).
      */
     public function addProductForm()
     {
         $stocks = Stock::query()
             ->orderBy('name')
             ->get(['id', 'name']);
-        return view('admin.stock.add-product', compact('stocks'));
+
+        $addProductTarget = 'stock';
+        $purchasePickerRows = collect();
+
+        if ($stocks->isEmpty()) {
+            $addProductTarget = 'purchase';
+            $purchasePickerRows = Purchase::query()
+                ->where('limit_status', 'pending')
+                ->where('limit_remaining', '>', 0)
+                ->orderBy('date', 'desc')
+                ->orderBy('id', 'desc')
+                ->get(['id', 'name']);
+        }
+
+        return view('admin.stock.add-product', compact('stocks', 'addProductTarget', 'purchasePickerRows'));
+    }
+
+    /**
+     * JSON: model + category for one purchase (web Add product when picking a purchase directly).
+     */
+    public function modelsForPurchaseAddProduct(Purchase $purchase)
+    {
+        $purchase->load(['product:id,name,category_id']);
+        $product = $purchase->product;
+        if (! $product) {
+            return response()->json(['data' => []]);
+        }
+
+        $model = trim((string) ($product->name ?? ''));
+        $categoryId = $product->category_id ?? null;
+        if ($model === '' || empty($categoryId)) {
+            return response()->json(['data' => []]);
+        }
+
+        return response()->json([
+            'data' => [
+                ['model' => $model, 'category_id' => (int) $categoryId],
+            ],
+        ]);
     }
 
     /**
@@ -825,16 +866,53 @@ class StockController extends Controller
     }
 
     /**
-     * Save one or more IMEIs: stock_id, model, category_id, imei_numbers (newline / comma separated).
+     * Save one or more IMEIs: stock_id or purchase_id, model, category_id, imei_numbers (newline / comma separated).
      */
     public function storeProductFromForm(Request $request)
     {
-        $validated = $request->validate([
-            'stock_id' => 'required|exists:stocks,id',
+        $baseRules = [
             'model' => 'required|string|max:255',
             'category_id' => 'required|exists:brands,id',
             'imei_numbers' => 'required|string|max:65535',
-        ]);
+        ];
+
+        if ($request->filled('purchase_id')) {
+            $validated = $request->validate($baseRules + [
+                'purchase_id' => 'required|exists:purchases,id',
+            ]);
+            $purchase = Purchase::with(['product', 'stock'])->findOrFail($validated['purchase_id']);
+            if ($purchase->limit_status !== 'pending' || (int) $purchase->limit_remaining <= 0) {
+                return redirect()->route('admin.stock.add-product')
+                    ->withInput()
+                    ->withErrors(['purchase_id' => 'This purchase has no remaining device slots.']);
+            }
+            $stockIdForRow = $purchase->stock_id;
+        } elseif ($request->filled('stock_id')) {
+            $validated = $request->validate($baseRules + [
+                'stock_id' => 'required|exists:stocks,id',
+            ]);
+            $stock = Stock::findOrFail($validated['stock_id']);
+            $purchase = Purchase::where('stock_id', $stock->id)
+                ->where('limit_status', 'pending')
+                ->where('limit_remaining', '>', 0)
+                ->latest('date')->latest('id')->first();
+
+            if (! $purchase) {
+                return redirect()->route('admin.stock.add-product')
+                    ->withInput()
+                    ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
+            }
+            $stockIdForRow = $stock->id;
+        } else {
+            $pickField = Stock::query()->exists() ? 'stock_id' : 'purchase_id';
+            $pickMessage = $pickField === 'stock_id'
+                ? 'Select stock first.'
+                : 'Select a purchase first.';
+
+            return redirect()->route('admin.stock.add-product')
+                ->withInput()
+                ->withErrors([$pickField => $pickMessage]);
+        }
 
         $imeis = ImeiListParser::parse($validated['imei_numbers']);
 
@@ -849,18 +927,6 @@ class StockController extends Controller
             return redirect()->route('admin.stock.add-product')
                 ->withInput()
                 ->withErrors(['imei_numbers' => implode(' ', $lenErrors)]);
-        }
-
-        $stock = Stock::findOrFail($validated['stock_id']);
-        $purchase = Purchase::where('stock_id', $stock->id)
-            ->where('limit_status', 'pending')
-            ->where('limit_remaining', '>', 0)
-            ->latest('date')->latest('id')->first();
-
-        if (! $purchase) {
-            return redirect()->route('admin.stock.add-product')
-                ->withInput()
-                ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
         }
 
         if (count($imeis) > $purchase->limit_remaining) {
@@ -878,7 +944,7 @@ class StockController extends Controller
         ];
         $created = 0;
 
-        DB::transaction(function () use ($purchase, $stock, $validated, $imeis, &$failed, &$failureReasons, &$created) {
+        DB::transaction(function () use ($purchase, $stockIdForRow, $validated, $imeis, &$failed, &$failureReasons, &$created) {
             $productPrice = $purchase->sell_price ?? $purchase->unit_price ?? 0;
             $product = Product::firstOrCreate(
                 [
@@ -913,7 +979,7 @@ class StockController extends Controller
                 }
 
                 ProductListItem::create([
-                    'stock_id' => $stock->id,
+                    'stock_id' => $stockIdForRow,
                     'purchase_id' => $purchase->id,
                     'category_id' => $validated['category_id'],
                     'model' => $validated['model'],

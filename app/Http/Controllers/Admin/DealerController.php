@@ -31,10 +31,6 @@ class DealerController extends Controller
             'business_name' => 'required|string|max:255',
         ];
 
-        if (Schema::hasColumn('users', 'ability')) {
-            $rules['ability'] = 'required|in:view,fullaccess';
-        }
-
         $validated = $request->validate($rules);
 
         $payload = [
@@ -48,7 +44,7 @@ class DealerController extends Controller
         ];
 
         if (Schema::hasColumn('users', 'ability')) {
-            $payload['ability'] = $validated['ability'] ?? 'fullaccess';
+            $payload['ability'] = 'fullaccess';
         }
 
         $user = User::create($payload);
