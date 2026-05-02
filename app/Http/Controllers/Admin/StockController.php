@@ -402,6 +402,7 @@ class StockController extends Controller
             fputcsv($handle, [
                 'Date',
                 'Dealer',
+                'Business name',
                 'Seller',
                 'Product',
                 'Quantity',
@@ -423,6 +424,7 @@ class StockController extends Controller
                 fputcsv($handle, [
                     $sale->date ?? '',
                     $sale->dealer_name ?? $sale->dealer?->name ?? '',
+                    $sale->dealer?->business_name ?? '',
                     $sale->seller_name ?? '',
                     trim(($sale->product?->category?->name ? $sale->product->category->name . ' - ' : '') . ($sale->product?->name ?? '')),
                     (int) ($sale->quantity_sold ?? 0),
@@ -1549,7 +1551,11 @@ class StockController extends Controller
         $eps = 0.0001;
         $validated['status'] = $validated['paid_amount'] >= $validated['total_selling_value'] - $eps ? 'complete' : 'pending';
         if (!empty($validated['dealer_id'])) {
-            $validated['dealer_name'] = \App\Models\User::find($validated['dealer_id'])->name ?? $validated['dealer_name'] ?? null;
+            $dealer = \App\Models\User::find($validated['dealer_id']);
+            $validated['dealer_name'] = $dealer?->business_name
+                ?? $dealer?->name
+                ?? $validated['dealer_name']
+                ?? null;
         }
 
         DistributionSale::create($validated);

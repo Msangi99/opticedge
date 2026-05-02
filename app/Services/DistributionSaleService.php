@@ -22,7 +22,7 @@ class DistributionSaleService
         }
 
         $order->load(['items.product.category']);
-        $dealerName = $user->name;
+        $dealerName = $user->business_name ?? $user->name;
         $sellerName = $user->referrer?->name;
 
         $isFirstPurchase = !DistributionSale::where('dealer_id', $user->id)->exists();

@@ -79,11 +79,12 @@
 
         <div class="mt-6 admin-clay-panel overflow-x-auto min-w-0">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
-                <table class="min-w-[1280px]">
+                <table class="min-w-[1380px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Date</th>
                             <th scope="col" class="admin-prod-th">Dealer</th>
+                            <th scope="col" class="admin-prod-th">Business name</th>
                             <th scope="col" class="admin-prod-th">Seller</th>
                             <th scope="col" class="admin-prod-th">Product</th>
                             <th scope="col" class="admin-prod-th">Qty</th>
@@ -110,6 +111,7 @@
                             <tr>
                                 <td class="text-slate-600 text-sm">{{ $sale->date }}</td>
                                 <td class="font-medium text-[#232f3e]">{{ $sale->dealer_name ?? $sale->dealer?->name ?? 'N/A' }}</td>
+                                <td class="text-slate-600 text-sm">{{ $sale->dealer?->business_name ?? '—' }}</td>
                                 <td class="text-slate-600">{{ $sale->seller_name ?? '-' }}</td>
                                 <td class="text-slate-600 text-sm">
                                     {{ $sale->product ? ($sale->product->category?->name . ' - ' . $sale->product->name) : 'N/A' }}</td>
@@ -155,7 +157,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="15" class="text-center text-slate-500 py-10">No distribution sales found.</td>
+                                <td colspan="16" class="text-center text-slate-500 py-10">No distribution sales found.</td>
                             </tr>
                         @endforelse
                     </tbody>

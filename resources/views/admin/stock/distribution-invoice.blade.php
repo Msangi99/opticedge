@@ -164,7 +164,8 @@
 @php
     $companyName = 'OPTIC EDGE AFRICA';
     $formattedDate = $sale->date ? \Carbon\Carbon::parse($sale->date)->format('d M Y') : '';
-    $dealerName = $sale->dealer?->business_name
+    // Prefer legal / trading name on invoice; dealer_name snapshot should match (see StockController / DistributionSaleService).
+    $dealerBusinessName = $sale->dealer?->business_name
         ?? $sale->dealer_name
         ?? $sale->dealer?->name
         ?? 'N/A';
@@ -207,7 +208,7 @@
                 </td>
                 <td>
                     <div class="bill-heading">Bill to</div>
-                    <div><strong>Name:</strong> {{ $dealerName }}</div>
+                    <div><strong>Business name:</strong> {{ $dealerBusinessName }}</div>
                     <div><strong>Date:</strong> {{ $formattedDate }}</div>
                 </td>
             </tr>
