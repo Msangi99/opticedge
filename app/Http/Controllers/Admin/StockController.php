@@ -22,6 +22,7 @@ use App\Support\PdfDownload;
 use App\Support\PurchaseInvoiceNumber;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -1057,7 +1058,9 @@ class StockController extends Controller
             ->sortBy(fn (Product $p) => ($p->category?->name ?? '') . $p->name)
             ->values();
 
-        return view('admin.stock.create-purchase', compact('vendors', 'fromStock', 'branches', 'productsForSelect'));
+        $paymentOptions = PaymentOption::visible()->orderBy('name')->get();
+
+        return view('admin.stock.create-purchase', compact('vendors', 'fromStock', 'branches', 'productsForSelect', 'paymentOptions'));
     }
 
     public function storePurchase(Request $request)
@@ -1086,7 +1089,11 @@ class StockController extends Controller
             'sell_price' => 'nullable|numeric|min:0',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
-            'payment_option_id' => 'nullable|exists:payment_options,id',
+            'payment_option_id' => [
+                'nullable',
+                'exists:payment_options,id',
+                Rule::requiredIf(fn () => (float) $request->input('paid_amount', 0) > 0.0001),
+            ],
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
@@ -1162,17 +1169,20 @@ class StockController extends Controller
             Log::warning('payment_option_id column not found in purchases table. Migration may need to be run.');
         }
 
-        // Handle payment option balance deduction if payment is made
+        // Handle payment option balance deduction if payment is made (only visible channels)
         if ($paidAmount > 0 && $paymentOptionId) {
-            $paymentOption = PaymentOption::find($paymentOptionId);
-            if ($paymentOption) {
-                if ($paymentOption->balance >= $paidAmount) {
-                    $paymentOption->decrement('balance', $paidAmount);
-                } else {
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
-                }
+            $paymentOption = PaymentOption::visible()->find($paymentOptionId);
+            if (! $paymentOption) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['payment_option_id' => 'Selected channel is not available for payments. Open Channels and use Show, or pick another account.']);
+            }
+            if ((float) $paymentOption->balance >= $paidAmount) {
+                $paymentOption->decrement('balance', $paidAmount);
+            } else {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
             }
         }
 
@@ -1250,7 +1260,11 @@ class StockController extends Controller
             'name' => 'nullable|string|max:255',
             'paid_date' => 'nullable|date',
             'paid_amount' => 'nullable|numeric|min:0',
-            'payment_option_id' => 'nullable|exists:payment_options,id',
+            'payment_option_id' => [
+                'nullable',
+                'exists:payment_options,id',
+                Rule::requiredIf(fn () => (float) $request->input('paid_amount', 0) > 0.0001),
+            ],
             'payment_receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
         $validated = $request->validate($rules);
@@ -1302,22 +1316,17 @@ class StockController extends Controller
         }
 
         if ($increment > $eps && $newPaymentOptionId === null) {
-            $defaultWatuChannelRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
-            $defaultWatuChannelId = $defaultWatuChannelRaw !== null && $defaultWatuChannelRaw !== ''
-                ? (int) $defaultWatuChannelRaw
-                : null;
-            if (! $defaultWatuChannelId) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['payment_option_id' => 'Select which payment channel to pay from (e.g. your bank account).']);
+        }
+
+        if ($increment > $eps && $newPaymentOptionId !== null) {
+            if (! PaymentOption::visible()->whereKey($newPaymentOptionId)->exists()) {
                 return redirect()->back()
                     ->withInput()
-                    ->withErrors(['error' => 'Choose a default Watu channel in Store settings before recording payment.']);
+                    ->withErrors(['payment_option_id' => 'Selected channel is not available for payments. Open Channels and use Show, or pick another account.']);
             }
-            $defaultWatuChannel = PaymentOption::visible()->whereKey($defaultWatuChannelId)->first();
-            if (! $defaultWatuChannel) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors(['error' => 'Default Watu channel is invalid or hidden. Update Store settings.']);
-            }
-            $newPaymentOptionId = $defaultWatuChannel->id;
         }
         $newPaidDate = $validated['paid_date'] ?? null;
 
@@ -1338,35 +1347,41 @@ class StockController extends Controller
                 }
             }
             if ($newPaidAmount > $eps) {
-                $paymentOption = PaymentOption::find($newOptId);
-                if ($paymentOption) {
-                    if ($paymentOption->balance + $eps >= $newPaidAmount) {
-                        $paymentOption->decrement('balance', $newPaidAmount);
-                    } else {
-                        return redirect()->back()
-                            ->withInput()
-                            ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
-                    }
+                $paymentOption = PaymentOption::visible()->find($newOptId);
+                if (! $paymentOption) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['payment_option_id' => 'Selected channel is not available for payments.']);
+                }
+                if ($paymentOption->balance + $eps >= $newPaidAmount) {
+                    $paymentOption->decrement('balance', $newPaidAmount);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['payment_option_id' => 'Insufficient balance in selected payment channel.']);
                 }
             }
         } elseif ($newOptId !== null) {
-            $paymentOption = PaymentOption::find($newOptId);
-            if ($paymentOption) {
-                $deltaToApply = $paymentDifference;
-                if ($oldOptId === null && $paymentDifference <= $eps && $oldPaidAmount > $eps) {
-                    $deltaToApply = $oldPaidAmount;
+            $paymentOption = PaymentOption::visible()->find($newOptId);
+            if (! $paymentOption) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['payment_option_id' => 'Selected channel is not available for payments.']);
+            }
+            $deltaToApply = $paymentDifference;
+            if ($oldOptId === null && $paymentDifference <= $eps && $oldPaidAmount > $eps) {
+                $deltaToApply = $oldPaidAmount;
+            }
+            if ($deltaToApply > $eps) {
+                if ($paymentOption->balance + $eps >= $deltaToApply) {
+                    $paymentOption->decrement('balance', $deltaToApply);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['paid_amount' => 'Insufficient balance in selected payment channel for this payment.']);
                 }
-                if ($deltaToApply > $eps) {
-                    if ($paymentOption->balance + $eps >= $deltaToApply) {
-                        $paymentOption->decrement('balance', $deltaToApply);
-                    } else {
-                        return redirect()->back()
-                            ->withInput()
-                            ->withErrors(['paid_amount' => 'Insufficient balance in selected payment channel for this payment.']);
-                    }
-                } elseif ($deltaToApply < -$eps) {
-                    $paymentOption->increment('balance', abs($deltaToApply));
-                }
+            } elseif ($deltaToApply < -$eps) {
+                $paymentOption->increment('balance', abs($deltaToApply));
             }
         }
 

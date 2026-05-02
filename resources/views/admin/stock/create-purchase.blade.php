@@ -152,6 +152,42 @@
                             <input type="hidden" id="total_value" name="total_value">
                         </div>
 
+                        <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                            <h3 class="text-lg font-medium text-slate-900 mb-2">Payment (optional)</h3>
+                            <p class="text-xs text-slate-500 mb-4">If you pay the supplier now, choose which <strong>channel</strong> (bank / mobile / cash) the money leaves from. Only channels shown under <strong>Channels</strong> (not hidden) appear here.</p>
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="paid_date" class="admin-prod-label">Paid date</label>
+                            <input type="date" name="paid_date" id="paid_date" value="{{ old('paid_date', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}" class="admin-prod-input">
+                            @error('paid_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="paid_amount" class="admin-prod-label">Paid amount (optional)</label>
+                            <input type="number" step="0.01" name="paid_amount" id="paid_amount" value="{{ old('paid_amount', '') }}" min="0" placeholder="0.00" class="admin-prod-input">
+                            @error('paid_amount') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="payment_option_id" class="admin-prod-label">Payment channel</label>
+                            <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
+                                <option value="">{{ __('Select channel…') }}</option>
+                                @foreach($paymentOptions ?? [] as $option)
+                                    <option value="{{ $option->id }}" {{ (string) old('payment_option_id') === (string) $option->id ? 'selected' : '' }}>
+                                        {{ $option->name }} ({{ \App\Models\PaymentOption::types()[$option->type] ?? $option->type }} — {{ number_format($option->balance, 2) }} TZS)
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('payment_option_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="col-span-1">
+                            <label for="payment_receipt_image" class="admin-prod-label">Payment receipt (optional)</label>
+                            <input type="file" name="payment_receipt_image" id="payment_receipt_image" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" class="admin-prod-input text-sm">
+                            @error('payment_receipt_image') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
                     </div>
 
                     <div class="admin-prod-form-footer !mt-6">
@@ -186,6 +222,16 @@
                     alert('❌ Branch is required');
                     document.getElementById('branch_id')?.focus();
                     return false;
+                }
+
+                const paid = parseFloat(document.getElementById('paid_amount')?.value) || 0;
+                if (paid > 0) {
+                    const channel = document.getElementById('payment_option_id')?.value || '';
+                    if (!channel) {
+                        alert('❌ Select a payment channel when paying an amount now (e.g. your bank account).');
+                        document.getElementById('payment_option_id')?.focus();
+                        return false;
+                    }
                 }
                 
                 const total = (quantity * price).toFixed(2);

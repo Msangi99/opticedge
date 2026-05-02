@@ -65,13 +65,13 @@ class DashboardFinancialService
     /**
      * Per-dealer (distributor) totals: billed, collected, outstanding — for dashboard receivables detail.
      *
-     * @return list<array{dealer_name: string, dealer_id: int|null, total_billed: float, total_paid: float, outstanding: float}>
+     * @return list<array{dealer_name: string, dealer_id: int|null, total_billed: float, total_paid: float, outstanding: float, aging_days: int|null, aging_label: string|null}>
      */
     public function getDistributorReceivableBreakdown(): array
     {
         $sales = DistributionSale::query()
             ->with(['dealer:id,name'])
-            ->get(['id', 'dealer_id', 'dealer_name', 'total_selling_value', 'paid_amount', 'balance']);
+            ->get(['id', 'dealer_id', 'dealer_name', 'date', 'total_selling_value', 'paid_amount', 'balance']);
 
         return $sales
             ->groupBy(function (DistributionSale $s) {
@@ -99,18 +99,65 @@ class DashboardFinancialService
                     return max(0, $t - $p);
                 });
 
+                $eps = 0.0001;
+                $agingDays = null;
+                if ($outstanding > $eps) {
+                    $oldestOutstandingDate = $group
+                        ->filter(function (DistributionSale $s) use ($eps) {
+                            $remaining = $s->balance !== null
+                                ? (float) $s->balance
+                                : max(0, (float) ($s->total_selling_value ?? 0) - (float) ($s->paid_amount ?? 0));
+
+                            return $remaining > $eps;
+                        })
+                        ->map(function (DistributionSale $s) {
+                            $d = $s->date;
+                            if ($d === null) {
+                                return null;
+                            }
+
+                            return $d instanceof Carbon ? $d->copy()->startOfDay() : Carbon::parse($d)->startOfDay();
+                        })
+                        ->filter()
+                        ->sort()
+                        ->first();
+
+                    if ($oldestOutstandingDate) {
+                        $agingDays = max(0, (int) floor($oldestOutstandingDate->floatDiffInRealDays(Carbon::now()->startOfDay())));
+                    }
+                }
+
+                $agingLabel = $agingDays === null ? null : $this->formatAgingLabel($agingDays);
+
                 return [
                     'dealer_name' => $name,
                     'dealer_id' => $first->dealer_id,
                     'total_billed' => $totalBilled,
                     'total_paid' => $totalPaid,
                     'outstanding' => $outstanding,
+                    'aging_days' => $agingDays,
+                    'aging_label' => $agingLabel,
                 ];
             })
             ->values()
             ->sortByDesc('outstanding')
             ->values()
             ->all();
+    }
+
+    private function formatAgingLabel(int $diffDays): string
+    {
+        if ($diffDays < 7) {
+            return $diffDays . ' day' . ($diffDays === 1 ? '' : 's') . '+';
+        }
+        if ($diffDays < 30) {
+            $weeks = (int) floor($diffDays / 7);
+
+            return $weeks . ' week' . ($weeks === 1 ? '' : 's') . '+';
+        }
+        $months = (int) floor($diffDays / 30);
+
+        return $months . ' month' . ($months === 1 ? '' : 's') . '+';
     }
 
     /**
@@ -217,7 +264,7 @@ class DashboardFinancialService
     }
 
     /**
-     * Calculate total sales from Orders, DistributionSales, and AgentSales for a date range.
+     * Calculate total sales from Orders, DistributionSales, AgentSales, and AgentCredits for a date range.
      */
     private function calculateSalesForPeriod(Carbon $startDate, Carbon $endDate): float
     {
@@ -236,7 +283,11 @@ class DashboardFinancialService
         $agentSales = AgentSale::whereBetween('date', [$start, $end])
             ->sum('total_selling_value');
 
-        return (float) ($ordersSales + $distributionSales + $agentSales);
+        // AgentCredits: count financed sales value in the same period.
+        $agentCredits = AgentCredit::whereBetween('date', [$start, $end])
+            ->sum('total_amount');
+
+        return (float) ($ordersSales + $distributionSales + $agentSales + $agentCredits);
     }
 
     /**

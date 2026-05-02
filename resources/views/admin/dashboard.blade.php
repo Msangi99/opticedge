@@ -1051,6 +1051,7 @@
                                         <th class="admin-dash-th">Total billed</th>
                                         <th class="admin-dash-th">Paid</th>
                                         <th class="admin-dash-th">Remaining</th>
+                                        <th class="admin-dash-th">Aging</th>
                                         <th class="admin-dash-th admin-dash-th--end">Action</th>
                                     </tr>
                                 </thead>
@@ -1061,6 +1062,15 @@
                                             <td class="px-4 py-2.5 text-slate-700 font-variant-numeric">{{ number_format($row['total_billed'], 0) }} TZS</td>
                                             <td class="px-4 py-2.5 text-slate-700 font-variant-numeric">{{ number_format($row['total_paid'], 0) }} TZS</td>
                                             <td class="px-4 py-2.5 font-bold text-blue-800 font-variant-numeric">{{ number_format($row['outstanding'], 0) }} TZS</td>
+                                            <td class="px-4 py-2.5">
+                                                @if(!empty($row['aging_label']))
+                                                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/70">
+                                                        {{ $row['aging_label'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs text-slate-400">—</span>
+                                                @endif
+                                            </td>
                                             <td class="px-4 py-2.5 text-right">
                                                 @if(!empty($row['dealer_id']))
                                                     <a href="{{ route('admin.dealers.show', $row['dealer_id']) }}" class="admin-dash-link text-xs py-1.5 px-3">Dealer</a>
@@ -1071,7 +1081,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="px-4 py-8 text-center text-slate-500 text-sm">
+                                            <td colspan="6" class="px-4 py-8 text-center text-slate-500 text-sm">
                                                 No distribution sales found.
                                             </td>
                                         </tr>
@@ -1084,6 +1094,7 @@
                                             <td class="px-4 py-3 font-variant-numeric">{{ number_format($recvBilled, 0) }} TZS</td>
                                             <td class="px-4 py-3 font-variant-numeric">{{ number_format($recvPaid, 0) }} TZS</td>
                                             <td class="px-4 py-3 text-blue-900 font-variant-numeric">{{ number_format($recvOutstanding, 0) }} TZS</td>
+                                            <td class="px-4 py-3"></td>
                                             <td class="px-4 py-3"></td>
                                         </tr>
                                     </tfoot>

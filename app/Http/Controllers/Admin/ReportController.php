@@ -47,10 +47,7 @@ class ReportController extends Controller
                     $total = (float) $rows->sum(function ($p) {
                         return (float) ($p->total_amount ?? ($p->quantity * $p->unit_price));
                     });
-                    $salesCount = ProductListItem::query()
-                        ->whereEffectiveBranch($b->id)
-                        ->whereNotNull('sold_at')
-                        ->count();
+                    $salesCount = $this->branchAttributedSalesCount($b->id);
                     $closingStock = ProductListItem::query()
                         ->whereEffectiveBranch($b->id)
                         ->whereNull('sold_at')
@@ -86,10 +83,7 @@ class ReportController extends Controller
             $branch = Branch::find($bid);
             if ($branch) {
                 $rows = Purchase::where('branch_id', $bid)->get();
-                $salesCount = ProductListItem::query()
-                    ->whereEffectiveBranch($bid)
-                    ->whereNotNull('sold_at')
-                    ->count();
+                $salesCount = $this->branchAttributedSalesCount($bid);
                 $closingStock = ProductListItem::query()
                     ->whereEffectiveBranch($bid)
                     ->whereNull('sold_at')
@@ -108,14 +102,7 @@ class ReportController extends Controller
             }
         }
 
-        $unassignedSales = ProductListItem::query()
-            ->whereNotNull('sold_at')
-            ->whereNull('branch_id')
-            ->where(function ($outer) {
-                $outer->whereNull('purchase_id')
-                    ->orWhereHas('purchase', fn ($p) => $p->whereNull('branch_id'));
-            })
-            ->count();
+        $unassignedSales = $this->unassignedAttributedSalesCount();
         $unassignedClosingStock = ProductListItem::query()
             ->whereNull('sold_at')
             ->whereNull('branch_id')
@@ -199,5 +186,51 @@ class ReportController extends Controller
         }
 
         return $total;
+    }
+
+    private function branchAttributedSalesCount(int $branchId): int
+    {
+        return ProductListItem::query()
+            ->whereNotNull('sold_at')
+            ->where(function ($outer) use ($branchId) {
+                $outer->whereHas('agentSale.agent', fn ($q) => $q->where('branch_id', $branchId))
+                    ->orWhereHas('pendingSale.seller', fn ($q) => $q->where('branch_id', $branchId))
+                    ->orWhereHas('agentCredit.agent', fn ($q) => $q->where('branch_id', $branchId))
+                    ->orWhere(function ($shop) use ($branchId) {
+                        $shop->whereDoesntHave('agentSale', fn ($q) => $q->whereNotNull('agent_id'))
+                            ->whereDoesntHave('pendingSale', fn ($q) => $q->whereNotNull('seller_id'))
+                            ->whereDoesntHave('agentCredit')
+                            ->whereEffectiveBranch($branchId);
+                    });
+            })
+            ->count();
+    }
+
+    private function unassignedAttributedSalesCount(): int
+    {
+        return ProductListItem::query()
+            ->whereNotNull('sold_at')
+            ->where(function ($outer) {
+                $outer->whereHas('agentSale', function ($q) {
+                    $q->whereNull('agent_id')
+                        ->orWhereHas('agent', fn ($u) => $u->whereNull('branch_id'));
+                })->orWhereHas('pendingSale', function ($q) {
+                    $q->whereNull('seller_id')
+                        ->orWhereHas('seller', fn ($u) => $u->whereNull('branch_id'));
+                })->orWhereHas('agentCredit', function ($q) {
+                    $q->whereNull('agent_id')
+                        ->orWhereHas('agent', fn ($u) => $u->whereNull('branch_id'));
+                })->orWhere(function ($shop) {
+                    $shop->whereDoesntHave('agentSale', fn ($q) => $q->whereNotNull('agent_id'))
+                        ->whereDoesntHave('pendingSale', fn ($q) => $q->whereNotNull('seller_id'))
+                        ->whereDoesntHave('agentCredit')
+                        ->whereNull('branch_id')
+                        ->where(function ($w) {
+                            $w->whereNull('purchase_id')
+                                ->orWhereHas('purchase', fn ($p) => $p->whereNull('branch_id'));
+                        });
+                });
+            })
+            ->count();
     }
 }

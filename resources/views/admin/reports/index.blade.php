@@ -242,6 +242,17 @@
                     </div>
                 </div>
                 <div class="admin-prod-form-body !pt-4">
+                    @php
+                        $branchOpeningTotal = (int) $branchesBusiness->sum('opening_stock') + (int) $unassignedOpeningStock;
+                        $branchSalesTotal = (int) $branchesBusiness->sum('sales_count') + (int) $unassignedSales;
+                        $branchClosingTotal = (int) $branchesBusiness->sum('closing_stock') + (int) $unassignedClosingStock;
+                    @endphp
+                    <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        <span class="font-semibold text-slate-900">Branch sales summary:</span>
+                        Opening {{ number_format($branchOpeningTotal) }}
+                        · Sales {{ number_format($branchSalesTotal) }}
+                        · Closing {{ number_format($branchClosingTotal) }}
+                    </div>
                     @if($selectedBranchDetail)
                         <div class="admin-prod-alert admin-prod-alert--warning mb-4">
                             <span class="font-semibold text-slate-800">{{ $selectedBranchDetail->branch->name }}</span>
@@ -280,6 +291,12 @@
                                         <td class="text-right">{{ number_format($unassignedClosingStock) }}</td>
                                     </tr>
                                 @endif
+                                <tr class="border-t-2 border-slate-300 font-semibold text-slate-900">
+                                    <td>Total</td>
+                                    <td class="text-right font-variant-numeric">{{ number_format($branchOpeningTotal) }}</td>
+                                    <td class="text-right font-variant-numeric">{{ number_format($branchSalesTotal) }}</td>
+                                    <td class="text-right font-variant-numeric">{{ number_format($branchClosingTotal) }}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

@@ -139,6 +139,36 @@
                             <p class="text-xs text-slate-500 mt-1">Actual pending amount = Total − total paid. Updates automatically as you type.</p>
                         </div>
 
+                        <!-- Payment Channel -->
+                        <div class="col-span-1">
+                            <label for="payment_option_id" class="admin-prod-label">Payment Channel</label>
+                            <select name="payment_option_id" id="payment_option_id" class="admin-prod-select">
+                                <option value="">Select channel</option>
+                                @foreach($paymentOptions as $option)
+                                    <option
+                                        value="{{ $option->id }}"
+                                        data-balance="{{ $option->balance }}"
+                                        {{ (string) old('payment_option_id', $purchase->payment_option_id) === (string) $option->id ? 'selected' : '' }}>
+                                        {{ $option->name }} (Balance: {{ number_format($option->balance, 2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('payment_option_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            <p class="text-xs text-slate-500 mt-1"><strong>Required</strong> when “Paid (this time)” is greater than 0 — pick the bank or other channel the money leaves from. Only channels listed under <strong>Channels</strong> (not hidden) appear here.</p>
+                        </div>
+
+                        <!-- Selected Channel Balance -->
+                        <div class="col-span-1">
+                            <label class="admin-prod-label">Selected Channel Balance</label>
+                            <input
+                                type="text"
+                                id="selected_channel_balance"
+                                readonly
+                                class="admin-prod-input font-medium cursor-not-allowed"
+                                value="0.00">
+                            <p id="channel_balance_hint" class="text-xs text-slate-500 mt-1">Select a channel to view available balance.</p>
+                        </div>
+
                         <!-- Payment History -->
                         <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
                             <h3 class="text-lg font-medium text-slate-900 mb-4">Payment History</h3>
@@ -197,23 +227,93 @@
             var pendingBase = {{ $pendingNow }};
             var paidInput = document.getElementById('paid_amount');
             var pendingEl = document.getElementById('pending_amount');
+            var optionSelect = document.getElementById('payment_option_id');
+            var optionBalanceEl = document.getElementById('selected_channel_balance');
+            var optionHintEl = document.getElementById('channel_balance_hint');
+            var submitBtn = document.querySelector('button[type="submit"]');
+
+            function selectedChannelBalance() {
+                if (!optionSelect) {
+                    return 0;
+                }
+                var selectedOption = optionSelect.options[optionSelect.selectedIndex];
+                if (!selectedOption) {
+                    return 0;
+                }
+                return parseFloat(selectedOption.getAttribute('data-balance')) || 0;
+            }
+
+            function updateChannelBalance() {
+                if (!optionSelect || !optionBalanceEl || !optionHintEl) {
+                    return;
+                }
+                var selectedOption = optionSelect.options[optionSelect.selectedIndex];
+                var balance = selectedChannelBalance();
+                optionBalanceEl.value = balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                if (!selectedOption || !selectedOption.value) {
+                    optionHintEl.textContent = 'Select a channel to view available balance.';
+                } else {
+                    optionHintEl.textContent = 'Current channel balance updates live from selected option.';
+                }
+            }
             
             function updatePendingAmount() {
-                if (paidInput && pendingEl) {
-                    var payNow = parseFloat(paidInput.value) || 0;
-                    // Ensure payNow doesn't exceed remaining pending
-                    if (payNow > pendingBase) {
-                        payNow = pendingBase;
-                        paidInput.value = pendingBase;
-                    }
-                    var pending = Math.max(0, pendingBase - payNow);
-                    pendingEl.value = pending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (!paidInput || !pendingEl) {
+                    return;
                 }
+
+                var payNow = parseFloat(paidInput.value) || 0;
+                if (payNow > pendingBase) {
+                    payNow = pendingBase;
+                    paidInput.value = pendingBase;
+                }
+
+                var channelBalance = selectedChannelBalance();
+                var hasSelectedChannel = optionSelect && optionSelect.value !== '';
+                var exceedsChannelBalance = hasSelectedChannel && payNow > channelBalance;
+
+                if (exceedsChannelBalance) {
+                    paidInput.setCustomValidity('Selected channel does not have enough balance for this payment amount.');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                    if (optionHintEl) {
+                        optionHintEl.textContent = 'Insufficient channel balance for entered amount.';
+                        optionHintEl.classList.add('text-red-600');
+                    }
+                } else {
+                    paidInput.setCustomValidity('');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                    if (optionHintEl) {
+                        optionHintEl.classList.remove('text-red-600');
+                        if (!hasSelectedChannel) {
+                            optionHintEl.textContent = 'Select a channel to view available balance.';
+                        } else {
+                            optionHintEl.textContent = 'Current channel balance updates live from selected option.';
+                        }
+                    }
+                }
+
+                var pending = Math.max(0, pendingBase - payNow);
+                pendingEl.value = pending.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
             
             if (paidInput) {
                 paidInput.addEventListener('input', updatePendingAmount);
             }
+            if (optionSelect) {
+                optionSelect.addEventListener('change', function() {
+                    updateChannelBalance();
+                    updatePendingAmount();
+                });
+            }
+
+            updateChannelBalance();
+            updatePendingAmount();
             
         })();
     </script>

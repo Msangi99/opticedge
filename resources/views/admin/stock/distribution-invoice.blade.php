@@ -164,9 +164,9 @@
 @php
     $companyName = 'OPTIC EDGE AFRICA';
     $formattedDate = $sale->date ? \Carbon\Carbon::parse($sale->date)->format('d M Y') : '';
-    $dealerName = $sale->dealer_name
+    $dealerName = $sale->dealer?->business_name
+        ?? $sale->dealer_name
         ?? $sale->dealer?->name
-        ?? $sale->dealer?->business_name
         ?? 'N/A';
     $productName = $sale->product
         ? (($sale->product->category?->name ?? 'N/A') . ' - ' . $sale->product->name)

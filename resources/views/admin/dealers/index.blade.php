@@ -31,6 +31,7 @@
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Name</th>
+                            <th scope="col" class="admin-prod-th">Business Name</th>
                             <th scope="col" class="admin-prod-th">Email</th>
                             <th scope="col" class="admin-prod-th">Phone</th>
                             <th scope="col" class="admin-prod-th">Ability</th>
@@ -46,6 +47,7 @@
                                     <a href="{{ route('admin.dealers.show', $dealer->id) }}"
                                         class="admin-prod-link text-[#232f3e] hover:text-[#c2410c]">{{ $dealer->name }}</a>
                                 </td>
+                                <td class="text-slate-600">{{ $dealer->business_name ?? '—' }}</td>
                                 <td class="text-slate-600">{{ $dealer->email }}</td>
                                 <td class="text-slate-600">{{ $dealer->phone ?? '—' }}</td>
                                 <td class="text-slate-600">{{ ($dealer->ability ?? 'fullaccess') === 'view' ? 'View only' : 'Full access' }}</td>
@@ -135,7 +137,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-slate-500 py-10">No dealers found.</td>
+                                <td colspan="8" class="text-center text-slate-500 py-10">No dealers found.</td>
                             </tr>
                         @endforelse
                     </tbody>
