@@ -467,7 +467,6 @@
                     'admin.stock.edit-agent-credit',
                     'admin.stock.agent-credit-payment-channel',
                     'admin.stock.agent-credit-pay-remaining',
-                    'admin.stock.agent-credits-convert-to-sale',
                     'admin.stock.update-agent-credit',
                 ]);
                 $navStockAgentTransfers = request()->routeIs([

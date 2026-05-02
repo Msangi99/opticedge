@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AgentCredit;
-use App\Models\AgentCreditPayment;
 use App\Models\AgentSale;
 use App\Models\Expense;
 use App\Models\PaymentOption;
@@ -125,98 +124,6 @@ class AgentSaleCreditMigrationService
     }
 
     /**
-     * Convert agent credit to an agent sale: reverse credit payment ledger + commission,
-     * book full amount on the chosen channel, relink IMEIs.
-     */
-    public function convertAgentCreditToAgentSale(AgentCredit $credit, int $paymentOptionId): AgentSale
-    {
-        $eps = 0.0001;
-        $credit->loadMissing(['agent', 'product']);
-
-        if (! $credit->agent_id) {
-            throw new \InvalidArgumentException('This credit has no agent.');
-        }
-        if (! $credit->product_id) {
-            throw new \InvalidArgumentException('This credit has no product.');
-        }
-
-        $total = (float) ($credit->total_amount ?? 0);
-        if ($total <= $eps) {
-            throw new \InvalidArgumentException('Credit total must be greater than zero.');
-        }
-
-        $paid = (float) ($credit->paid_amount ?? 0);
-        $paymentRows = AgentCreditPayment::query()->where('agent_credit_id', $credit->id)->orderBy('id')->get();
-        if ($paid > $eps && $paymentRows->isEmpty()) {
-            throw new \InvalidArgumentException('This credit has paid amount but no payment rows; fix the record before converting.');
-        }
-
-        $linkedItems = ProductListItem::query()->where('agent_credit_id', $credit->id)->get();
-        if ($linkedItems->isEmpty() && $credit->product_list_id) {
-            $row = ProductListItem::query()->find($credit->product_list_id);
-            $linkedItems = $row ? collect([$row]) : collect();
-        }
-        if ($linkedItems->count() > 1) {
-            throw new \InvalidArgumentException('More than one IMEI row points to this credit; fix links before converting.');
-        }
-
-        return DB::transaction(function () use ($credit, $paymentOptionId, $total, $linkedItems) {
-            $option = PaymentOption::visible()->whereKey($paymentOptionId)->lockForUpdate()->first();
-            if (! $option) {
-                throw new \InvalidArgumentException('Selected payment channel is invalid or hidden.');
-            }
-
-            $credit = AgentCredit::lockForUpdate()->findOrFail($credit->id);
-            $paymentRows = AgentCreditPayment::query()->where('agent_credit_id', $credit->id)->orderBy('id')->get();
-
-            $this->reverseAgentCreditCommissionExpense($credit);
-            $this->reverseAgentCreditPaymentLedger($credit, $paymentRows);
-
-            AgentCreditPayment::query()->where('agent_credit_id', $credit->id)->delete();
-
-            $buyPrice = $this->distributionSaleService->getBuyPriceForProduct((int) $credit->product_id);
-            $qty = 1;
-            $sellingPrice = $total;
-            $profit = $sellingPrice - ($buyPrice * $qty);
-
-            $attrs = [
-                'agent_id' => $credit->agent_id,
-                'customer_name' => $credit->customer_name,
-                'seller_name' => $credit->agent?->name,
-                'product_id' => (int) $credit->product_id,
-                'quantity_sold' => $qty,
-                'purchase_price' => $buyPrice,
-                'selling_price' => $sellingPrice,
-                'total_purchase_value' => $buyPrice * $qty,
-                'total_selling_value' => $total,
-                'profit' => $profit,
-                'commission_paid' => 0,
-                'balance' => 0,
-                'date' => $credit->date ? Carbon::parse($credit->date)->toDateString() : now()->toDateString(),
-                'payment_option_id' => $option->id,
-            ];
-            if (Schema::hasColumn('agent_sales', 'commission_expense_id')) {
-                $attrs['commission_expense_id'] = null;
-            }
-
-            $sale = AgentSale::create($attrs);
-
-            $option->increment('balance', $total);
-
-            foreach ($linkedItems as $item) {
-                $item->update([
-                    'agent_sale_id' => $sale->id,
-                    'agent_credit_id' => null,
-                ]);
-            }
-
-            DB::table('agent_credits')->where('id', $credit->id)->delete();
-
-            return $sale->fresh(['product.category', 'agent', 'paymentOption']);
-        });
-    }
-
-    /**
      * Undo channel top-up and commission expense for a sale (does not touch product_list).
      */
     public function reverseAgentSalePaymentAndCommissionOnly(AgentSale $sale): void
@@ -242,60 +149,6 @@ class AgentSaleCreditMigrationService
                     }
                 }
                 DB::table('expenses')->where('id', $expense->id)->delete();
-            }
-        }
-    }
-
-    private function reverseAgentCreditCommissionExpense(AgentCredit $credit): void
-    {
-        if (! Schema::hasColumn('agent_credits', 'commission_expense_id') || empty($credit->commission_expense_id)) {
-            return;
-        }
-
-        $expense = Expense::find($credit->commission_expense_id);
-        if (! $expense) {
-            return;
-        }
-
-        if ($expense->payment_option_id) {
-            $expOpt = PaymentOption::find($expense->payment_option_id);
-            if ($expOpt) {
-                $expOpt->increment('balance', (float) $expense->amount);
-            }
-        }
-        DB::table('expenses')->where('id', $expense->id)->delete();
-    }
-
-    /**
-     * Reverse recorded credit payments against channel balances.
-     * Initial down payment (sellCredit) decremented the channel; repayments incremented it.
-     */
-    private function reverseAgentCreditPaymentLedger(AgentCredit $credit, $paymentRows): void
-    {
-        $eps = 0.0001;
-
-        foreach ($paymentRows as $idx => $p) {
-            $opt = PaymentOption::lockForUpdate()->find($p->payment_option_id);
-            if (! $opt) {
-                continue;
-            }
-            $amt = (float) $p->amount;
-            if ($amt <= $eps) {
-                continue;
-            }
-
-            // sellCredit writes the down payment row in the same request as the credit (channel decrement).
-            $createdDiffOk = $credit->created_at && $p->created_at
-                && abs($credit->created_at->diffInSeconds($p->created_at)) <= 3;
-            $isLikelyInitialDown = $idx === 0 && $createdDiffOk;
-
-            if ($isLikelyInitialDown) {
-                $opt->increment('balance', $amt);
-            } else {
-                if ((float) $opt->balance + $eps < $amt) {
-                    throw new \InvalidArgumentException('Cannot reverse a repayment: channel “'.$opt->name.'” balance is too low.');
-                }
-                $opt->decrement('balance', $amt);
             }
         }
     }
