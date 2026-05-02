@@ -271,6 +271,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::get('agent-sales/{id}/invoice', [App\Http\Controllers\Admin\StockController::class, 'downloadAgentSaleInvoice'])->name('agent-sale-invoice');
             Route::patch('agent-sales/{id}/commission', [App\Http\Controllers\Admin\StockController::class, 'updateAgentSaleCommission'])->name('agent-sales-update-commission');
             Route::post('agent-sales/{id}/channel', [App\Http\Controllers\Admin\StockController::class, 'saveAgentSaleChannel'])->name('agent-sales-save-channel');
+            Route::post('agent-sales/{id}/convert-to-credit', [App\Http\Controllers\Admin\StockController::class, 'convertAgentSaleToCredit'])->name('agent-sales-convert-to-credit');
             Route::delete('agent-sales/{id}', [App\Http\Controllers\Admin\StockController::class, 'destroyAgentSale'])->name('destroy-agent-sale');
 
             Route::get('agent-transfers', [App\Http\Controllers\Admin\AgentTransferController::class, 'index'])->name('agent-transfers');
@@ -291,6 +292,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::patch('agent-credits/{id}/commission', [App\Http\Controllers\Admin\AgentCreditController::class, 'updateCommission'])->name('agent-credits-update-commission');
             Route::post('agent-credits/pay', [App\Http\Controllers\Admin\AgentCreditController::class, 'pay'])->name('agent-credits-pay');
             Route::post('agent-credits/{id}/pay-remaining', [App\Http\Controllers\Admin\AgentCreditController::class, 'payRemaining'])->name('agent-credit-pay-remaining');
+            Route::post('agent-credits/{id}/convert-to-sale', [App\Http\Controllers\Admin\AgentCreditController::class, 'convertAgentCreditToSale'])->name('agent-credits-convert-to-sale');
             Route::put('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'update'])->name('update-agent-credit');
             Route::delete('agent-credits/{id}', [App\Http\Controllers\Admin\AgentCreditController::class, 'destroy'])->name('destroy-agent-credit');
 

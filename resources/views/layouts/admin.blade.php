@@ -460,12 +460,14 @@
                     'admin.stock.store-agent-sale',
                     'admin.stock.agent-sales-update-commission',
                     'admin.stock.agent-sales-save-channel',
+                    'admin.stock.agent-sales-convert-to-credit',
                 ]);
                 $navStockAgentCredits = request()->routeIs([
                     'admin.stock.agent-credits',
                     'admin.stock.edit-agent-credit',
                     'admin.stock.agent-credit-payment-channel',
                     'admin.stock.agent-credit-pay-remaining',
+                    'admin.stock.agent-credits-convert-to-sale',
                     'admin.stock.update-agent-credit',
                 ]);
                 $navStockAgentTransfers = request()->routeIs([

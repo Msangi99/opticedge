@@ -140,7 +140,24 @@ class DashboardFinancialService
                 ];
             })
             ->values()
-            ->sortByDesc('outstanding')
+            ->sort(function (array $a, array $b): int {
+                $aAging = $a['aging_days'];
+                $bAging = $b['aging_days'];
+                if ($aAging !== null || $bAging !== null) {
+                    if ($aAging === null) {
+                        return 1;
+                    }
+                    if ($bAging === null) {
+                        return -1;
+                    }
+                    $byAging = $bAging <=> $aAging;
+                    if ($byAging !== 0) {
+                        return $byAging;
+                    }
+                }
+
+                return ($b['outstanding'] <=> $a['outstanding']);
+            })
             ->values()
             ->all();
     }

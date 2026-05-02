@@ -137,6 +137,14 @@
                                 </td>
                                 <td class="admin-prod-cell-actions whitespace-nowrap">
                                     <a href="{{ route('admin.stock.agent-sale-invoice', $sale->id) }}" class="admin-prod-link text-xs whitespace-nowrap inline-flex">Download receipt</a>
+                                    @if($sale->payment_option_id)
+                                        <span class="text-slate-300 mx-1 inline-flex">|</span>
+                                        <form action="{{ route('admin.stock.agent-sales-convert-to-credit', $sale->id) }}" method="POST" class="inline-block"
+                                            onsubmit="return confirm('Convert this sale to agent credit? The sale amount will be removed from the current channel, moved to the default Watu channel, and a pending credit will be created.');">
+                                            @csrf
+                                            <button type="submit" class="admin-prod-link text-xs whitespace-nowrap">To agent credit</button>
+                                        </form>
+                                    @endif
                                     <span class="text-slate-300 mx-1 inline-flex">|</span>
                                     <form action="{{ route('admin.stock.destroy-agent-sale', $sale->id) }}" method="POST" class="inline-block"
                                         onsubmit="return confirm('Delete this agent sale record?');">

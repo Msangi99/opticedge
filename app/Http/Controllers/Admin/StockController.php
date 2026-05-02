@@ -20,6 +20,7 @@ use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PdfDownload;
 use App\Support\PurchaseInvoiceNumber;
+use App\Services\AgentSaleCreditMigrationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -645,6 +646,29 @@ class StockController extends Controller
         }
 
         return redirect()->route('admin.stock.agent-sales', $request->query())->with('success', 'Commission updated and expense synced.');
+    }
+
+    public function convertAgentSaleToCredit(Request $request, int $id)
+    {
+        $sale = AgentSale::findOrFail($id);
+
+        try {
+            $credit = app(AgentSaleCreditMigrationService::class)->convertAgentSaleToAgentCredit($sale);
+
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->with('success', 'Agent sale #'.$sale->id.' was converted to agent credit #'.$credit->id.'. The sale amount was removed from the sale channel and added to '.$credit->paymentOption?->name.'.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.stock.agent-sales', $request->query())
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('convertAgentSaleToCredit: '.$e->getMessage(), ['exception' => $e]);
+
+            return redirect()
+                ->route('admin.stock.agent-sales', $request->query())
+                ->withErrors(['error' => 'Conversion failed. Check logs or try again.']);
+        }
     }
 
     /**

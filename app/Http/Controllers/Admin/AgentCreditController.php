@@ -9,6 +9,7 @@ use App\Models\Expense;
 use App\Models\PaymentOption;
 use App\Models\Setting;
 use App\Support\PdfDownload;
+use App\Services\AgentSaleCreditMigrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -157,6 +158,36 @@ class AgentCreditController extends Controller
         return redirect()
             ->route('admin.stock.agent-credits', $request->query())
             ->with('success', 'Payment recorded and totals updated.');
+    }
+
+    public function convertAgentCreditToSale(Request $request, int $id)
+    {
+        $request->validate([
+            'payment_option_id' => 'required|exists:payment_options,id',
+        ]);
+
+        $credit = AgentCredit::findOrFail($id);
+
+        try {
+            $sale = app(AgentSaleCreditMigrationService::class)->convertAgentCreditToAgentSale(
+                $credit,
+                (int) $request->input('payment_option_id')
+            );
+
+            return redirect()
+                ->route('admin.stock.agent-sales', $request->query())
+                ->with('success', 'Agent credit #'.$credit->id.' was converted to agent sale #'.$sale->id.' on '.$sale->paymentOption?->name.'.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('convertAgentCreditToSale: '.$e->getMessage(), ['exception' => $e]);
+
+            return redirect()
+                ->route('admin.stock.agent-credits', $request->query())
+                ->withErrors(['error' => 'Conversion failed. Check logs or try again.']);
+        }
     }
 
     public function exportCsv(Request $request)

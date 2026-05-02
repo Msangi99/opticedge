@@ -130,6 +130,18 @@
                                     <span class="text-slate-300 mx-1">|</span>
                                     <a href="{{ route('admin.stock.agent-credit-invoice', $credit->id) }}" class="admin-prod-link">Download receipt</a>
                                     <span class="text-slate-300 mx-1">|</span>
+                                    <form action="{{ route('admin.stock.agent-credits-convert-to-sale', ['id' => $credit->id] + request()->query()) }}" method="POST" class="inline-flex flex-wrap items-center gap-1 max-w-[min(100%,18rem)]"
+                                        onsubmit="return confirm('Convert this credit to a paid agent sale on the selected channel? Existing repayments will be reversed from their channels, then the full amount will be booked to the channel you pick.');">
+                                        @csrf
+                                        <select name="payment_option_id" required class="admin-prod-select text-xs py-1 min-w-[9rem] max-w-full">
+                                            <option value="">Channel…</option>
+                                            @foreach($paymentOptions as $opt)
+                                                <option value="{{ $opt->id }}">{{ $opt->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="admin-prod-link text-xs whitespace-nowrap">To agent sale</button>
+                                    </form>
+                                    <span class="text-slate-300 mx-1">|</span>
                                     <form action="{{ route('admin.stock.destroy-agent-credit', ['id' => $credit->id] + request()->query()) }}" method="POST"
                                         class="inline-block"
                                         onsubmit="return confirm('Delete this agent credit record?');">
