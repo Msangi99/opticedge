@@ -20,14 +20,15 @@ class AgentSaleCreditMigrationService
     ) {}
 
     /**
-     * Default Watu channel for agent credits (same rules as app sell-on-credit).
+     * Default Watu / agent-credit collection channel: Store setting first (any visible channel, e.g. “I&M”),
+     * then optional fallback to a channel whose name contains “Watu”.
      */
     public function resolveDefaultWatuPaymentOption(): PaymentOption
     {
         $watuDefaultRaw = Setting::query()->where('key', 'default_watu_channel_id')->value('value');
         if (is_numeric($watuDefaultRaw)) {
             $candidate = PaymentOption::visible()->find((int) $watuDefaultRaw);
-            if ($candidate && $candidate->isWatuAgentCreditChannel()) {
+            if ($candidate) {
                 return $candidate;
             }
         }
@@ -38,7 +39,9 @@ class AgentSaleCreditMigrationService
             ->first(fn (PaymentOption $opt) => $opt->isWatuAgentCreditChannel());
 
         if (! $fallback) {
-            throw new \InvalidArgumentException('No Watu payment channel is configured. Set default Watu channel in Store settings or add a visible channel whose name contains “Watu”.');
+            throw new \InvalidArgumentException(
+                'No default Watu channel is available. In Store settings, set Default Watu channel to a visible payment option, or add a visible channel whose name contains “Watu”.'
+            );
         }
 
         return $fallback;

@@ -610,7 +610,7 @@ class ProductListController extends Controller
             if (is_numeric($watuDefaultRaw)) {
                 $candidateId = (int) $watuDefaultRaw;
                 $candidate = PaymentOption::visible()->find($candidateId);
-                if ($candidate && $candidate->isWatuAgentCreditChannel()) {
+                if ($candidate) {
                     $paymentOptionId = $candidate->id;
                 }
             }
