@@ -16,6 +16,7 @@ use App\Models\ProductListItem;
 use App\Models\Stock;
 use App\Models\Vendor;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PdfDownload;
@@ -381,7 +382,12 @@ class StockController extends Controller
             })->count(),
         ];
 
-        return view('admin.stock.distribution', compact('distributionSales', 'distributionDashboard'));
+        $consolidatedDealers = User::query()
+            ->where('role', 'dealer')
+            ->orderBy('name')
+            ->get(['id', 'name', 'business_name']);
+
+        return view('admin.stock.distribution', compact('distributionSales', 'distributionDashboard', 'consolidatedDealers'));
     }
 
     public function exportDistributionCsv(Request $request)
@@ -1537,11 +1543,12 @@ class StockController extends Controller
     // Distribution Sales
     public function createDistribution()
     {
-        // Fetch products that have been purchased at least once
-        $products = \App\Models\Product::whereHas('purchases')->orderBy('name')->get();
-        
-        // Fetch dealers
-        $dealers = \App\Models\User::where('role', 'dealer')->orderBy('name')->get();
+        $products = Product::whereHas('purchases')
+            ->with('category')
+            ->orderBy('name')
+            ->get();
+
+        $dealers = User::where('role', 'dealer')->orderBy('name')->get();
 
         return view('admin.stock.create-distribution', compact('products', 'dealers'));
     }
@@ -1554,40 +1561,136 @@ class StockController extends Controller
 
         $validated = $request->validate([
             'date' => 'required|date',
-            'dealer_id' => 'nullable|exists:users,id',
-            'dealer_name' => 'nullable|string|max:255',
+            'dealer_id' => 'required|exists:users,id',
             'seller_name' => 'nullable|string|max:255',
-            'product_id' => 'required|exists:models,id',
-            'quantity_sold' => 'required|integer|min:1',
-            'selling_price' => 'required|numeric|min:0',
+            'lines' => 'required|array|min:1',
+            'lines.*.product_id' => 'required|integer|exists:models,id',
+            'lines.*.quantity_sold' => 'required|integer|min:1',
+            'lines.*.selling_price' => 'required|numeric|min:0.01',
             'paid_amount' => 'nullable|numeric|min:0',
         ]);
 
         $service = app(\App\Services\DistributionSaleService::class);
-        $buyPrice = $service->getBuyPriceForProduct($validated['product_id']); // Uses latest purchase unit_price as buy cost
-        $validated['purchase_price'] = $buyPrice;
-        $validated['total_selling_value'] = $validated['quantity_sold'] * $validated['selling_price'];
-        $validated['total_purchase_value'] = $validated['quantity_sold'] * $buyPrice;
-        $validated['commission'] = 0; // Manual entry: no referrer commission
-        $validated['profit'] = $validated['total_selling_value'] - $validated['total_purchase_value'] - 0;
-        $validated['paid_amount'] = $validated['paid_amount'] ?? 0;
-        $validated['balance'] = $validated['total_selling_value'] - $validated['paid_amount'];
-        $eps = 0.0001;
-        $validated['status'] = $validated['paid_amount'] >= $validated['total_selling_value'] - $eps ? 'complete' : 'pending';
-        if (!empty($validated['dealer_id'])) {
-            $dealer = \App\Models\User::find($validated['dealer_id']);
-            $validated['dealer_name'] = $dealer?->business_name
-                ?? $dealer?->name
-                ?? $validated['dealer_name']
-                ?? null;
+        $dealer = User::findOrFail((int) $validated['dealer_id']);
+        $dealerName = $dealer->business_name ?? $dealer->name;
+
+        $linePayloads = [];
+        $grandSellingTotal = 0.0;
+
+        foreach ($validated['lines'] as $line) {
+            $pid = (int) $line['product_id'];
+            $qty = (int) $line['quantity_sold'];
+            $sellUnit = (float) $line['selling_price'];
+
+            $product = Product::findOrFail($pid);
+            $stock = (int) ($product->stock_quantity ?? 0);
+            if ($qty > $stock) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors([
+                        'lines' => "Insufficient stock for {$product->name}: requested {$qty}, available {$stock}.",
+                    ]);
+            }
+
+            $buyPrice = $service->getBuyPriceForProduct($pid);
+            $totalSell = $qty * $sellUnit;
+            $totalBuy = $qty * $buyPrice;
+            $grandSellingTotal += $totalSell;
+
+            $linePayloads[] = [
+                'product' => $product,
+                'quantity_sold' => $qty,
+                'purchase_price' => $buyPrice,
+                'selling_price' => $sellUnit,
+                'total_selling_value' => $totalSell,
+                'total_purchase_value' => $totalBuy,
+                'profit' => $totalSell - $totalBuy,
+            ];
         }
 
-        DistributionSale::create($validated);
+        $paidTotal = (float) ($validated['paid_amount'] ?? 0);
+        $eps = 0.0001;
+        if ($paidTotal > $grandSellingTotal + $eps * max(1, count($linePayloads))) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['paid_amount' => 'Paid amount cannot exceed the total for all lines.']);
+        }
 
-        // Keep product.stock_quantity in sync for Category Management / dashboards
-        \App\Models\Product::where('id', $validated['product_id'])->decrement('stock_quantity', $validated['quantity_sold']);
+        $lineTotals = array_map(fn ($p) => (float) $p['total_selling_value'], $linePayloads);
+        $paidShares = $this->allocateDistributionPaidAcrossLines($paidTotal, $grandSellingTotal, $lineTotals);
 
-        return redirect()->route('admin.stock.distribution')->with('success', 'Distribution sale recorded successfully.');
+        DB::transaction(function () use ($validated, $dealerName, $request, $linePayloads, $paidShares, $eps) {
+            foreach ($linePayloads as $idx => $payload) {
+                $paidLine = (float) ($paidShares[$idx] ?? 0);
+                $totalSell = (float) $payload['total_selling_value'];
+                $attrs = [
+                    'date' => $validated['date'],
+                    'dealer_id' => (int) $validated['dealer_id'],
+                    'dealer_name' => $dealerName,
+                    'seller_name' => $validated['seller_name'] ?? $request->user()?->name,
+                    'product_id' => $payload['product']->id,
+                    'quantity_sold' => $payload['quantity_sold'],
+                    'purchase_price' => $payload['purchase_price'],
+                    'selling_price' => $payload['selling_price'],
+                    'total_purchase_value' => $payload['total_purchase_value'],
+                    'total_selling_value' => $totalSell,
+                    'commission' => 0,
+                    'profit' => $payload['profit'],
+                    'paid_amount' => $paidLine,
+                    'balance' => max(0, $totalSell - $paidLine),
+                    'status' => $paidLine >= $totalSell - $eps ? 'complete' : 'pending',
+                ];
+
+                DistributionSale::create($attrs);
+
+                Product::where('id', $payload['product']->id)->decrement('stock_quantity', $payload['quantity_sold']);
+            }
+        });
+
+        $count = count($linePayloads);
+        $msg = $count === 1
+            ? 'Distribution sale recorded successfully.'
+            : "Recorded {$count} distribution sale lines successfully.";
+
+        return redirect()->route('admin.stock.distribution')->with('success', $msg);
+    }
+
+    /**
+     * Split a single paid_amount across multiple distribution lines by each line’s share of billed total.
+     *
+     * @param  array<int, float>  $lineSellingTotals
+     * @return array<int, float>
+     */
+    private function allocateDistributionPaidAcrossLines(float $paidTotal, float $grandTotal, array $lineSellingTotals): array
+    {
+        $paidTotal = max(0, min($paidTotal, $grandTotal));
+        $n = count($lineSellingTotals);
+        if ($n === 0) {
+            return [];
+        }
+        if ($paidTotal <= 0.00001 || $grandTotal <= 0.00001) {
+            return array_fill(0, $n, 0.0);
+        }
+
+        $out = [];
+        $allocated = 0.0;
+        foreach ($lineSellingTotals as $i => $lt) {
+            if ($i === $n - 1) {
+                $rest = round($paidTotal - $allocated, 2);
+                $out[$i] = max(0, min($lt, $rest));
+
+                continue;
+            }
+            $share = round($paidTotal * ($lt / $grandTotal), 2);
+            $share = min($share, $lt, $paidTotal - $allocated);
+            if ($share < 0) {
+                $share = 0.0;
+            }
+            $out[$i] = $share;
+            $allocated += $share;
+        }
+
+        return $out;
     }
 
     public function editDistribution($id)
@@ -1607,6 +1710,86 @@ class StockController extends Controller
         $filename = "distribution-invoice-{$invoiceNo}-{$safeDate}.pdf";
 
         return PdfDownload::fromView('admin.stock.distribution-invoice', compact('sale', 'invoiceNo'), $filename);
+    }
+
+    /**
+     * One PDF: all distribution rows for a dealer in a date range with outstanding balance &gt; 0.
+     */
+    public function downloadConsolidatedDistributionInvoice(Request $request)
+    {
+        $validated = $request->validate([
+            'dealer_id' => 'required|integer|exists:users,id',
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+        ]);
+
+        $dealer = User::query()
+            ->where('id', (int) $validated['dealer_id'])
+            ->where('role', 'dealer')
+            ->firstOrFail();
+
+        $from = Carbon::parse($validated['date_from'])->startOfDay();
+        $to = Carbon::parse($validated['date_to'])->endOfDay();
+
+        $sales = DistributionSale::query()
+            ->with(['product.category'])
+            ->where('dealer_id', $dealer->id)
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        $eps = 0.0001;
+        $outstandingFn = function (DistributionSale $s): float {
+            if ($s->balance !== null) {
+                return max(0, (float) $s->balance);
+            }
+            $t = (float) ($s->total_selling_value ?? 0);
+            $p = (float) ($s->paid_amount ?? 0);
+
+            return max(0, $t - $p);
+        };
+
+        $lines = $sales->filter(fn (DistributionSale $s) => $outstandingFn($s) > $eps)->values();
+
+        if ($lines->isEmpty()) {
+            return redirect()
+                ->route('admin.stock.distribution', $request->only(['date_from', 'date_to']))
+                ->with('info', 'No outstanding distribution invoices for that dealer in the selected date range.');
+        }
+
+        $lineRows = $lines->map(function (DistributionSale $s) use ($outstandingFn) {
+            $totalSell = (float) ($s->total_selling_value ?? 0);
+            $paid = (float) ($s->paid_amount ?? 0);
+            $productName = $s->product
+                ? (($s->product->category?->name ?? 'N/A').' - '.$s->product->name)
+                : 'N/A';
+
+            return [
+                'id' => $s->id,
+                'date' => $s->date ? Carbon::parse($s->date)->format('Y-m-d') : null,
+                'product_name' => $productName,
+                'quantity' => (int) ($s->quantity_sold ?? 0),
+                'total_sell' => $totalSell,
+                'paid' => $paid,
+                'outstanding' => $outstandingFn($s),
+            ];
+        })->values()->all();
+
+        $totalOutstanding = (float) collect($lineRows)->sum('outstanding');
+        $dealerBusinessName = $dealer->business_name ?? $dealer->name;
+        $invoiceNo = 'CONS-'.$dealer->id.'-'.$from->format('Ymd').'-'.$to->format('Ymd');
+        $filename = 'distribution-consolidated-'.strtolower($invoiceNo).'.pdf';
+        $periodLabel = $from->format('d M Y').' – '.$to->format('d M Y');
+
+        return PdfDownload::fromView('admin.stock.distribution-invoice-consolidated', compact(
+            'dealer',
+            'dealerBusinessName',
+            'lineRows',
+            'totalOutstanding',
+            'invoiceNo',
+            'periodLabel',
+        ), $filename);
     }
 
     public function updateDistribution(Request $request, $id)

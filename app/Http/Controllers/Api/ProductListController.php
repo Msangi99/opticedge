@@ -702,6 +702,7 @@ class ProductListController extends Controller
             AgentProductListAssignment::where('product_list_id', $item->id)->delete();
             AgentAssignment::where('agent_id', $agent->id)
                 ->where('product_id', $product->id)
+                ->where('assignment_type', AgentAssignment::TYPE_IMEI)
                 ->increment('quantity_sold');
 
             return $credit;
@@ -715,6 +716,223 @@ class ProductListController extends Controller
                 'total_amount' => (float) $credit->total_amount,
                 'paid_amount' => (float) $credit->paid_amount,
                 'payment_status' => $credit->payment_status,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Agent: List "total" (quantity-only) assignments for the Given tab.
+     * Returns one row per assigned product with the remaining quantity and a
+     * suggested sell price taken from the product catalog.
+     */
+    public function totalAssignments()
+    {
+        $agentId = Auth::id();
+
+        $rows = AgentAssignment::where('agent_id', $agentId)
+            ->where('assignment_type', AgentAssignment::TYPE_TOTAL)
+            ->with(['product.category'])
+            ->get();
+
+        $data = $rows->map(function (AgentAssignment $row) {
+            $product = $row->product;
+            $sellPrice = 0.0;
+            if ($product) {
+                if ($product->price !== null && (float) $product->price > 0) {
+                    $sellPrice = (float) $product->price;
+                } else {
+                    $purchase = Purchase::where('product_id', $product->id)
+                        ->whereNotNull('sell_price')
+                        ->latest('date')
+                        ->first();
+                    if ($purchase && $purchase->sell_price !== null) {
+                        $sellPrice = (float) $purchase->sell_price;
+                    }
+                }
+            }
+
+            $assigned = (int) $row->quantity_assigned;
+            $sold = (int) $row->quantity_sold;
+            $remaining = max(0, $assigned - $sold);
+
+            return [
+                'id' => $row->id,
+                'product_id' => $row->product_id,
+                'product_name' => $product?->name ?? '–',
+                'category_id' => $product?->category_id,
+                'category_name' => $product?->category?->name,
+                'quantity_assigned' => $assigned,
+                'quantity_sold' => $sold,
+                'quantity_remaining' => $remaining,
+                'sell_price' => $sellPrice,
+            ];
+        })
+            ->filter(fn (array $r) => $r['quantity_remaining'] > 0)
+            ->values()
+            ->all();
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Agent: Record a "Given" sale (from a quantity-only assignment).
+     *
+     * Flow:
+     *  - Validate the agent has a TYPE_TOTAL assignment for $product_id with quantity_remaining >= 1.
+     *  - Look up product_list by imei. If found and unsold, reuse it. If found and sold, fail.
+     *    If not found, create a new product_list row tied to the catalog product so the IMEI is trackable.
+     *  - Create the AgentSale, mark the product_list row as sold, increment the TYPE_TOTAL counter,
+     *    and credit the chosen payment channel.
+     */
+    public function sellGiven(Request $request)
+    {
+        $validated = $request->validate([
+            'imei' => 'required|string|max:512',
+            'product_id' => 'required|integer|exists:models,id',
+            'customer_name' => 'required|string|max:255',
+            'selling_price' => 'required|numeric|min:0',
+            'payment_option_id' => 'required|integer|exists:payment_options,id',
+        ]);
+
+        $agent = Auth::user();
+        $imei = trim($validated['imei']);
+        $productId = (int) $validated['product_id'];
+        $sellingPrice = (float) $validated['selling_price'];
+
+        if ($imei === '') {
+            return response()->json(['message' => 'IMEI is required.'], 422);
+        }
+
+        $assignment = AgentAssignment::where('agent_id', $agent->id)
+            ->where('product_id', $productId)
+            ->where('assignment_type', AgentAssignment::TYPE_TOTAL)
+            ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'message' => 'You do not have a total assignment for this product. Ask admin to assign by total.',
+            ], 422);
+        }
+
+        if ($assignment->quantity_remaining < 1) {
+            return response()->json([
+                'message' => 'You have already sold all assigned units of this product.',
+            ], 422);
+        }
+
+        $product = Product::find($productId);
+        if (! $product) {
+            return response()->json(['message' => 'Selected product no longer exists.'], 422);
+        }
+
+        $paymentOpt = PaymentOption::visible()->find((int) $validated['payment_option_id']);
+        if (! $paymentOpt) {
+            return response()->json(['message' => 'Selected payment channel is invalid or not available.'], 422);
+        }
+        if ($paymentOpt->isWatuAgentCreditChannel()) {
+            return response()->json([
+                'message' => 'Given sales cannot use the Watu credit channel. Choose a regular channel.',
+            ], 422);
+        }
+
+        $existing = ProductListItem::where('imei_number', $imei)->first();
+        if ($existing) {
+            if ($existing->isSold()) {
+                return response()->json([
+                    'message' => 'This IMEI has already been sold.',
+                ], 422);
+            }
+
+            $existingProductId = (int) ($existing->product_id ?? 0);
+            if ($existingProductId !== 0 && $existingProductId !== $productId) {
+                return response()->json([
+                    'message' => 'This IMEI is already registered for a different product.',
+                ], 422);
+            }
+
+            $otherAssignment = AgentProductListAssignment::where('product_list_id', $existing->id)
+                ->where('agent_id', '!=', $agent->id)
+                ->exists();
+            if ($otherAssignment) {
+                return response()->json([
+                    'message' => 'This IMEI is currently assigned to another agent.',
+                ], 422);
+            }
+        }
+
+        $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
+        $profit = $sellingPrice - $buyPrice;
+
+        try {
+            $sale = DB::transaction(function () use ($agent, $product, $assignment, $existing, $imei, $productId, $validated, $sellingPrice, $buyPrice, $profit, $paymentOpt) {
+                if ($existing) {
+                    $item = $existing;
+                    if ((int) ($item->product_id ?? 0) === 0) {
+                        $item->update(['product_id' => $productId]);
+                    }
+                } else {
+                    $item = ProductListItem::create([
+                        'stock_id' => null,
+                        'purchase_id' => null,
+                        'category_id' => $product->category_id,
+                        'model' => $product->name,
+                        'imei_number' => $imei,
+                        'product_id' => $product->id,
+                    ]);
+                }
+
+                $attrs = [
+                    'customer_name' => $validated['customer_name'],
+                    'seller_name' => $agent->name,
+                    'product_id' => $product->id,
+                    'quantity_sold' => 1,
+                    'purchase_price' => $buyPrice,
+                    'selling_price' => $sellingPrice,
+                    'total_purchase_value' => $buyPrice,
+                    'total_selling_value' => $sellingPrice,
+                    'profit' => $profit,
+                    'balance' => 0,
+                    'date' => now()->toDateString(),
+                ];
+                if (Schema::hasColumn('agent_sales', 'agent_id')) {
+                    $attrs['agent_id'] = $agent->id;
+                }
+                if (Schema::hasColumn('agent_sales', 'payment_option_id')) {
+                    $attrs['payment_option_id'] = $paymentOpt->id;
+                }
+
+                $sale = AgentSale::create($attrs);
+
+                $paymentOpt->increment('balance', $sellingPrice);
+
+                $item->update([
+                    'sold_at' => now(),
+                    'agent_sale_id' => $sale->id,
+                    'pending_sale_id' => null,
+                    'agent_credit_id' => null,
+                ]);
+
+                AgentProductListAssignment::where('product_list_id', $item->id)->delete();
+
+                $product->decrement('stock_quantity');
+
+                $assignment->increment('quantity_sold');
+
+                return $sale;
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Could not record sale: '.$e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Given sale recorded successfully.',
+            'data' => [
+                'agent_sale_id' => $sale->id,
+                'customer_name' => $sale->customer_name,
+                'selling_price' => (float) $sale->selling_price,
+                'imei_number' => $imei,
             ],
         ], 201);
     }
@@ -797,6 +1015,7 @@ class ProductListController extends Controller
             AgentProductListAssignment::where('product_list_id', $item->id)->delete();
             AgentAssignment::where('agent_id', $agent->id)
                 ->where('product_id', $product->id)
+                ->where('assignment_type', AgentAssignment::TYPE_IMEI)
                 ->increment('quantity_sold');
 
             return $sale;
@@ -847,6 +1066,7 @@ class ProductListController extends Controller
             AgentProductListAssignment::where('product_list_id', $item->id)->delete();
             AgentAssignment::where('agent_id', $agent->id)
                 ->where('product_id', $product->id)
+                ->where('assignment_type', AgentAssignment::TYPE_IMEI)
                 ->increment('quantity_sold');
 
             return $sale;

@@ -37,16 +37,10 @@ class AgentDailyStockReportService
         $dayEnd = $reportDate->copy()->endOfDay();
         $prevEnd = $reportDate->copy()->subDay()->endOfDay();
 
-        $agents = User::query()
-            ->where('role', 'agent')
-            ->where(function ($q) {
-                $q->where('status', 'active')->orWhereNull('status');
-            })
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         $productIds = $this->distinctProductIdsInScope($branchId);
         if ($productIds->isEmpty()) {
+            $agents = $this->resolveAgentsForReport($branchId, [], [], []);
+
             return [
                 'report_date' => $reportDate->toDateString(),
                 'branch_id' => $branchId,
@@ -74,6 +68,8 @@ class AgentDailyStockReportService
 
         $transferNetShop = $this->shopTransferNetByProduct($reportDate, $branchId, $productIds);
         $receivedToday = $this->receivedTodayByProduct($reportDate, $branchId, $productIds);
+
+        $agents = $this->resolveAgentsForReport($branchId, $salesAgents, $unsoldAssignedAgents, $prevClosingAgents);
 
         $activeProductIds = [];
         foreach ($productIds as $pid) {
@@ -160,6 +156,48 @@ class AgentDailyStockReportService
             'rows' => $rows,
             'totals' => $this->sumTotals($rows, $agents),
         ];
+    }
+
+    /**
+     * Agents shown as columns: all active agents when no branch filter; when a branch is selected,
+     * agents assigned to that branch plus any agent with stock/sales activity in branch-scoped data
+     * (covers reps not yet assigned branch_id on their user row).
+     *
+     * @param  array<int, array<int, int>>  $salesByAgent
+     * @param  array<int, array<int, int>>  $unsoldByAgent
+     * @param  array<int, array<int, int>>  $prevClosingByAgent
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    private function resolveAgentsForReport(?int $branchId, array $salesByAgent, array $unsoldByAgent, array $prevClosingByAgent)
+    {
+        $base = User::query()
+            ->where('role', 'agent')
+            ->where(function ($q) {
+                $q->where('status', 'active')->orWhereNull('status');
+            });
+
+        if ($branchId === null || ! Schema::hasColumn('users', 'branch_id')) {
+            return (clone $base)->with('branch')->orderBy('name')->get(['id', 'name', 'branch_id']);
+        }
+
+        $assignedIds = (clone $base)->where('branch_id', $branchId)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $activityIds = array_unique(array_merge(
+            array_keys($salesByAgent),
+            array_keys($unsoldByAgent),
+            array_keys($prevClosingByAgent)
+        ));
+        $merged = array_values(array_unique(array_merge($assignedIds, array_map('intval', $activityIds))));
+
+        if ($merged === []) {
+            return collect();
+        }
+
+        return User::query()
+            ->whereIn('id', $merged)
+            ->where('role', 'agent')
+            ->with('branch')
+            ->orderBy('name')
+            ->get(['id', 'name', 'branch_id']);
     }
 
     /**

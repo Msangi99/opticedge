@@ -2,15 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class AgentAssignment extends Model
 {
+    public const TYPE_IMEI = 'imei';
+    public const TYPE_TOTAL = 'total';
+
     protected $fillable = [
         'agent_id',
         'product_id',
+        'assignment_type',
         'quantity_assigned',
         'quantity_sold',
+    ];
+
+    protected $attributes = [
+        'assignment_type' => self::TYPE_IMEI,
     ];
 
     public function agent()
@@ -26,6 +35,26 @@ class AgentAssignment extends Model
     /** Quantity still available to sell */
     public function getQuantityRemainingAttribute(): int
     {
-        return max(0, $this->quantity_assigned - $this->quantity_sold);
+        return max(0, (int) $this->quantity_assigned - (int) $this->quantity_sold);
+    }
+
+    public function isImei(): bool
+    {
+        return $this->assignment_type === self::TYPE_IMEI;
+    }
+
+    public function isTotal(): bool
+    {
+        return $this->assignment_type === self::TYPE_TOTAL;
+    }
+
+    public function scopeImei(Builder $query): Builder
+    {
+        return $query->where('assignment_type', self::TYPE_IMEI);
+    }
+
+    public function scopeTotal(Builder $query): Builder
+    {
+        return $query->where('assignment_type', self::TYPE_TOTAL);
     }
 }

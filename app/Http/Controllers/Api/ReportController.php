@@ -146,13 +146,111 @@ class ReportController extends Controller
             ->values()
             ->all();
 
+        // Last 30 days: units sold in this branch’s stock scope + revenue (aligned with branch attribution rules).
+        $salesWindowDays = 30;
+        $since = Carbon::now()->subDays($salesWindowDays)->startOfDay();
+        $agents = $this->branchAgentsWithSalesMetrics($branchId, $since);
+
         return response()->json([
             'data' => [
                 'branch_id' => $branch->id,
                 'branch_name' => $branch->name,
                 'purchases' => $purchases,
+                'sales_metrics_days' => $salesWindowDays,
+                'agents' => $agents,
             ],
         ]);
+    }
+
+    /**
+     * Agents assigned to the branch plus any rep with a sale in branch-scoped stock in $since..now.
+     * sales_units = IMEI/unit rows sold in that window; revenue_tzs = sum of linked sale amounts (cash + pending + credit paths).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function branchAgentsWithSalesMetrics(int $branchId, Carbon $since): array
+    {
+        if (! Schema::hasTable('product_list')) {
+            return [];
+        }
+
+        $activityRows = ProductListItem::query()
+            ->whereNotNull('sold_at')
+            ->where('sold_at', '>=', $since)
+            ->whereEffectiveBranch($branchId)
+            ->where(function ($o) {
+                $o->whereHas('agentSale', fn ($q) => $q->whereNotNull('agent_id'))
+                    ->orWhereHas('pendingSale', fn ($q) => $q->whereNotNull('seller_id'))
+                    ->orWhereHas('agentCredit', fn ($q) => $q->whereNotNull('agent_id'));
+            })
+            ->with([
+                'agentSale:id,agent_id,selling_price,total_selling_value',
+                'pendingSale:id,seller_id,selling_price,total_selling_value',
+                'agentCredit:id,agent_id,total_amount',
+            ])
+            ->get(['id', 'agent_sale_id', 'pending_sale_id', 'agent_credit_id']);
+
+        $byAgent = [];
+        foreach ($activityRows as $pl) {
+            $aid = (int) ($pl->agentSale?->agent_id
+                ?? $pl->pendingSale?->seller_id
+                ?? $pl->agentCredit?->agent_id);
+            if ($aid <= 0) {
+                continue;
+            }
+            if (! isset($byAgent[$aid])) {
+                $byAgent[$aid] = ['units' => 0, 'revenue' => 0.0];
+            }
+            $byAgent[$aid]['units']++;
+            if ($pl->agent_sale_id && $pl->agentSale) {
+                $ag = $pl->agentSale;
+                $byAgent[$aid]['revenue'] += (float) ($ag->selling_price ?? $ag->total_selling_value ?? 0);
+            } elseif ($pl->pending_sale_id && $pl->pendingSale) {
+                $ps = $pl->pendingSale;
+                $byAgent[$aid]['revenue'] += (float) ($ps->selling_price ?? $ps->total_selling_value ?? 0);
+            } elseif ($pl->agent_credit_id && $pl->agentCredit) {
+                $byAgent[$aid]['revenue'] += (float) ($pl->agentCredit->total_amount ?? 0);
+            }
+        }
+
+        $assignedIds = [];
+        if (Schema::hasColumn('users', 'branch_id')) {
+            $assignedIds = User::query()
+                ->where('role', 'agent')
+                ->where(function ($q) {
+                    $q->where('status', 'active')->orWhereNull('status');
+                })
+                ->where('branch_id', $branchId)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $allIds = collect($assignedIds)->merge(array_keys($byAgent))->unique()->sort()->values();
+        if ($allIds->isEmpty()) {
+            return [];
+        }
+
+        $users = User::query()
+            ->whereIn('id', $allIds->all())
+            ->where('role', 'agent')
+            ->orderBy('name')
+            ->get(['id', 'name', 'branch_id']);
+
+        $out = [];
+        foreach ($users as $u) {
+            $uid = (int) $u->id;
+            $m = $byAgent[$uid] ?? ['units' => 0, 'revenue' => 0.0];
+            $out[] = [
+                'id' => $uid,
+                'name' => $u->name,
+                'branch_id' => $u->branch_id !== null ? (int) $u->branch_id : null,
+                'sales_units' => $m['units'],
+                'revenue_tzs' => round($m['revenue'], 2),
+            ];
+        }
+
+        return $out;
     }
 
     private function dailySalesAmount(string $date): float

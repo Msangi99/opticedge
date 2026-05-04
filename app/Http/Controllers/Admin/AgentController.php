@@ -73,23 +73,35 @@ class AgentController extends Controller
         $validated = $request->validate([
             'agent_id' => 'required|exists:users,id',
             'product_id' => 'required|exists:models,id',
-            'product_list_ids' => 'required|array|min:1',
+            'assignment_type' => 'required|in:imei,total',
+            'product_list_ids' => 'required_if:assignment_type,imei|array',
             'product_list_ids.*' => 'distinct|integer|exists:product_list,id',
+            'quantity' => 'required_if:assignment_type,total|nullable|integer|min:1',
         ]);
 
         $user = User::findOrFail($validated['agent_id']);
 
         try {
-            $assignmentService->assignToAgent(
-                $user,
-                (int) $validated['product_id'],
-                $validated['product_list_ids']
-            );
+            if ($validated['assignment_type'] === 'total') {
+                $assignmentService->assignTotalToAgent(
+                    $user,
+                    (int) $validated['product_id'],
+                    (int) $validated['quantity']
+                );
+                $message = 'Quantity assigned to agent.';
+            } else {
+                $assignmentService->assignToAgent(
+                    $user,
+                    (int) $validated['product_id'],
+                    $validated['product_list_ids']
+                );
+                $message = 'Products assigned to agent.';
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('admin.agents.assign-products')->with('success', 'Products assigned to agent.');
+        return redirect()->route('admin.agents.assign-products')->with('success', $message);
     }
 
     public function create()

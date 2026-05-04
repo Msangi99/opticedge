@@ -146,7 +146,11 @@ class AgentProductTransferService
             return;
         }
 
-        $row = AgentAssignment::where('agent_id', $agentId)->where('product_id', $productId)->lockForUpdate()->first();
+        $row = AgentAssignment::where('agent_id', $agentId)
+            ->where('product_id', $productId)
+            ->where('assignment_type', AgentAssignment::TYPE_IMEI)
+            ->lockForUpdate()
+            ->first();
 
         if ($delta < 0) {
             if (! $row) {
@@ -174,6 +178,7 @@ class AgentProductTransferService
             AgentAssignment::create([
                 'agent_id' => $agentId,
                 'product_id' => $productId,
+                'assignment_type' => AgentAssignment::TYPE_IMEI,
                 'quantity_assigned' => $delta,
                 'quantity_sold' => 0,
             ]);

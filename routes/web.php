@@ -253,6 +253,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             
             // Distribution Sales
             Route::get('distribution', [App\Http\Controllers\Admin\StockController::class , 'distribution'])->name('distribution');
+            Route::get('distribution/consolidated-invoice', [App\Http\Controllers\Admin\StockController::class, 'downloadConsolidatedDistributionInvoice'])->name('distribution-consolidated-invoice');
             Route::get('distribution/export-csv', [App\Http\Controllers\Admin\StockController::class, 'exportDistributionCsv'])->name('distribution.export-csv');
             Route::get('distribution/create', [App\Http\Controllers\Admin\StockController::class, 'createDistribution'])->name('create-distribution');
             Route::post('distribution', [App\Http\Controllers\Admin\StockController::class, 'storeDistribution'])->name('store-distribution');

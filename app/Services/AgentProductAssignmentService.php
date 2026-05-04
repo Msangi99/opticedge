@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
+use App\Models\Product;
 use App\Models\ProductListItem;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 class AgentProductAssignmentService
 {
     /**
+     * Assign specific IMEIs (product_list rows) to an agent.
+     *
      * @param  array<int, int>  $productListIds
      * @return int number of devices assigned
      *
@@ -60,11 +63,48 @@ class AgentProductAssignmentService
             $assignment = AgentAssignment::firstOrNew([
                 'agent_id' => $agent->id,
                 'product_id' => $productId,
+                'assignment_type' => AgentAssignment::TYPE_IMEI,
             ]);
             $assignment->quantity_assigned = (int) ($assignment->quantity_assigned ?? 0) + $added;
             $assignment->save();
 
             return $added;
+        });
+    }
+
+    /**
+     * Assign a product to an agent by total quantity (no specific IMEIs locked).
+     * Multiple admin actions on the same agent+product accumulate into the same row.
+     *
+     * @return int new total quantity_assigned for the (agent, product, total) row
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function assignTotalToAgent(User $agent, int $productId, int $quantity): int
+    {
+        if ($agent->role !== 'agent') {
+            throw new \InvalidArgumentException('Selected user is not an agent.');
+        }
+
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be at least 1.');
+        }
+
+        if (! Product::query()->whereKey($productId)->exists()) {
+            throw new \InvalidArgumentException('Selected product does not exist.');
+        }
+
+        return DB::transaction(function () use ($agent, $productId, $quantity) {
+            $assignment = AgentAssignment::firstOrNew([
+                'agent_id' => $agent->id,
+                'product_id' => $productId,
+                'assignment_type' => AgentAssignment::TYPE_TOTAL,
+            ]);
+            $assignment->quantity_assigned = (int) ($assignment->quantity_assigned ?? 0) + $quantity;
+            $assignment->quantity_sold = (int) ($assignment->quantity_sold ?? 0);
+            $assignment->save();
+
+            return (int) $assignment->quantity_assigned;
         });
     }
 }

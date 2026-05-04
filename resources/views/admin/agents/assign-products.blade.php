@@ -12,6 +12,51 @@
             .admin-prod-select2-wrap .select2-container--default .select2-selection--single .select2-selection__arrow {
                 height: 2.5rem;
             }
+
+            .assign-type-group {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .assign-type-option {
+                display: flex;
+                gap: 0.75rem;
+                align-items: flex-start;
+                padding: 0.875rem 1rem;
+                border-radius: 0.625rem;
+                border: 1.5px solid #e2e8f0;
+                background: #fff;
+                cursor: pointer;
+                transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+            }
+
+            .assign-type-option input[type="radio"] {
+                margin-top: 0.2rem;
+                accent-color: #f97316;
+            }
+
+            .assign-type-option:hover {
+                border-color: #fdba74;
+            }
+
+            .assign-type-option--active {
+                border-color: #f97316;
+                background: #fff7ed;
+                box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+            }
+
+            .assign-type-option__title {
+                font-weight: 600;
+                color: #0f172a;
+                font-size: 0.9rem;
+            }
+
+            .assign-type-option__hint {
+                font-size: 0.75rem;
+                color: #64748b;
+                margin-top: 0.15rem;
+            }
         </style>
     @endpush
 
@@ -20,8 +65,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Sales team</p>
                 <h1 class="admin-prod-title">Assign products to agent</h1>
-                <p class="admin-prod-subtitle">Select an agent and product, then choose one or more IMEIs (unsold units from
-                    eligible purchases: paid, partial, unpaid, or purchase still has IMEI limit remaining). The agent will only see those devices on the sell screen in the app.</p>
+                <p class="admin-prod-subtitle">Pick how to assign: by IMEI (lock specific devices) or by total (a quantity the agent can sell from the Given tab in the app, scanning any matching IMEI at sale time).</p>
             </div>
             <a href="{{ route('admin.agents.index') }}" class="admin-prod-back shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -77,6 +121,29 @@
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>
+                <div>
+                    <label class="admin-prod-label">Assignment mode</label>
+                    @php($assignType = old('assignment_type', 'imei'))
+                    <div class="assign-type-group" id="assignment-type-group">
+                        <label class="assign-type-option {{ $assignType === 'imei' ? 'assign-type-option--active' : '' }}" data-mode="imei">
+                            <input type="radio" name="assignment_type" value="imei" {{ $assignType === 'imei' ? 'checked' : '' }}>
+                            <span>
+                                <span class="assign-type-option__title">Assign by IMEI</span>
+                                <span class="assign-type-option__hint">Lock specific devices to this agent. They appear in the Sell and Credit Sale tabs.</span>
+                            </span>
+                        </label>
+                        <label class="assign-type-option {{ $assignType === 'total' ? 'assign-type-option--active' : '' }}" data-mode="total">
+                            <input type="radio" name="assignment_type" value="total" {{ $assignType === 'total' ? 'checked' : '' }}>
+                            <span>
+                                <span class="assign-type-option__title">Assign by total</span>
+                                <span class="assign-type-option__hint">Give the agent a quantity to sell. They scan any matching IMEI in the Given tab; new IMEIs are added to the system.</span>
+                            </span>
+                        </label>
+                    </div>
+                    @error('assignment_type')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div id="imei-wrap" class="hidden">
                     <label for="imei_select" class="admin-prod-label">IMEIs to assign</label>
                     <p class="text-xs text-slate-500 mt-0.5 mb-2">Only unsold devices from eligible purchases are listed (paid, partial, unpaid, or purchase still has IMEI slots left; matched by catalog product or linked purchase).</p>
@@ -85,6 +152,17 @@
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                     @error('product_list_ids.*')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div id="quantity-wrap" class="hidden">
+                    <label for="quantity" class="admin-prod-label">Quantity to assign</label>
+                    <p class="text-xs text-slate-500 mt-0.5 mb-2">Total units the agent is allowed to sell. The agent scans an IMEI at sale time; if the IMEI is new it is registered automatically.</p>
+                    <input type="number" id="quantity" name="quantity" min="1" step="1"
+                        value="{{ old('quantity') }}"
+                        placeholder="e.g. 10"
+                        class="admin-prod-input">
+                    @error('quantity')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>
@@ -105,18 +183,50 @@
                 const assignableUrl = @json(route('admin.assignable-imeis'));
                 const $product = jQuery('#product_id');
                 const $imei = jQuery('#imei_select');
-                const $wrap = jQuery('#imei-wrap');
+                const $imeiWrap = jQuery('#imei-wrap');
+                const $qtyWrap = jQuery('#quantity-wrap');
+                const $qty = jQuery('#quantity');
+                const $modeOptions = jQuery('#assignment-type-group .assign-type-option');
+                const $modeInputs = jQuery('input[name="assignment_type"]');
+
+                function currentMode() {
+                    const checked = jQuery('input[name="assignment_type"]:checked').val();
+                    return checked === 'total' ? 'total' : 'imei';
+                }
+
+                function applyModeUI(mode) {
+                    $modeOptions.each(function () {
+                        const isActive = jQuery(this).data('mode') === mode;
+                        jQuery(this).toggleClass('assign-type-option--active', isActive);
+                    });
+
+                    if (mode === 'total') {
+                        $imeiWrap.addClass('hidden');
+                        $qtyWrap.removeClass('hidden');
+                        $imei.prop('disabled', true);
+                        $qty.prop('disabled', false);
+                    } else {
+                        $qtyWrap.addClass('hidden');
+                        $qty.prop('disabled', true);
+                        $imei.prop('disabled', false);
+                        if ($product.val()) {
+                            $imeiWrap.removeClass('hidden');
+                        }
+                    }
+                }
 
                 function loadImeis(productId) {
                     if (!productId) {
-                        $wrap.addClass('hidden');
+                        $imeiWrap.addClass('hidden');
                         if ($imei.data('select2')) {
                             $imei.select2('destroy');
                         }
                         $imei.empty();
                         return;
                     }
-                    $wrap.removeClass('hidden');
+                    if (currentMode() === 'imei') {
+                        $imeiWrap.removeClass('hidden');
+                    }
                     fetch(assignableUrl + '?product_id=' + encodeURIComponent(productId), {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                         credentials: 'same-origin',
@@ -154,7 +264,12 @@
                     loadImeis(this.value);
                 });
 
+                $modeInputs.on('change', function () {
+                    applyModeUI(currentMode());
+                });
+
                 document.addEventListener('DOMContentLoaded', function () {
+                    applyModeUI(currentMode());
                     if ($product.val()) {
                         loadImeis($product.val());
                     }

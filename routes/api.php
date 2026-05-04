@@ -110,10 +110,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('dashboard/inventory', [\App\Http\Controllers\Api\AgentDashboardController::class, 'inventory']);
         Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
+        Route::get('assignments/total', [ProductListController::class, 'totalAssignments']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);
         Route::get('sale-config', [ApiPaymentOptionController::class, 'agentSaleConfig']);
         Route::post('sell', [ProductListController::class, 'sell']);
         Route::post('sell-credit', [ProductListController::class, 'sellCredit']);
+        Route::post('sell-given', [ProductListController::class, 'sellGiven']);
         Route::get('catalog/brands', [AgentCatalogController::class, 'categories']);
         Route::get('catalog/brands/{category}/models', [AgentCatalogController::class, 'productsByCategory']);
         Route::get('catalog/categories', [AgentCatalogController::class, 'categories']); // backward compatible alias

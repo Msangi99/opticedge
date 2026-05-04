@@ -125,13 +125,32 @@ class AdminAgentAssignmentApiController extends Controller
         $validated = $request->validate([
             'agent_id' => 'required|integer|exists:users,id',
             'product_id' => 'required|integer|exists:models,id',
-            'product_list_ids' => 'required|array|min:1',
+            'assignment_type' => 'sometimes|in:imei,total',
+            'product_list_ids' => 'required_unless:assignment_type,total|array|min:1',
             'product_list_ids.*' => 'distinct|integer|exists:product_list,id',
+            'quantity' => 'required_if:assignment_type,total|nullable|integer|min:1',
         ]);
 
         $user = User::findOrFail($validated['agent_id']);
+        $assignmentType = $validated['assignment_type'] ?? 'imei';
 
         try {
+            if ($assignmentType === 'total') {
+                $newTotal = $this->assignmentService->assignTotalToAgent(
+                    $user,
+                    (int) $validated['product_id'],
+                    (int) $validated['quantity']
+                );
+
+                return response()->json([
+                    'message' => 'Quantity assigned to agent.',
+                    'data' => [
+                        'assignment_type' => 'total',
+                        'quantity_assigned' => $newTotal,
+                    ],
+                ], 201);
+            }
+
             $added = $this->assignmentService->assignToAgent(
                 $user,
                 (int) $validated['product_id'],
@@ -143,7 +162,10 @@ class AdminAgentAssignmentApiController extends Controller
 
         return response()->json([
             'message' => 'Products assigned to agent.',
-            'data' => ['assigned_count' => $added],
+            'data' => [
+                'assignment_type' => 'imei',
+                'assigned_count' => $added,
+            ],
         ], 201);
     }
 }

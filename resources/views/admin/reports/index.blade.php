@@ -148,8 +148,12 @@
                                     <th scope="col" class="admin-prod-th admin-prod-th--end align-bottom" rowspan="2">Price (TZS)</th>
                                     <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="3">Total</th>
                                     @foreach($asr['agents'] as $agent)
-                                        @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
-                                        <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agent->name }}</th>
+                                        @php
+                                            $agentBand = $agentColorBands[$loop->index % count($agentColorBands)];
+                                            $branchLabel = $agent->branch?->name;
+                                            $agentHeader = $branchLabel ? ($agent->name.' · '.$branchLabel) : $agent->name;
+                                        @endphp
+                                        <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agentHeader }}</th>
                                     @endforeach
                                 </tr>
                                 <tr>
@@ -209,6 +213,11 @@
                             </tbody> 
                         </table>
                     </div>
+                    @if(request('branch_id'))
+                        <p class="mt-2 text-xs text-slate-600 bg-slate-50/90 border border-slate-200/80 rounded-lg px-3 py-2">
+                            Branch filter is on: agent columns show this branch’s team (assigned branch) plus any rep with stock or sales in this branch’s scope, even if their profile branch is not set yet.
+                        </p>
+                    @endif
                     <p class="mt-3 text-xs text-slate-500"><strong>Total</strong> = sum of every agent column for that product (opening, sales, closing each summed across agents). Shop / unassigned warehouse is excluded. Agent cells are per rep. <strong>Price</strong> uses catalog price, or latest purchase sell/unit price when catalog price is zero.</p>
                 @endif
             </div>

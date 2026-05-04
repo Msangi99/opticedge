@@ -77,6 +77,39 @@
             </div>
         </div>
 
+        <div class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden">
+            <div class="admin-prod-form-head">
+                <h2 class="admin-prod-form-title">Consolidated statement (outstanding)</h2>
+                <p class="admin-prod-form-hint max-w-3xl">Pick a dealer and date range (e.g. Jan–Mar). Downloads one PDF with every distribution line in that period that still has a balance due, and the total owed.</p>
+            </div>
+            <div class="admin-prod-form-body">
+                <form method="GET" action="{{ route('admin.stock.distribution-consolidated-invoice') }}" class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label for="consolidated_dealer_id" class="admin-prod-label">Dealer</label>
+                        <select name="dealer_id" id="consolidated_dealer_id" required class="admin-prod-select min-w-[14rem] py-2 text-sm">
+                            <option value="">— Select dealer —</option>
+                            @foreach($consolidatedDealers ?? [] as $d)
+                                <option value="{{ $d->id }}">{{ $d->name }}{{ $d->business_name ? ' · '.$d->business_name : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="consolidated_date_from" class="admin-prod-label">From</label>
+                        <input type="date" name="date_from" id="consolidated_date_from" required
+                            value="{{ old('date_from', now()->startOfMonth()->format('Y-m-d')) }}"
+                            class="admin-prod-input w-auto min-w-[10rem] py-2 text-sm">
+                    </div>
+                    <div>
+                        <label for="consolidated_date_to" class="admin-prod-label">To</label>
+                        <input type="date" name="date_to" id="consolidated_date_to" required
+                            value="{{ old('date_to', now()->format('Y-m-d')) }}"
+                            class="admin-prod-input w-auto min-w-[10rem] py-2 text-sm">
+                    </div>
+                    <button type="submit" class="admin-prod-btn-primary text-sm py-2 px-4">Download PDF</button>
+                </form>
+            </div>
+        </div>
+
         <div class="mt-6 admin-clay-panel overflow-x-auto min-w-0">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
                 <table class="min-w-[1380px]">

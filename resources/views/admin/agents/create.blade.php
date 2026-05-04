@@ -59,6 +59,7 @@
                             </option>
                         @endforeach
                     </select>
+                    <p class="admin-prod-form-hint !mt-1.5">Set the rep’s home branch (e.g. Mwanza, Mbeya, Dar) so branch filters, reports, and mobile branch views attribute sales correctly.</p>
                     @error('branch_id')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
