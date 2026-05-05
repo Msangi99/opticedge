@@ -107,65 +107,89 @@
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
                 </div>
-                <div>
-                    <label for="product_id" class="admin-prod-label">Product</label>
-                    <select id="product_id" name="product_id" class="admin-prod-select" required>
-                        <option value="">Select product</option>
-                        @foreach($products as $p)
-                            <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
-                                {{ $p->category->name ?? '—' }} – {{ $p->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('product_id')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
+                @php($assignType = old('assignment_type', 'imei'))
+                <input type="hidden" id="assignment_type" name="assignment_type" value="{{ $assignType === 'total' ? 'total' : 'imei' }}">
+
+                <div class="assign-type-group" id="assignment-type-group">
+                    <button type="button" class="assign-type-option {{ $assignType === 'imei' ? 'assign-type-option--active' : '' }}" data-mode="imei">
+                        <span>
+                            <span class="assign-type-option__title">Assign by IMEI</span>
+                            <span class="assign-type-option__hint">Agent + product + IMEIs (Select2).</span>
+                        </span>
+                    </button>
+                    <button type="button" class="assign-type-option {{ $assignType === 'total' ? 'assign-type-option--active' : '' }}" data-mode="total">
+                        <span>
+                            <span class="assign-type-option__title">Assign by Total</span>
+                            <span class="assign-type-option__hint">Agent + purchase + model + total units.</span>
+                        </span>
+                    </button>
                 </div>
-                <div>
-                    <label class="admin-prod-label">Assignment mode</label>
-                    @php($assignType = old('assignment_type', 'imei'))
-                    <div class="assign-type-group" id="assignment-type-group">
-                        <label class="assign-type-option {{ $assignType === 'imei' ? 'assign-type-option--active' : '' }}" data-mode="imei">
-                            <input type="radio" name="assignment_type" value="imei" {{ $assignType === 'imei' ? 'checked' : '' }}>
-                            <span>
-                                <span class="assign-type-option__title">Assign by IMEI</span>
-                                <span class="assign-type-option__hint">Lock specific devices to this agent. They appear in the Sell and Credit Sale tabs.</span>
-                            </span>
-                        </label>
-                        <label class="assign-type-option {{ $assignType === 'total' ? 'assign-type-option--active' : '' }}" data-mode="total">
-                            <input type="radio" name="assignment_type" value="total" {{ $assignType === 'total' ? 'checked' : '' }}>
-                            <span>
-                                <span class="assign-type-option__title">Assign by total</span>
-                                <span class="assign-type-option__hint">Give the agent a quantity to sell. They scan any matching IMEI in the Given tab; new IMEIs are added to the system.</span>
-                            </span>
-                        </label>
+
+                <div id="tab-imei" class="{{ $assignType === 'total' ? 'hidden' : '' }} space-y-6">
+                    <div>
+                        <label for="product_id" class="admin-prod-label">Product</label>
+                        <select id="product_id" name="product_id" class="admin-prod-select">
+                            <option value="">Select product</option>
+                            @foreach($products as $p)
+                                <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
+                                    {{ $p->category->name ?? '—' }} – {{ $p->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                    @error('assignment_type')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div id="imei-wrap" class="hidden">
+                    <div id="imei-wrap" class="hidden">
                     <label for="imei_select" class="admin-prod-label">IMEIs to assign</label>
                     <p class="text-xs text-slate-500 mt-0.5 mb-2">Only unsold devices from eligible purchases are listed (paid, partial, unpaid, or purchase still has IMEI slots left; matched by catalog product or linked purchase).</p>
                     <select id="imei_select" name="product_list_ids[]" multiple="multiple" class="w-full"></select>
                     @error('product_list_ids')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
-                    @error('product_list_ids.*')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
+                        @error('product_list_ids.*')
+                            <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
-                <div id="quantity-wrap" class="hidden">
-                    <label for="quantity" class="admin-prod-label">Quantity to assign</label>
-                    <p class="text-xs text-slate-500 mt-0.5 mb-2">Total units the agent is allowed to sell. The agent scans an IMEI at sale time; if the IMEI is new it is registered automatically.</p>
-                    <input type="number" id="quantity" name="quantity" min="1" step="1"
-                        value="{{ old('quantity') }}"
-                        placeholder="e.g. 10"
-                        class="admin-prod-input">
-                    @error('quantity')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
+
+                <div id="tab-total" class="{{ $assignType === 'total' ? '' : 'hidden' }} space-y-6">
+                    <div>
+                        <label for="purchase_id" class="admin-prod-label">Purchase name</label>
+                        <select id="purchase_id" name="purchase_id" class="admin-prod-select">
+                            <option value="">Select purchase</option>
+                            @foreach($purchases as $purchase)
+                                <option value="{{ $purchase->id }}"
+                                    data-product-id="{{ $purchase->product_id }}"
+                                    data-model="{{ $purchase->product?->name ?? '' }}"
+                                    {{ (string) old('purchase_id') === (string) $purchase->id ? 'selected' : '' }}>
+                                    {{ $purchase->name ?? ('Purchase #' . $purchase->id) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('purchase_id')
+                            <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="purchase_model" class="admin-prod-label">Model</label>
+                        <input type="text" id="purchase_model" class="admin-prod-input" readonly placeholder="Auto from selected purchase">
+                    </div>
+                    <div>
+                        <label for="quantity" class="admin-prod-label">Total</label>
+                        <input type="number" id="quantity" name="quantity" min="1" step="1"
+                            value="{{ old('quantity') }}"
+                            placeholder="e.g. 10"
+                            class="admin-prod-input">
+                        @error('quantity')
+                            <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <input type="hidden" id="product_id_total" name="product_id_total" value="">
                 </div>
+                @error('product_id')
+                    <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                @enderror
+                @error('assignment_type')
+                    <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                @enderror
                 <div class="admin-prod-form-footer !mt-0 !pt-0 !border-0 !shadow-none">
                     <a href="{{ route('admin.agents.index') }}" class="admin-prod-btn-ghost">Cancel</a>
                     <button type="submit" class="admin-prod-btn-primary px-8">Assign</button>
@@ -181,17 +205,21 @@
         <script>
             (function () {
                 const assignableUrl = @json(route('admin.assignable-imeis'));
+                const $agent = jQuery('#agent_id');
                 const $product = jQuery('#product_id');
+                const $purchase = jQuery('#purchase_id');
+                const $purchaseModel = jQuery('#purchase_model');
+                const $productTotal = jQuery('#product_id_total');
                 const $imei = jQuery('#imei_select');
                 const $imeiWrap = jQuery('#imei-wrap');
-                const $qtyWrap = jQuery('#quantity-wrap');
-                const $qty = jQuery('#quantity');
                 const $modeOptions = jQuery('#assignment-type-group .assign-type-option');
-                const $modeInputs = jQuery('input[name="assignment_type"]');
+                const $assignmentType = jQuery('#assignment_type');
+                const $tabImei = jQuery('#tab-imei');
+                const $tabTotal = jQuery('#tab-total');
+                const $form = jQuery('#assign-form');
 
                 function currentMode() {
-                    const checked = jQuery('input[name="assignment_type"]:checked').val();
-                    return checked === 'total' ? 'total' : 'imei';
+                    return $assignmentType.val() === 'total' ? 'total' : 'imei';
                 }
 
                 function applyModeUI(mode) {
@@ -201,18 +229,29 @@
                     });
 
                     if (mode === 'total') {
-                        $imeiWrap.addClass('hidden');
-                        $qtyWrap.removeClass('hidden');
+                        $tabImei.addClass('hidden');
+                        $tabTotal.removeClass('hidden');
+                        $product.prop('disabled', true);
                         $imei.prop('disabled', true);
-                        $qty.prop('disabled', false);
+                        $purchase.prop('disabled', false);
                     } else {
-                        $qtyWrap.addClass('hidden');
-                        $qty.prop('disabled', true);
+                        $tabTotal.addClass('hidden');
+                        $tabImei.removeClass('hidden');
+                        $product.prop('disabled', false);
+                        $purchase.prop('disabled', true);
                         $imei.prop('disabled', false);
                         if ($product.val()) {
                             $imeiWrap.removeClass('hidden');
                         }
                     }
+                }
+
+                function updatePurchaseDerivedFields() {
+                    const selected = $purchase.find('option:selected');
+                    const model = selected.data('model') || '';
+                    const productId = selected.data('product-id') || '';
+                    $purchaseModel.val(model);
+                    $productTotal.val(productId);
                 }
 
                 function loadImeis(productId) {
@@ -264,11 +303,39 @@
                     loadImeis(this.value);
                 });
 
-                $modeInputs.on('change', function () {
-                    applyModeUI(currentMode());
+                $modeOptions.on('click', function () {
+                    const mode = jQuery(this).data('mode') === 'total' ? 'total' : 'imei';
+                    $assignmentType.val(mode);
+                    applyModeUI(mode);
+                });
+
+                $purchase.on('change', updatePurchaseDerivedFields);
+
+                $agent.select2({ width: '100%' });
+                $product.select2({ width: '100%' });
+                $purchase.select2({ width: '100%' });
+
+                $form.on('submit', function () {
+                    const mode = currentMode();
+                    if (mode === 'total') {
+                        const pid = ($productTotal.val() || '').toString();
+                        let hiddenProduct = jQuery('#product_id_hidden_total_submit');
+                        if (!hiddenProduct.length) {
+                            hiddenProduct = jQuery('<input>', {
+                                type: 'hidden',
+                                id: 'product_id_hidden_total_submit',
+                                name: 'product_id',
+                            });
+                            $form.append(hiddenProduct);
+                        }
+                        hiddenProduct.val(pid);
+                    } else {
+                        jQuery('#product_id_hidden_total_submit').remove();
+                    }
                 });
 
                 document.addEventListener('DOMContentLoaded', function () {
+                    updatePurchaseDerivedFields();
                     applyModeUI(currentMode());
                     if ($product.val()) {
                         loadImeis($product.val());

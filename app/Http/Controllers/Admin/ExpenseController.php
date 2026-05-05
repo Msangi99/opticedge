@@ -8,10 +8,32 @@ use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $expenses = Expense::with('paymentOption')->latest('date')->latest('id')->get();
-        return view('admin.expenses.index', compact('expenses'));
+        $validated = $request->validate([
+            'from' => 'nullable|date',
+            'to' => 'nullable|date|after_or_equal:from',
+        ]);
+
+        $expensesQuery = Expense::with('paymentOption');
+
+        if (!empty($validated['from'])) {
+            $expensesQuery->whereDate('date', '>=', $validated['from']);
+        }
+
+        if (!empty($validated['to'])) {
+            $expensesQuery->whereDate('date', '<=', $validated['to']);
+        }
+
+        $totalExpenseAmount = (clone $expensesQuery)->sum('amount');
+        $expenses = $expensesQuery->latest('date')->latest('id')->get();
+
+        return view('admin.expenses.index', [
+            'expenses' => $expenses,
+            'totalExpenseAmount' => $totalExpenseAmount,
+            'fromDate' => $validated['from'] ?? null,
+            'toDate' => $validated['to'] ?? null,
+        ]);
     }
 
     public function create()

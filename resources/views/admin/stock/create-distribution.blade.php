@@ -148,18 +148,22 @@
         </div>
     </div>
 
+    @php
+        $productMeta = $products->keyBy('id')->map(function ($p) {
+            return [
+                'id' => $p->id,
+                'label' => ($p->category?->name ?? '—') . ' — ' . $p->name,
+                'stock' => (int) ($p->stock_quantity ?? 0),
+                'suggest' => (float) ($p->price ?? 0),
+            ];
+        })->toArray();
+    @endphp
+
     @push('scripts')
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
-            const PRODUCT_META = @json($products->keyBy('id')->map(function ($p) {
-                return [
-                    'id' => $p->id,
-                    'label' => ($p->category?->name ?? '—').' — '.$p->name,
-                    'stock' => (int) ($p->stock_quantity ?? 0),
-                    'suggest' => (float) ($p->price ?? 0),
-                ];
-            }));
+            const PRODUCT_META = @json($productMeta);
 
             const tbody = document.getElementById('line-items-body');
             const noLinesHint = document.getElementById('no-lines-hint');

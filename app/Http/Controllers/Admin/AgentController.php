@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AgentAssignment;
 use App\Models\Branch;
 use App\Models\Product;
+use App\Models\Purchase;
 use App\Models\ProductListItem;
 use App\Models\SubadminRole;
 use App\Models\User;
@@ -43,8 +44,13 @@ class AgentController extends Controller
     {
         $agents = User::where('role', 'agent')->orderBy('name')->get();
         $products = Product::whereHas('purchases')->orderBy('name')->get();
+        $purchases = Purchase::with('product.category')
+            ->whereNotNull('product_id')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
 
-        return view('admin.agents.assign-products', compact('agents', 'products'));
+        return view('admin.agents.assign-products', compact('agents', 'products', 'purchases'));
     }
 
     /**
@@ -76,6 +82,7 @@ class AgentController extends Controller
             'assignment_type' => 'required|in:imei,total',
             'product_list_ids' => 'required_if:assignment_type,imei|array',
             'product_list_ids.*' => 'distinct|integer|exists:product_list,id',
+            'purchase_id' => 'required_if:assignment_type,total|nullable|exists:purchases,id',
             'quantity' => 'required_if:assignment_type,total|nullable|integer|min:1',
         ]);
 
@@ -86,7 +93,8 @@ class AgentController extends Controller
                 $assignmentService->assignTotalToAgent(
                     $user,
                     (int) $validated['product_id'],
-                    (int) $validated['quantity']
+                    (int) $validated['quantity'],
+                    isset($validated['purchase_id']) ? (int) $validated['purchase_id'] : null
                 );
                 $message = 'Quantity assigned to agent.';
             } else {

@@ -79,13 +79,24 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             $totalProducts = \App\Models\Product::count();
             $recentOrders = \App\Models\Order::with('user')->latest()->take(5)->get();
             $financialService = app(\App\Services\DashboardFinancialService::class);
-            $financialMetrics = $financialService->getMetrics();
             $salesMetrics = $financialService->getSalesMetrics();
             
             // Get date range from request or use defaults
             $startDate = request('start_date') ? \Carbon\Carbon::parse(request('start_date')) : \Carbon\Carbon::now()->subMonths(1);
             $endDate = request('end_date') ? \Carbon\Carbon::parse(request('end_date')) : \Carbon\Carbon::now();
             $topProducts = $financialService->getTopSellingProducts($startDate, $endDate, 10);
+
+            // Financial summary date range (separate from top-selling chart range)
+            $financialStartDate = request('financial_start_date')
+                ? \Carbon\Carbon::parse(request('financial_start_date'))
+                : \Carbon\Carbon::now()->startOfMonth();
+            $financialEndDate = request('financial_end_date')
+                ? \Carbon\Carbon::parse(request('financial_end_date'))
+                : \Carbon\Carbon::now();
+            if ($financialStartDate->gt($financialEndDate)) {
+                [$financialStartDate, $financialEndDate] = [$financialEndDate, $financialStartDate];
+            }
+            $financialMetrics = $financialService->getMetrics($financialStartDate, $financialEndDate);
             
             // Get payment options with balances
             $paymentOptions = \App\Models\PaymentOption::visible()->orderBy('name')->get();
@@ -111,19 +122,21 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             // Overdue purchases: not fully paid, oldest first
             $overduePurchases = \App\Models\Purchase::with(['product', 'branch'])
                 ->where('payment_status', '!=', 'paid')
+                ->whereBetween('date', [$financialStartDate->copy()->startOfDay(), $financialEndDate->copy()->endOfDay()])
                 ->orderBy('date', 'asc')
                 ->orderBy('id', 'asc')
                 ->limit(20)
                 ->get();
 
             // Manual payables (separate from purchase payables), for optional detail modal
-            $overduePayables = \App\Models\Payable::orderBy('date', 'asc')
+            $overduePayables = \App\Models\Payable::whereBetween('date', [$financialStartDate->copy()->startOfDay(), $financialEndDate->copy()->endOfDay()])
+                ->orderBy('date', 'asc')
                 ->orderBy('id', 'asc')
                 ->limit(20)
                 ->get();
 
-            $distributorReceivables = $financialService->getDistributorReceivableBreakdown();
-            $agentCreditReceivables = $financialService->getAgentCreditReceivableSummary();
+            $distributorReceivables = $financialService->getDistributorReceivableBreakdown($financialStartDate, $financialEndDate);
+            $agentCreditReceivables = $financialService->getAgentCreditReceivableSummary($financialStartDate, $financialEndDate);
             
             return view('admin.dashboard', compact(
                 'totalCustomers',
@@ -135,6 +148,8 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
                 'topProducts',
                 'startDate',
                 'endDate',
+                'financialStartDate',
+                'financialEndDate',
                 'paymentOptions',
                 'agentAgingAssetsCount',
                 'agentAgingAssets',

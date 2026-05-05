@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductListItem;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Services\AgentProductAssignmentService;
 use Illuminate\Http\Request;
@@ -25,12 +26,28 @@ class AdminAgentAssignmentApiController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'category_id']);
 
+        $purchases = Purchase::query()
+            ->with('product.category')
+            ->whereNotNull('product_id')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+
         return response()->json([
             'data' => $products->map(fn (Product $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'category_id' => $p->category_id,
             ])->values()->all(),
+            'purchases' => $purchases->map(function (Purchase $purchase) {
+                return [
+                    'id' => $purchase->id,
+                    'name' => $purchase->name ?: ('Purchase #' . $purchase->id),
+                    'product_id' => $purchase->product_id,
+                    'model' => $purchase->product?->name,
+                    'category_name' => $purchase->product?->category?->name,
+                ];
+            })->values()->all(),
         ]);
     }
 
@@ -128,6 +145,7 @@ class AdminAgentAssignmentApiController extends Controller
             'assignment_type' => 'sometimes|in:imei,total',
             'product_list_ids' => 'required_unless:assignment_type,total|array|min:1',
             'product_list_ids.*' => 'distinct|integer|exists:product_list,id',
+            'purchase_id' => 'required_if:assignment_type,total|nullable|integer|exists:purchases,id',
             'quantity' => 'required_if:assignment_type,total|nullable|integer|min:1',
         ]);
 
@@ -139,7 +157,8 @@ class AdminAgentAssignmentApiController extends Controller
                 $newTotal = $this->assignmentService->assignTotalToAgent(
                     $user,
                     (int) $validated['product_id'],
-                    (int) $validated['quantity']
+                    (int) $validated['quantity'],
+                    isset($validated['purchase_id']) ? (int) $validated['purchase_id'] : null
                 );
 
                 return response()->json([

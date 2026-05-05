@@ -49,7 +49,9 @@
                                 </td>
                                 <td>
                                     @if($item->sold_at)
-                                        <span class="admin-prod-status admin-prod-status--sold">Sold</span>
+                                        <span class="admin-prod-status admin-prod-status--sold">
+                                            {{ $item->agent_sale_id || $item->agent_credit_id ? 'Installed' : 'Sold' }}
+                                        </span>
                                     @else
                                         <span class="admin-prod-status admin-prod-status--ok">Available</span>
                                     @endif

@@ -23,10 +23,12 @@ class DashboardFinancialService
     /**
      * Total pending (not paid) from purchases.
      */
-    public function payables(): float
+    public function payables(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
         $total = 0;
-        foreach (Purchase::all() as $purchase) {
+        $query = Purchase::query();
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+        foreach ($query->get() as $purchase) {
             $totalAmount = $purchase->total_amount ?? ($purchase->quantity * $purchase->unit_price);
             $total += max(0, $totalAmount - ($purchase->paid_amount ?? 0));
         }
@@ -36,25 +38,31 @@ class DashboardFinancialService
     /**
      * Total pending (not collected) from Distribution Sales and Agent Credits.
      */
-    public function receivables(): float
+    public function receivables(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return $this->distributionReceivables() + $this->agentCreditReceivables();
+        return $this->distributionReceivables($startDate, $endDate) + $this->agentCreditReceivables($startDate, $endDate);
     }
 
     /**
      * Total pending from Distribution Sales (balance).
      */
-    public function distributionReceivables(): float
+    public function distributionReceivables(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return (float) DistributionSale::get()->sum(fn ($s) => (float) ($s->balance ?? max(0, ($s->total_selling_value ?? 0) - ($s->paid_amount ?? 0))));
+        $query = DistributionSale::query();
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+
+        return (float) $query->get()->sum(fn ($s) => (float) ($s->balance ?? max(0, ($s->total_selling_value ?? 0) - ($s->paid_amount ?? 0))));
     }
 
     /**
      * Total pending from Agent Credits (credit amount not yet paid).
      */
-    public function agentCreditReceivables(): float
+    public function agentCreditReceivables(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return (float) AgentCredit::query()->get()->sum(function (AgentCredit $credit) {
+        $query = AgentCredit::query();
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+
+        return (float) $query->get()->sum(function (AgentCredit $credit) {
             $total = (float) ($credit->total_amount ?? 0);
             $paid = (float) ($credit->paid_amount ?? 0);
 
@@ -67,11 +75,12 @@ class DashboardFinancialService
      *
      * @return list<array{dealer_name: string, dealer_id: int|null, total_billed: float, total_paid: float, outstanding: float, aging_days: int|null, aging_label: string|null}>
      */
-    public function getDistributorReceivableBreakdown(): array
+    public function getDistributorReceivableBreakdown(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
-        $sales = DistributionSale::query()
-            ->with(['dealer:id,name'])
-            ->get(['id', 'dealer_id', 'dealer_name', 'date', 'total_selling_value', 'paid_amount', 'balance']);
+        $query = DistributionSale::query()
+            ->with(['dealer:id,name']);
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+        $sales = $query->get(['id', 'dealer_id', 'dealer_name', 'date', 'total_selling_value', 'paid_amount', 'balance']);
 
         return $sales
             ->groupBy(function (DistributionSale $s) {
@@ -182,9 +191,11 @@ class DashboardFinancialService
      *
      * @return array{credits: int, total_credit: float, total_paid: float, outstanding: float}
      */
-    public function getAgentCreditReceivableSummary(): array
+    public function getAgentCreditReceivableSummary(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
-        $credits = AgentCredit::query()->get(['total_amount', 'paid_amount']);
+        $query = AgentCredit::query();
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+        $credits = $query->get(['total_amount', 'paid_amount']);
         $totalCredit = (float) $credits->sum(fn (AgentCredit $credit) => (float) ($credit->total_amount ?? 0));
         $totalPaid = (float) $credits->sum(fn (AgentCredit $credit) => (float) ($credit->paid_amount ?? 0));
 
@@ -230,54 +241,75 @@ class DashboardFinancialService
     /**
      * Sum of receivables, stock in hand value, and cash in hand.
      */
-    public function totalValue(): float
+    public function totalValue(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return $this->receivables() + $this->stockInHandValue() + $this->cashInHand();
+        return $this->receivables($startDate, $endDate) + $this->stockInHandValue() + $this->cashInHand();
     }
 
     /**
      * Profit from Distribution Sales + Agent Sales profit.
      */
-    public function grossProfit(): float
+    public function grossProfit(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        $distProfit = (float) DistributionSale::sum('profit');
-        $agentProfit = (float) AgentSale::sum('profit');
+        $distributionQuery = DistributionSale::query();
+        $this->applyDateRange($distributionQuery, 'date', $startDate, $endDate);
+        $distProfit = (float) $distributionQuery->sum('profit');
+
+        $agentSalesQuery = AgentSale::query();
+        $this->applyDateRange($agentSalesQuery, 'date', $startDate, $endDate);
+        $agentProfit = (float) $agentSalesQuery->sum('profit');
+
         return $distProfit + $agentProfit;
     }
 
     /**
      * Total from Expenses section (admin expenses).
      */
-    public function totalExpenses(): float
+    public function totalExpenses(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return (float) Expense::sum('amount');
+        $query = Expense::query();
+        $this->applyDateRange($query, 'date', $startDate, $endDate);
+
+        return (float) $query->sum('amount');
     }
 
     /**
      * Gross profit - Total expenses.
      */
-    public function netProfit(): float
+    public function netProfit(?Carbon $startDate = null, ?Carbon $endDate = null): float
     {
-        return $this->grossProfit() - $this->totalExpenses();
+        return $this->grossProfit($startDate, $endDate) - $this->totalExpenses($startDate, $endDate);
     }
 
     /**
      * Get all financial metrics as an array.
      */
-    public function getMetrics(): array
+    public function getMetrics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         return [
-            'payables' => $this->payables(),
-            'receivables' => $this->receivables(),
+            'payables' => $this->payables($startDate, $endDate),
+            'receivables' => $this->receivables($startDate, $endDate),
             'stock_in_hand_value' => $this->stockInHandValue(),
             'cash_in_hand' => $this->cashInHand(),
-            'total_value' => $this->totalValue(),
-            'gross_profit' => $this->grossProfit(),
-            'total_expenses' => $this->totalExpenses(),
-            'net_profit' => $this->netProfit(),
+            'total_value' => $this->totalValue($startDate, $endDate),
+            'gross_profit' => $this->grossProfit($startDate, $endDate),
+            'total_expenses' => $this->totalExpenses($startDate, $endDate),
+            'net_profit' => $this->netProfit($startDate, $endDate),
             'total_purchase_buy_price' => $this->totalPurchaseBuyPrice(),
             'total_products_in_purchases' => $this->totalProductsInPurchases(),
         ];
+    }
+
+    private function applyDateRange($query, string $column, ?Carbon $startDate, ?Carbon $endDate): void
+    {
+        if (! $startDate && ! $endDate) {
+            return;
+        }
+
+        $start = $startDate ? $startDate->copy()->startOfDay() : Carbon::minValue();
+        $end = $endDate ? $endDate->copy()->endOfDay() : Carbon::maxValue();
+
+        $query->whereBetween($column, [$start, $end]);
     }
 
     /**

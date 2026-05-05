@@ -111,6 +111,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('product-list/available', [ProductListController::class, 'available']);
         Route::get('product-list/by-imei/{imei}', [ProductListController::class, 'showByImei']);
         Route::get('assignments/total', [ProductListController::class, 'totalAssignments']);
+        Route::get('assignments/total/by-imei/{imei}', [ProductListController::class, 'totalAssignmentByImei']);
         Route::get('payment-options', [ApiPaymentOptionController::class, 'indexVisible']);
         Route::get('sale-config', [ApiPaymentOptionController::class, 'agentSaleConfig']);
         Route::post('sell', [ProductListController::class, 'sell']);

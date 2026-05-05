@@ -10,7 +10,9 @@
     <div class="flex flex-wrap items-baseline gap-2">
         <span class="font-mono font-semibold text-slate-900">{{ $imei }}</span>
         @if($sold)
-            <span class="text-xs uppercase tracking-wide px-2 py-0.5 rounded bg-slate-200 text-slate-700">Sold</span>
+            <span class="text-xs uppercase tracking-wide px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                {{ $item->agent_sale_id || $item->agent_credit_id ? 'Installed' : 'Sold' }}
+            </span>
             <span class="text-slate-500">{{ $item->sold_at instanceof \Carbon\Carbon ? $item->sold_at->format('Y-m-d H:i') : $item->sold_at }}</span>
         @else
             <span class="text-xs uppercase tracking-wide px-2 py-0.5 rounded bg-green-100 text-green-800">In stock</span>
@@ -84,7 +86,7 @@
             @elseif($item->agent_sale_id && $item->agentSale)
                 @php $as = $item->agentSale; @endphp
                 <div class="sm:col-span-2 rounded-md bg-orange-50 border border-orange-100 px-3 py-2 space-y-1">
-                    <div class="text-xs uppercase text-orange-800 font-semibold">Agent sale (recorded)</div>
+                    <div class="text-xs uppercase text-orange-800 font-semibold">Installed by agent</div>
                     <div><span class="text-slate-500">Customer:</span> <strong>{{ $as->customer_name ?? '—' }}</strong></div>
                     @if($as->agent)
                         <div><span class="text-slate-500">Agent:</span> <strong>{{ $as->agent->name }}</strong></div>

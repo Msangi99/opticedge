@@ -8,12 +8,46 @@
                 <h1 class="admin-prod-title">Expenses</h1>
                 <p class="admin-prod-subtitle">Business spend by channel.</p>
             </div>
-            <a href="{{ route('admin.expenses.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add expense
-            </a>
+            <div class="w-full sm:w-auto flex flex-col items-stretch sm:items-end gap-2">
+                <form method="GET" action="{{ route('admin.expenses.index') }}" class="flex flex-wrap items-end gap-2 justify-start sm:justify-end">
+                    <div>
+                        <label for="expenses_from" class="admin-prod-label !mb-1">Date filter (from)</label>
+                        <input
+                            type="date"
+                            id="expenses_from"
+                            name="from"
+                            value="{{ $fromDate }}"
+                            class="admin-prod-input text-sm py-2 min-w-[10rem]"
+                        >
+                    </div>
+                    <div>
+                        <label for="expenses_to" class="admin-prod-label !mb-1">Date filter (to)</label>
+                        <input
+                            type="date"
+                            id="expenses_to"
+                            name="to"
+                            value="{{ $toDate }}"
+                            class="admin-prod-input text-sm py-2 min-w-[10rem]"
+                        >
+                    </div>
+                    <button type="submit" class="admin-prod-btn-primary text-sm py-2 px-4">Apply</button>
+                    @if($fromDate || $toDate)
+                        <a href="{{ route('admin.expenses.index') }}" class="admin-prod-btn-ghost text-sm py-2 px-3">Clear</a>
+                    @endif
+                </form>
+
+                <div class="admin-clay-panel px-4 py-2.5 w-full sm:w-auto">
+                    <p class="admin-prod-eyebrow !mb-1">Total expense - amount</p>
+                    <p class="admin-prod-form-title !text-lg font-variant-numeric">{{ number_format($totalExpenseAmount, 0) }} TZS</p>
+                </div>
+
+                <a href="{{ route('admin.expenses.create') }}" class="admin-prod-btn-primary inline-flex items-center gap-2 shrink-0 self-start sm:self-end">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add expense
+                </a>
+            </div>
         </div>
 
         @if(session('success'))

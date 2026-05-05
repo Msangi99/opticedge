@@ -1,5 +1,6 @@
 <x-admin-layout>
     @push('styles')
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
         <style>
             .admin-dash-section-head {
                 padding: 1.1rem 1.5rem;
@@ -613,8 +614,40 @@
         @if(isset($financialMetrics))
         <div class="mt-8 admin-clay-panel overflow-hidden" x-data="{ cashInHandModalOpen: false, overduePurchasesModalOpen: false, manualPayablesModalOpen: false, receivablesModalOpen: false, agentAgingAssetsModalOpen: @js(request('open') === 'agent-aging-assets') }">
             <div class="admin-dash-section-head">
-                <h3 class="admin-dash-section-title">Financial Summary</h3>
-                <p class="admin-dash-section-desc">Payables, receivables, stock value, and profit overview.</p>
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <h3 class="admin-dash-section-title">Financial Summary</h3>
+                        <p class="admin-dash-section-desc">
+                            Payables, receivables, stock value, and profit overview.
+                            <span class="font-semibold text-slate-700">
+                                ({{ $financialStartDate->format('M j, Y') }} → {{ $financialEndDate->format('M j, Y') }})
+                            </span>
+                        </p>
+                    </div>
+                    <form method="GET" action="{{ route('admin.dashboard') }}"
+                        class="admin-dash-filter-bar flex flex-wrap gap-3 items-end shrink-0"
+                        aria-label="Filter financial summary date range">
+                        <input type="hidden" name="start_date" value="{{ request('start_date', $startDate->format('Y-m-d')) }}">
+                        <input type="hidden" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}">
+                        @if(request()->filled('open'))
+                            <input type="hidden" name="open" value="{{ request('open') }}">
+                        @endif
+                        <div>
+                            <label for="financial_date_range"
+                                class="block text-[0.6rem] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5">Financial range</label>
+                            <input type="text" id="financial_date_range" autocomplete="off"
+                                class="admin-dash-filter-input w-full min-w-[17rem]"
+                                value="{{ $financialStartDate->format('Y-m-d') }} to {{ $financialEndDate->format('Y-m-d') }}">
+                            <input type="hidden" name="financial_start_date" id="financial_start_date"
+                                value="{{ request('financial_start_date', $financialStartDate->format('Y-m-d')) }}">
+                            <input type="hidden" name="financial_end_date" id="financial_end_date"
+                                value="{{ request('financial_end_date', $financialEndDate->format('Y-m-d')) }}">
+                        </div>
+                        <button type="submit" class="admin-dash-btn-primary self-end">
+                            Apply range
+                        </button>
+                    </form>
+                </div>
             </div>
                 <div class="admin-dash-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1215,6 +1248,11 @@
                 <form method="GET" action="{{ route('admin.dashboard') }}"
                     class="admin-dash-filter-bar flex flex-wrap gap-3 items-end shrink-0"
                     aria-label="Filter chart date range">
+                    <input type="hidden" name="financial_start_date" value="{{ request('financial_start_date', $financialStartDate->format('Y-m-d')) }}">
+                    <input type="hidden" name="financial_end_date" value="{{ request('financial_end_date', $financialEndDate->format('Y-m-d')) }}">
+                    @if(request()->filled('open'))
+                        <input type="hidden" name="open" value="{{ request('open') }}">
+                    @endif
                     <div>
                         <label for="start_date" class="block text-[0.6rem] font-extrabold uppercase tracking-widest text-slate-500 mb-1.5">From</label>
                         <input type="date" name="start_date" id="start_date"
@@ -1312,10 +1350,36 @@
 
     <!-- Chart.js + DataTables -->
     @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/dataTables.tailwindcss.min.js"></script>
     <script>
+        if (window.flatpickr) {
+            const financialRangeInput = document.getElementById('financial_date_range');
+            const financialStartInput = document.getElementById('financial_start_date');
+            const financialEndInput = document.getElementById('financial_end_date');
+
+            if (financialRangeInput && financialStartInput && financialEndInput) {
+                const defaultDates = [financialStartInput.value, financialEndInput.value].filter(Boolean);
+                flatpickr(financialRangeInput, {
+                    mode: 'range',
+                    dateFormat: 'Y-m-d',
+                    defaultDate: defaultDates.length ? defaultDates : null,
+                    onClose: function(selectedDates) {
+                        if (selectedDates.length === 2) {
+                            financialStartInput.value = flatpickr.formatDate(selectedDates[0], 'Y-m-d');
+                            financialEndInput.value = flatpickr.formatDate(selectedDates[1], 'Y-m-d');
+                        } else if (selectedDates.length === 1) {
+                            const singleDate = flatpickr.formatDate(selectedDates[0], 'Y-m-d');
+                            financialStartInput.value = singleDate;
+                            financialEndInput.value = singleDate;
+                        }
+                    }
+                });
+            }
+        }
+
         @if(count($topProducts) > 0)
         const ctx = document.getElementById('topProductsChart');
         if (ctx) {

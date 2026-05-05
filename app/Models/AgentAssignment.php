@@ -13,6 +13,7 @@ class AgentAssignment extends Model
     protected $fillable = [
         'agent_id',
         'product_id',
+        'purchase_id',
         'assignment_type',
         'quantity_assigned',
         'quantity_sold',
@@ -30,6 +31,11 @@ class AgentAssignment extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function purchase()
+    {
+        return $this->belongsTo(Purchase::class);
     }
 
     /** Quantity still available to sell */

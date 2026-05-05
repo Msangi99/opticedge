@@ -731,7 +731,7 @@ class ProductListController extends Controller
 
         $rows = AgentAssignment::where('agent_id', $agentId)
             ->where('assignment_type', AgentAssignment::TYPE_TOTAL)
-            ->with(['product.category'])
+            ->with(['product.category', 'purchase'])
             ->get();
 
         $data = $rows->map(function (AgentAssignment $row) {
@@ -758,6 +758,8 @@ class ProductListController extends Controller
             return [
                 'id' => $row->id,
                 'product_id' => $row->product_id,
+                'purchase_id' => $row->purchase_id,
+                'purchase_name' => $row->purchase?->name,
                 'product_name' => $product?->name ?? '–',
                 'category_id' => $product?->category_id,
                 'category_name' => $product?->category?->name,
@@ -775,6 +777,61 @@ class ProductListController extends Controller
     }
 
     /**
+     * Agent: resolve scanned IMEI to a remaining total assignment.
+     */
+    public function totalAssignmentByImei(string $imei)
+    {
+        $agent = Auth::user();
+        $imei = trim($imei);
+        if ($imei === '') {
+            return response()->json(['message' => 'IMEI is required.'], 422);
+        }
+
+        $item = ProductListItem::query()
+            ->with(['product', 'purchase'])
+            ->where('imei_number', $imei)
+            ->first();
+
+        if (! $item || ! $item->product_id) {
+            return response()->json([
+                'message' => 'Scanned IMEI is not linked to an assigned product.',
+            ], 422);
+        }
+
+        $query = AgentAssignment::query()
+            ->where('agent_id', $agent->id)
+            ->where('assignment_type', AgentAssignment::TYPE_TOTAL)
+            ->where('product_id', (int) $item->product_id)
+            ->whereRaw('(quantity_assigned - quantity_sold) > 0')
+            ->with(['product', 'purchase']);
+
+        if ($item->purchase_id) {
+            $query->orderByRaw('CASE WHEN purchase_id = ? THEN 0 ELSE 1 END', [(int) $item->purchase_id]);
+        }
+
+        $assignment = $query
+            ->orderBy('id')
+            ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'message' => 'No remaining total assignment matches this IMEI.',
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'imei' => $imei,
+                'assignment_id' => $assignment->id,
+                'product_id' => $assignment->product_id,
+                'purchase_assigned' => $assignment->purchase?->name ?? ($item->purchase?->name ?? 'Unspecified purchase'),
+                'model' => $assignment->product?->name ?? ($item->model ?? '—'),
+                'remaining_total' => max(0, (int) $assignment->quantity_assigned - (int) $assignment->quantity_sold),
+            ],
+        ]);
+    }
+
+    /**
      * Agent: Record a "Given" sale (from a quantity-only assignment).
      *
      * Flow:
@@ -788,25 +845,34 @@ class ProductListController extends Controller
     {
         $validated = $request->validate([
             'imei' => 'required|string|max:512',
-            'product_id' => 'required|integer|exists:models,id',
-            'customer_name' => 'required|string|max:255',
-            'selling_price' => 'required|numeric|min:0',
-            'payment_option_id' => 'required|integer|exists:payment_options,id',
         ]);
 
         $agent = Auth::user();
         $imei = trim($validated['imei']);
-        $productId = (int) $validated['product_id'];
-        $sellingPrice = (float) $validated['selling_price'];
 
         if ($imei === '') {
             return response()->json(['message' => 'IMEI is required.'], 422);
         }
 
-        $assignment = AgentAssignment::where('agent_id', $agent->id)
-            ->where('product_id', $productId)
+        $existing = ProductListItem::where('imei_number', $imei)->first();
+        if (! $existing || ! $existing->product_id) {
+            return response()->json([
+                'message' => 'This IMEI is not linked to a product in stock.',
+            ], 422);
+        }
+
+        $productId = (int) $existing->product_id;
+
+        $assignmentQuery = AgentAssignment::where('agent_id', $agent->id)
             ->where('assignment_type', AgentAssignment::TYPE_TOTAL)
-            ->first();
+            ->where('product_id', $productId)
+            ->whereRaw('(quantity_assigned - quantity_sold) > 0');
+
+        if ($existing->purchase_id) {
+            $assignmentQuery->orderByRaw('CASE WHEN purchase_id = ? THEN 0 ELSE 1 END', [(int) $existing->purchase_id]);
+        }
+
+        $assignment = $assignmentQuery->orderBy('id')->first();
 
         if (! $assignment) {
             return response()->json([
@@ -825,64 +891,54 @@ class ProductListController extends Controller
             return response()->json(['message' => 'Selected product no longer exists.'], 422);
         }
 
-        $paymentOpt = PaymentOption::visible()->find((int) $validated['payment_option_id']);
-        if (! $paymentOpt) {
-            return response()->json(['message' => 'Selected payment channel is invalid or not available.'], 422);
-        }
-        if ($paymentOpt->isWatuAgentCreditChannel()) {
+        if ($existing->isSold()) {
             return response()->json([
-                'message' => 'Given sales cannot use the Watu credit channel. Choose a regular channel.',
+                'message' => 'This IMEI has already been sold.',
             ], 422);
         }
 
-        $existing = ProductListItem::where('imei_number', $imei)->first();
-        if ($existing) {
-            if ($existing->isSold()) {
-                return response()->json([
-                    'message' => 'This IMEI has already been sold.',
-                ], 422);
-            }
+        $otherAssignment = AgentProductListAssignment::where('product_list_id', $existing->id)
+            ->where('agent_id', '!=', $agent->id)
+            ->exists();
+        if ($otherAssignment) {
+            return response()->json([
+                'message' => 'This IMEI is currently assigned to another agent.',
+            ], 422);
+        }
 
-            $existingProductId = (int) ($existing->product_id ?? 0);
-            if ($existingProductId !== 0 && $existingProductId !== $productId) {
-                return response()->json([
-                    'message' => 'This IMEI is already registered for a different product.',
-                ], 422);
-            }
+        $paymentOpt = PaymentOption::visible()
+            ->orderBy('name')
+            ->get()
+            ->first(fn ($opt) => ! $opt->isWatuAgentCreditChannel());
+        if (! $paymentOpt) {
+            return response()->json([
+                'message' => 'No regular payment channel is configured.',
+            ], 422);
+        }
 
-            $otherAssignment = AgentProductListAssignment::where('product_list_id', $existing->id)
-                ->where('agent_id', '!=', $agent->id)
-                ->exists();
-            if ($otherAssignment) {
-                return response()->json([
-                    'message' => 'This IMEI is currently assigned to another agent.',
-                ], 422);
+        $sellingPrice = null;
+        if ($assignment->purchase_id) {
+            $assignedPurchase = Purchase::find($assignment->purchase_id);
+            if ($assignedPurchase && $assignedPurchase->sell_price !== null) {
+                $sellingPrice = (float) $assignedPurchase->sell_price;
             }
+        }
+        if ($sellingPrice === null && $existing->purchase_id && $existing->purchase && $existing->purchase->sell_price !== null) {
+            $sellingPrice = (float) $existing->purchase->sell_price;
+        }
+        if ($sellingPrice === null) {
+            $sellingPrice = (float) ($product->price ?? 0);
         }
 
         $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
         $profit = $sellingPrice - $buyPrice;
 
         try {
-            $sale = DB::transaction(function () use ($agent, $product, $assignment, $existing, $imei, $productId, $validated, $sellingPrice, $buyPrice, $profit, $paymentOpt) {
-                if ($existing) {
-                    $item = $existing;
-                    if ((int) ($item->product_id ?? 0) === 0) {
-                        $item->update(['product_id' => $productId]);
-                    }
-                } else {
-                    $item = ProductListItem::create([
-                        'stock_id' => null,
-                        'purchase_id' => null,
-                        'category_id' => $product->category_id,
-                        'model' => $product->name,
-                        'imei_number' => $imei,
-                        'product_id' => $product->id,
-                    ]);
-                }
+            $sale = DB::transaction(function () use ($agent, $product, $assignment, $existing, $validated, $sellingPrice, $buyPrice, $profit, $paymentOpt) {
+                $item = $existing;
 
                 $attrs = [
-                    'customer_name' => $validated['customer_name'],
+                    'customer_name' => 'Assigned agent sale',
                     'seller_name' => $agent->name,
                     'product_id' => $product->id,
                     'quantity_sold' => 1,

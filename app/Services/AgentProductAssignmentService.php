@@ -6,6 +6,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentProductListAssignment;
 use App\Models\Product;
 use App\Models\ProductListItem;
+use App\Models\Purchase;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -80,7 +81,7 @@ class AgentProductAssignmentService
      *
      * @throws \InvalidArgumentException
      */
-    public function assignTotalToAgent(User $agent, int $productId, int $quantity): int
+    public function assignTotalToAgent(User $agent, int $productId, int $quantity, ?int $purchaseId = null): int
     {
         if ($agent->role !== 'agent') {
             throw new \InvalidArgumentException('Selected user is not an agent.');
@@ -94,11 +95,25 @@ class AgentProductAssignmentService
             throw new \InvalidArgumentException('Selected product does not exist.');
         }
 
-        return DB::transaction(function () use ($agent, $productId, $quantity) {
+        return DB::transaction(function () use ($agent, $productId, $quantity, $purchaseId) {
+            $purchase = null;
+            if ($purchaseId !== null) {
+                $purchase = Purchase::query()
+                    ->with('product')
+                    ->find($purchaseId);
+                if (! $purchase) {
+                    throw new \InvalidArgumentException('Selected purchase does not exist.');
+                }
+                if ((int) $purchase->product_id !== $productId) {
+                    throw new \InvalidArgumentException('Selected purchase does not match the selected model.');
+                }
+            }
+
             $assignment = AgentAssignment::firstOrNew([
                 'agent_id' => $agent->id,
                 'product_id' => $productId,
                 'assignment_type' => AgentAssignment::TYPE_TOTAL,
+                'purchase_id' => $purchase?->id,
             ]);
             $assignment->quantity_assigned = (int) ($assignment->quantity_assigned ?? 0) + $quantity;
             $assignment->quantity_sold = (int) ($assignment->quantity_sold ?? 0);
