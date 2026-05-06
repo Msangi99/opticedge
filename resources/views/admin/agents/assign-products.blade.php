@@ -117,12 +117,6 @@
                             <span class="assign-type-option__hint">Agent + product + IMEIs (Select2).</span>
                         </span>
                     </button>
-                    <button type="button" class="assign-type-option {{ $assignType === 'total' ? 'assign-type-option--active' : '' }}" data-mode="total">
-                        <span>
-                            <span class="assign-type-option__title">Assign by Total</span>
-                            <span class="assign-type-option__hint">Agent + purchase + model + total units.</span>
-                        </span>
-                    </button>
                 </div>
 
                 <div id="tab-imei" class="{{ $assignType === 'total' ? 'hidden' : '' }} space-y-6">
