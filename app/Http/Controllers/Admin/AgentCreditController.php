@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AgentCredit;
 use App\Models\AgentCreditPayment;
-use App\Models\Expense;
 use App\Models\PaymentOption;
 use App\Models\Setting;
+use App\Services\AgentCommissionExpenseService;
 use App\Support\PdfDownload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,11 +30,15 @@ class AgentCreditController extends Controller
         $statsQuery = clone $base;
         $sumTotal = (float) (clone $statsQuery)->sum('total_amount');
         $sumPaid = (float) (clone $statsQuery)->sum('paid_amount');
+        $totalProfit = Schema::hasColumn('agent_credits', 'profit')
+            ? (float) (clone $statsQuery)->sum('profit')
+            : 0.0;
         $agentCreditsDashboard = [
             'count' => (clone $statsQuery)->count(),
             'total_credit' => $sumTotal,
             'total_paid' => $sumPaid,
             'total_pending' => max(0, $sumTotal - $sumPaid),
+            'total_profit' => $totalProfit,
         ];
 
         $credits = $base->with(['agent', 'product.category', 'productListItem', 'paymentOption'])
@@ -181,6 +185,9 @@ class AgentCreditController extends Controller
                 'Customer',
                 'Product',
                 'IMEI',
+                'Buy',
+                'Sell',
+                'Profit',
                 'Total Amount',
                 'Paid Amount',
                 'Pending Amount',
@@ -198,6 +205,9 @@ class AgentCreditController extends Controller
                     $credit->customer_name ?? '',
                     trim(($credit->product?->category?->name ? $credit->product->category->name . ' - ' : '') . ($credit->product?->name ?? '')),
                     $credit->productListItem?->imei_number ?? '',
+                    number_format($credit->displayPurchasePrice(), 2, '.', ''),
+                    number_format($credit->displaySellingPrice(), 2, '.', ''),
+                    number_format($credit->displayProfit(), 2, '.', ''),
                     number_format($total, 2, '.', ''),
                     number_format($paid, 2, '.', ''),
                     number_format(max(0, $total - $paid), 2, '.', ''),
@@ -426,85 +436,29 @@ class AgentCreditController extends Controller
         $newCommission = (float) $validated['commission_paid'];
         $eps = 0.0001;
 
-        if ($newCommission > $eps && ! Schema::hasColumn('agent_credits', 'commission_expense_id')) {
-            return redirect()
-                ->route('admin.stock.agent-credits', $request->query())
-                ->withErrors(['error' => 'Run php artisan migrate so commission can be recorded as an expense.']);
-        }
-
-        $defaultChannelRaw = Setting::query()->where('key', 'default_agent_commission_channel_id')->value('value');
-        $defaultChannelId = $defaultChannelRaw !== null && $defaultChannelRaw !== '' ? (int) $defaultChannelRaw : null;
-
-        if ($newCommission > $eps && ! $defaultChannelId) {
-            return redirect()
-                ->route('admin.stock.agent-credits', $request->query())
-                ->withErrors(['error' => 'Choose a default commission channel in Store settings before saving commission.']);
-        }
-
-        if ($newCommission > $eps && ! Schema::hasTable('payment_options')) {
-            return redirect()
-                ->route('admin.stock.agent-credits', $request->query())
-                ->withErrors(['error' => 'Payment channels are not configured.']);
-        }
-
         try {
-            DB::transaction(function () use ($credit, $newCommission, $defaultChannelId, $eps) {
+            DB::transaction(function () use ($credit, $newCommission, $eps) {
                 $credit->refresh();
+                $commissionService = app(AgentCommissionExpenseService::class);
 
-                $linkedExpense = null;
-                if (Schema::hasColumn('agent_credits', 'commission_expense_id') && $credit->commission_expense_id) {
-                    $linkedExpense = Expense::query()->lockForUpdate()->find($credit->commission_expense_id);
+                if ($newCommission <= $eps) {
+                    $commissionService->reverseForAgentCredit($credit);
+                    $credit->update(['commission_paid' => $newCommission]);
+
+                    return;
                 }
 
-                if ($linkedExpense) {
-                    $opt = $linkedExpense->paymentOption;
-                    if ($opt) {
-                        $opt->increment('balance', (float) $linkedExpense->amount);
-                    }
-                    $credit->commission_expense_id = null;
-                    $credit->saveQuietly();
-                    DB::table('expenses')->where('id', $linkedExpense->id)->delete();
+                $hasBookedExpense = Schema::hasColumn('agent_credits', 'commission_expense_id')
+                    && $credit->commission_expense_id;
+                $amountChanged = abs((float) ($credit->commission_paid ?? 0) - $newCommission) > $eps;
+
+                if ($hasBookedExpense && $amountChanged) {
+                    $commissionService->reverseForAgentCredit($credit);
+                    $credit->refresh();
                 }
 
-                $commissionExpenseId = null;
-                if ($newCommission > $eps) {
-                    $agentName = trim((string) ($credit->agent?->name ?? 'Unknown agent'));
-                    $option = PaymentOption::query()
-                        ->visible()
-                        ->whereKey($defaultChannelId)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $option) {
-                        throw new \InvalidArgumentException('The default commission channel is invalid or hidden. Update Store settings.');
-                    }
-
-                    if ((float) $option->balance + $eps < $newCommission) {
-                        throw new \InvalidArgumentException('Insufficient balance in the default commission channel for this amount.');
-                    }
-
-                    $option->decrement('balance', $newCommission);
-
-                    $expense = Expense::create([
-                        'activity' => 'Agent commission - ' . $agentName . ' (credit #' . $credit->id . ')',
-                        'amount' => $newCommission,
-                        'cash_used' => null,
-                        'payment_option_id' => $option->id,
-                        'date' => now()->toDateString(),
-                    ]);
-                    $commissionExpenseId = $expense->id;
-                }
-
-                $payload = ['commission_paid' => $newCommission];
-                if (Schema::hasColumn('agent_credits', 'commission_expense_id')) {
-                    $payload['commission_expense_id'] = $commissionExpenseId;
-                }
-                $credit->update($payload);
+                $credit->update(['commission_paid' => $newCommission]);
             });
-        } catch (\InvalidArgumentException $e) {
-            return redirect()
-                ->route('admin.stock.agent-credits', $request->query())
-                ->withErrors(['error' => $e->getMessage()]);
         } catch (\Throwable $e) {
             Log::error('Agent credit commission save failed: ' . $e->getMessage(), ['exception' => $e]);
 
@@ -514,7 +468,7 @@ class AgentCreditController extends Controller
         }
 
         $msg = $newCommission > $eps
-            ? 'Commission saved and recorded as an expense on the default commission channel.'
+            ? 'Commission saved. It will appear in Pay out; expense is recorded after Selcom payment completes.'
             : 'Commission cleared and any linked expense was reversed.';
 
         return redirect()

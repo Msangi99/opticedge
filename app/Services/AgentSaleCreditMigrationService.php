@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\AgentCredit;
 use App\Models\AgentSale;
-use App\Models\Expense;
 use App\Models\PaymentOption;
+use App\Services\AgentCommissionExpenseService;
 use App\Models\ProductListItem;
 use App\Models\Setting;
 use Carbon\Carbon;
@@ -87,7 +87,11 @@ class AgentSaleCreditMigrationService
                 $watuFresh->increment('balance', $total);
             }
 
-            $credit = AgentCredit::create([
+            $purchasePrice = (float) ($sale->purchase_price ?? 0);
+            $sellingPrice = (float) ($sale->selling_price ?? $total);
+            $profit = $sale->profit !== null ? (float) $sale->profit : ($sellingPrice - $purchasePrice);
+
+            $creditAttrs = [
                 'agent_id' => $sale->agent_id,
                 'customer_name' => $sale->customer_name ?: 'Customer',
                 'customer_phone' => null,
@@ -108,7 +112,15 @@ class AgentSaleCreditMigrationService
                     .($sale->seller_name ? ' Seller: '.$sale->seller_name : '')),
                 'date' => $sale->date ? Carbon::parse($sale->date)->toDateString() : now()->toDateString(),
                 'paid_date' => null,
-            ]);
+            ];
+
+            if (Schema::hasColumn('agent_credits', 'purchase_price')) {
+                $creditAttrs['purchase_price'] = $purchasePrice;
+                $creditAttrs['selling_price'] = $sellingPrice;
+                $creditAttrs['profit'] = $profit;
+            }
+
+            $credit = AgentCredit::create($creditAttrs);
 
             foreach ($linkedItems as $item) {
                 $item->update([
@@ -139,17 +151,6 @@ class AgentSaleCreditMigrationService
             }
         }
 
-        if (Schema::hasColumn('agent_sales', 'commission_expense_id') && ! empty($sale->commission_expense_id)) {
-            $expense = Expense::find($sale->commission_expense_id);
-            if ($expense) {
-                if ($expense->payment_option_id) {
-                    $expOpt = PaymentOption::find($expense->payment_option_id);
-                    if ($expOpt) {
-                        $expOpt->increment('balance', (float) $expense->amount);
-                    }
-                }
-                DB::table('expenses')->where('id', $expense->id)->delete();
-            }
-        }
+        app(AgentCommissionExpenseService::class)->reverseForAgentSale($sale);
     }
 }

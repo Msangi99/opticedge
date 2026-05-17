@@ -774,7 +774,9 @@ class ProductListController extends Controller
 
         $notes = $validated['description'] ?? $validated['installment_notes'] ?? null;
 
-        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent, $notes, $eps) {
+        $buyPrice = app(DistributionSaleService::class)->getBuyPriceForProduct($product->id);
+
+        $credit = DB::transaction(function () use ($item, $product, $validated, $totalCredit, $down, $paymentStatus, $paymentOptionId, $agent, $notes, $eps, $buyPrice) {
             $creditAttrs = [
                 'agent_id' => $agent->id,
                 'customer_name' => $validated['customer_name'],
@@ -807,6 +809,11 @@ class ProductListController extends Controller
                 $creditAttrs['installment_interval_days'] = isset($validated['installment_interval_days'])
                     ? (int) $validated['installment_interval_days']
                     : null;
+            }
+            if (Schema::hasColumn('agent_credits', 'purchase_price')) {
+                $creditAttrs['purchase_price'] = $buyPrice;
+                $creditAttrs['selling_price'] = $totalCredit;
+                $creditAttrs['profit'] = $totalCredit - $buyPrice;
             }
             $credit = AgentCredit::create($creditAttrs);
 

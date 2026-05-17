@@ -6,7 +6,7 @@
             <div>
                 <p class="admin-prod-eyebrow">Operations</p>
                 <h1 class="admin-prod-title">Pay out</h1>
-                <p class="admin-prod-subtitle">Track commissions; optional Selcom Checkout for mobile settlement.</p>
+                <p class="admin-prod-subtitle">Pay agent commissions via Selcom; expenses are recorded when Selcom completes.</p>
             </div>
         </div>
 
@@ -69,19 +69,20 @@
                     <p class="admin-prod-form-title !text-lg font-variant-numeric">{{ number_format($totals['commission'], 0) }}</p>
                 </div>
                 <div class="admin-clay-panel px-4 py-3 border-l-4 border-emerald-400/80">
-                    <p class="admin-prod-eyebrow !mb-1">Booked / paid out</p>
+                    <p class="admin-prod-eyebrow !mb-1">Expense booked</p>
                     <p class="admin-prod-form-title !text-lg font-variant-numeric text-emerald-800">{{ number_format($totals['booked'], 0) }}</p>
                 </div>
                 <div class="admin-clay-panel px-4 py-3 border-l-4 border-amber-400/80">
-                    <p class="admin-prod-eyebrow !mb-1">Pending booking</p>
+                    <p class="admin-prod-eyebrow !mb-1">Awaiting Selcom payout</p>
                     <p class="admin-prod-form-title !text-lg font-variant-numeric text-amber-900">{{ number_format($totals['pending'], 0) }}</p>
                 </div>
             </div>
 
             <p class="text-sm text-slate-600 max-w-3xl mb-4">
-                Each row is commission on an <strong>agent credit</strong> or <strong>agent sale</strong>.
-                <strong>Booked</strong> means an internal expense was recorded (Agent Sales / Agent Credit).
-                Use <strong>Send all via Selcom</strong> (below the table) to start checkout for every eligible line at once (one Selcom order per line; each agent approves USSD per order). Lines that already have a <strong>completed</strong> Selcom payout are skipped so commission is not charged twice. Status appears in the Selcom column; use <strong>Resume</strong> while a session is pending.
+                Each row is commission saved on an <strong>agent credit</strong> or <strong>agent sale</strong> (from Agent Sales or Agent Credit).
+                <strong>Not booked</strong> means Selcom has not completed yet — no expense has been recorded.
+                <strong>Booked</strong> means Selcom completed and an expense was created on your default commission channel.
+                Use <strong>Send all via Selcom</strong> (below the table) to pay eligible lines (one Selcom order per line; each agent approves USSD). Lines that already have a <strong>completed</strong> Selcom payout are skipped. Use <strong>Resume</strong> while a checkout is pending.
             </p>
 
             <div class="admin-clay-panel overflow-hidden">
@@ -93,7 +94,7 @@
                                 <th scope="col" class="admin-prod-th">Agent name</th>
                                 <th scope="col" class="admin-prod-th">Mobile</th>
                                 <th scope="col" class="admin-prod-th">Commission (TZS)</th>
-                                <th scope="col" class="admin-prod-th">Payout booked</th>
+                                <th scope="col" class="admin-prod-th">Expense booked</th>
                                 <th scope="col" class="admin-prod-th">Selcom</th>
                                 <th scope="col" class="admin-prod-th admin-prod-th--end">Actions</th>
                             </tr>

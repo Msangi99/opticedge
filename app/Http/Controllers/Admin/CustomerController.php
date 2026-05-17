@@ -109,7 +109,7 @@ class CustomerController extends Controller
     public function storeRegionalManager(Request $request)
     {
         if (! Schema::hasTable('regions') || ! Schema::hasColumn('users', 'region_id')) {
-            return redirect()->route('admin.customers.regional-managers.index')
+            return redirect()->route('admin.customers.regional-managers.index', ['add' => 1])
                 ->withErrors(['error' => 'Regions are not set up yet. Run migrations and seed regions first.']);
         }
 
@@ -157,12 +157,12 @@ class CustomerController extends Controller
     public function storeTeamLeader(Request $request)
     {
         if (! Schema::hasTable('regions') || ! Schema::hasColumn('users', 'region_id')) {
-            return redirect()->route('admin.customers.team-leaders.index')
+            return redirect()->route('admin.customers.team-leaders.index', ['add' => 1])
                 ->withErrors(['error' => 'Regions are not set up yet. Run migrations and seed regions first.']);
         }
 
         if (! Schema::hasTable('branches') || ! Schema::hasColumn('users', 'branch_id')) {
-            return redirect()->route('admin.customers.team-leaders.index')
+            return redirect()->route('admin.customers.team-leaders.index', ['add' => 1])
                 ->withErrors(['error' => 'Branches are not set up yet. Create a branch first.']);
         }
 
@@ -191,7 +191,7 @@ class CustomerController extends Controller
             ->first();
 
         if (! $manager || (int) $manager->region_id !== (int) $tl['region_id']) {
-            return redirect()->route('admin.customers.team-leaders.index')
+            return redirect()->route('admin.customers.team-leaders.index', ['add' => 1])
                 ->withErrors(['error' => 'The selected regional manager must belong to the same region you selected.'])
                 ->withInput();
         }

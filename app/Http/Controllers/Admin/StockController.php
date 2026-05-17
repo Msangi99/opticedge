@@ -22,6 +22,7 @@ use App\Services\BarcodeImageDecoder;
 use App\Support\ImeiListParser;
 use App\Support\PdfDownload;
 use App\Support\PurchaseInvoiceNumber;
+use App\Services\AgentCommissionExpenseService;
 use App\Services\AgentSaleCreditMigrationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -606,78 +607,35 @@ class StockController extends Controller
         $validated = $request->validate(['commission_paid' => 'required|numeric|min:0']);
         $newCommission = (float) $validated['commission_paid'];
         $eps = 0.0001;
-        $canStoreExpenseId = Schema::hasColumn('agent_sales', 'commission_expense_id');
 
-        $defaultChannelRaw = Setting::query()->where('key', 'default_agent_commission_channel_id')->value('value');
-        $defaultChannelId = $defaultChannelRaw !== null && $defaultChannelRaw !== '' ? (int) $defaultChannelRaw : null;
-        if ($newCommission > $eps && ! $defaultChannelId) {
+        if (! Schema::hasColumn('agent_sales', 'commission_paid')) {
             return redirect()->route('admin.stock.agent-sales', $request->query())
-                ->withErrors(['error' => 'Choose a default commission channel in Store settings before saving commission.']);
+                ->withErrors(['error' => 'The database is missing the commission column. Run php artisan migrate.']);
         }
 
         try {
-            DB::transaction(function () use ($sale, $newCommission, $defaultChannelId, $eps, $canStoreExpenseId) {
+            DB::transaction(function () use ($sale, $newCommission, $eps) {
                 $sale->refresh();
+                $commissionService = app(AgentCommissionExpenseService::class);
 
-                $linkedExpense = null;
-                if ($canStoreExpenseId && $sale->commission_expense_id) {
-                    $linkedExpense = Expense::query()->lockForUpdate()->find($sale->commission_expense_id);
-                }
-                if (! $linkedExpense) {
-                    $linkedExpense = Expense::query()
-                        ->lockForUpdate()
-                        ->where('activity', 'Agent sale commission (sale #' . $sale->id . ')')
-                        ->latest('id')
-                        ->first();
+                if ($newCommission <= $eps) {
+                    $commissionService->reverseForAgentSale($sale);
+                    $sale->update(['commission_paid' => $newCommission]);
+
+                    return;
                 }
 
-                if ($linkedExpense) {
-                    $opt = $linkedExpense->paymentOption;
-                    if ($opt) {
-                        $opt->increment('balance', (float) $linkedExpense->amount);
-                    }
-                    $sale->commission_expense_id = null;
-                    $sale->saveQuietly();
-                    DB::table('expenses')->where('id', $linkedExpense->id)->delete();
+                $hasBookedExpense = Schema::hasColumn('agent_sales', 'commission_expense_id')
+                    && $sale->commission_expense_id;
+                $amountChanged = abs((float) ($sale->commission_paid ?? 0) - $newCommission) > $eps;
+
+                if ($hasBookedExpense && $amountChanged) {
+                    $commissionService->reverseForAgentSale($sale);
+                    $sale->refresh();
                 }
 
-                $commissionExpenseId = null;
-                if ($newCommission > $eps) {
-                    $option = PaymentOption::query()
-                        ->visible()
-                        ->whereKey($defaultChannelId)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $option) {
-                        throw new \InvalidArgumentException('The default commission channel is invalid or hidden. Update Store settings.');
-                    }
-
-                    if ((float) $option->balance + $eps < $newCommission) {
-                        throw new \InvalidArgumentException('Insufficient balance in the default commission channel for this amount.');
-                    }
-
-                    $option->decrement('balance', $newCommission);
-
-                    $expense = Expense::create([
-                        'activity' => 'Agent sale commission (sale #' . $sale->id . ')',
-                        'amount' => $newCommission,
-                        'cash_used' => null,
-                        'payment_option_id' => $option->id,
-                        'date' => now()->toDateString(),
-                    ]);
-                    $commissionExpenseId = $expense->id;
-                }
-
-                $payload = ['commission_paid' => $newCommission];
-                if ($canStoreExpenseId) {
-                    $payload['commission_expense_id'] = $commissionExpenseId;
-                }
-                $sale->update($payload);
+                $sale->update(['commission_paid' => $newCommission]);
             });
-        } catch (\InvalidArgumentException $e) {
-            return redirect()->route('admin.stock.agent-sales', $request->query())
-                ->withErrors(['error' => $e->getMessage()]);
         } catch (\Throwable $e) {
             Log::error('Agent sale commission save failed: ' . $e->getMessage(), ['exception' => $e]);
 
@@ -685,7 +643,11 @@ class StockController extends Controller
                 ->withErrors(['error' => 'Could not save commission. Try again or check logs.']);
         }
 
-        return redirect()->route('admin.stock.agent-sales', $request->query())->with('success', 'Commission updated and expense synced.');
+        $msg = $newCommission > $eps
+            ? 'Commission saved. It will appear in Pay out; expense is recorded after Selcom payment completes.'
+            : 'Commission cleared and any linked expense was reversed.';
+
+        return redirect()->route('admin.stock.agent-sales', $request->query())->with('success', $msg);
     }
 
     public function convertAgentSaleToCredit(Request $request, int $id)
@@ -731,18 +693,7 @@ class StockController extends Controller
             }
         }
 
-        if (Schema::hasColumn('agent_sales', 'commission_expense_id') && ! empty($sale->commission_expense_id)) {
-            $expense = Expense::find($sale->commission_expense_id);
-            if ($expense) {
-                if ($expense->payment_option_id) {
-                    $expOpt = PaymentOption::find($expense->payment_option_id);
-                    if ($expOpt) {
-                        $expOpt->increment('balance', (float) $expense->amount);
-                    }
-                }
-                DB::table('expenses')->where('id', $expense->id)->delete();
-            }
-        }
+        app(AgentCommissionExpenseService::class)->reverseForAgentSale($sale);
 
         ProductListItem::where('agent_sale_id', $sale->id)->update([
             'agent_sale_id' => null,

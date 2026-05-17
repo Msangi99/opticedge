@@ -34,22 +34,26 @@
         @endif
 
         <x-admin-page-dashboard label="Summary (current filter)" class="mb-6">
-            <dl class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <dl class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Credits</dt>
                     <dd class="text-lg font-semibold text-slate-900">{{ number_format($agentCreditsDashboard['count']) }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs uppercase text-slate-500">Total credit</dt>
-                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($agentCreditsDashboard['total_credit'], 2) }} TZS</dd>
+                    <dt class="text-xs uppercase text-slate-500">Total selling</dt>
+                    <dd class="text-lg font-semibold text-slate-900">{{ number_format($agentCreditsDashboard['total_credit'], 0) }} TZS</dd>
+                </div>
+                <div>
+                    <dt class="text-xs uppercase text-slate-500">Total profit</dt>
+                    <dd class="text-lg font-semibold text-green-700">{{ number_format($agentCreditsDashboard['total_profit'] ?? 0, 0) }} TZS</dd>
                 </div>
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Total paid</dt>
-                    <dd class="text-lg font-semibold text-green-700">{{ number_format($agentCreditsDashboard['total_paid'], 2) }} TZS</dd>
+                    <dd class="text-lg font-semibold text-green-700">{{ number_format($agentCreditsDashboard['total_paid'], 0) }} TZS</dd>
                 </div>
                 <div>
                     <dt class="text-xs uppercase text-slate-500">Total pending</dt>
-                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($agentCreditsDashboard['total_pending'], 2) }} TZS</dd>
+                    <dd class="text-lg font-semibold text-amber-700">{{ number_format($agentCreditsDashboard['total_pending'], 0) }} TZS</dd>
                 </div>
             </dl>
         </x-admin-page-dashboard>
@@ -80,7 +84,7 @@
 
         <div id="credits-table" class="admin-clay-panel overflow-x-auto">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush min-w-0">
-                <table class="min-w-[1080px]">
+                <table class="min-w-[1280px]">
                     <thead>
                         <tr>
                             <th scope="col" class="admin-prod-th">Date</th>
@@ -88,7 +92,9 @@
                             <th scope="col" class="admin-prod-th">Customer</th>
                             <th scope="col" class="admin-prod-th">Product</th>
                             <th scope="col" class="admin-prod-th">IMEI</th>
-                            <th scope="col" class="admin-prod-th">Total</th>
+                            <th scope="col" class="admin-prod-th">Buy</th>
+                            <th scope="col" class="admin-prod-th">Sell</th>
+                            <th scope="col" class="admin-prod-th">Profit</th>
                             <th scope="col" class="admin-prod-th">Channel</th>
                             <th scope="col" class="admin-prod-th min-w-[180px]">Commision</th>
                             <th scope="col" class="admin-prod-th">Status</th>
@@ -97,9 +103,6 @@
                     </thead>
                     <tbody>
                         @forelse($credits as $credit)
-                            @php
-                                $t = (float) $credit->total_amount;
-                            @endphp
                             <tr>
                                 <td class="text-slate-600 text-sm">
                                     {{ $credit->date instanceof \Carbon\Carbon ? $credit->date->format('Y-m-d') : $credit->date }}</td>
@@ -108,7 +111,9 @@
                                 <td class="text-slate-600 text-sm">
                                     {{ $credit->product ? (($credit->product->category?->name ?? '—') . ' – ' . $credit->product->name) : 'N/A' }}</td>
                                 <td class="font-mono text-xs text-slate-600">{{ $credit->productListItem?->imei_number ?? '—' }}</td>
-                                <td class="font-variant-numeric">{{ number_format($t, 2) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($credit->displayPurchasePrice(), 0) }}</td>
+                                <td class="font-variant-numeric text-sm">{{ number_format($credit->displaySellingPrice(), 0) }}</td>
+                                <td class="font-variant-numeric text-green-700">{{ number_format($credit->displayProfit(), 0) }}</td>
                                 <td class="align-middle">
                                     <span class="text-slate-600 text-sm">{{ $credit->paymentOption?->name ?? $defaultWatuChannel?->name ?? '—' }}</span>
                                 </td>
@@ -141,7 +146,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
+                                <td colspan="12" class="text-center text-slate-500 py-10">No agent credits yet. Credits appear when an agent sells on credit from the app.</td>
                             </tr>
                         @endforelse
                     </tbody>

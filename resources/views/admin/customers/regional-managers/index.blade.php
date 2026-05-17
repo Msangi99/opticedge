@@ -1,7 +1,9 @@
 <x-admin-layout>
     @include('admin.partials.catalog-styles')
 
-    <div class="admin-prod-page" x-data="{ showForm: {{ $errors->any() ? 'true' : 'false' }} }">
+    @php $showForm = request()->boolean('add') || $errors->any(); @endphp
+
+    <div class="admin-prod-page">
         <div class="admin-prod-toolbar !mb-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="admin-prod-eyebrow">Users & Dealers</p>
@@ -9,11 +11,13 @@
                 <p class="admin-prod-subtitle">People who oversee a region. Use the button to create a new account.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <button type="button" @click="showForm = !showForm"
-                    class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
-                    <span x-show="!showForm">Add regional manager</span>
-                    <span x-show="showForm" x-cloak>Close form</span>
-                </button>
+                @if($showForm)
+                    <a href="{{ route('admin.customers.regional-managers.index') }}"
+                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Close form</a>
+                @else
+                    <a href="{{ route('admin.customers.regional-managers.index', ['add' => 1]) }}"
+                        class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Add regional manager</a>
+                @endif
                 <a href="{{ route('admin.customers.index', ['role' => 'regional_manager']) }}"
                     class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">All in directory</a>
             </div>
@@ -26,7 +30,8 @@
             <div class="admin-prod-alert admin-prod-alert--error mt-6" role="alert">{{ $errors->first() }}</div>
         @endif
 
-        <div x-show="showForm" x-cloak x-transition class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden">
+        @if($showForm)
+        <div class="mt-6 admin-clay-panel admin-prod-form-shell overflow-hidden">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">New regional manager</h2>
                 <p class="admin-prod-form-hint">Name, contact, region, password, and optional notes.</p>
@@ -99,12 +104,13 @@
                         </div>
                     </div>
                     <div class="admin-prod-form-footer !mt-0">
-                        <button type="button" @click="showForm = false" class="admin-prod-btn-ghost">Cancel</button>
+                        <a href="{{ route('admin.customers.regional-managers.index') }}" class="admin-prod-btn-ghost">Cancel</a>
                         <button type="submit" class="admin-prod-btn-primary px-8">Create account</button>
                     </div>
                 </form>
             @endif
         </div>
+        @endif
 
         <div class="mt-6 admin-clay-panel overflow-hidden">
             <div class="admin-prod-table-wrap admin-prod-table-wrap--flush overflow-x-auto">

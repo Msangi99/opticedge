@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Selcompay;
+use App\Services\AgentCommissionExpenseService;
 use App\Services\SelcomAgentCommissionCheckoutService;
 use App\Services\SelcomApiService;
 use App\Services\SelcomCredentialResolver;
@@ -76,6 +77,7 @@ class CommissionSelcomPayoutController extends Controller
 
             if ($paymentStatus === 'COMPLETED') {
                 $selcompay->update(['payment_status' => 'completed']);
+                $this->bookCommissionExpenseIfNeeded($selcompay);
 
                 return response()->json(['status' => 'completed', 'message' => 'Selcom reports completed.']);
             }
@@ -99,5 +101,11 @@ class CommissionSelcomPayoutController extends Controller
         if ($selcompay->purpose !== Selcompay::PURPOSE_AGENT_COMMISSION_CHECKOUT) {
             abort(404);
         }
+    }
+
+    protected function bookCommissionExpenseIfNeeded(Selcompay $selcompay): void
+    {
+        $selcompay->refresh();
+        app(AgentCommissionExpenseService::class)->bookFromSelcompay($selcompay);
     }
 }

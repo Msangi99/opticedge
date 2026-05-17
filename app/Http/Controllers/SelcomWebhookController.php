@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Selcompay;
+use App\Services\AgentCommissionExpenseService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Handles Selcom Checkout webhook callback (payment status notification).
@@ -42,8 +44,15 @@ class SelcomWebhookController extends Controller
         }
 
         $status = $paymentStatus ? strtolower($paymentStatus) : 'pending';
-        if (in_array($status, ['completed', 'cancelled', 'failed', 'rejected', 'usercancelled'])) {
+        if (in_array($status, ['completed', 'cancelled', 'failed', 'rejected', 'usercancelled'], true)) {
             $selcompay->update(['payment_status' => $status]);
+
+            if ($status === 'completed'
+                && Schema::hasColumn('selcompays', 'purpose')
+                && $selcompay->purpose === Selcompay::PURPOSE_AGENT_COMMISSION_CHECKOUT) {
+                $selcompay->refresh();
+                app(AgentCommissionExpenseService::class)->bookFromSelcompay($selcompay);
+            }
         }
 
         return response('OK', 200);
