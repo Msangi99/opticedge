@@ -210,30 +210,27 @@ class AgentDailyStockReportService
         $rows = $payload['rows'];
         $lines = [];
 
-        $header = ['Product', 'Purchased in period', 'Total opening', 'Total sales', 'Total closing', 'Shop transfer'];
-        foreach ($agents as $a) {
-            $n = str_replace('"', '""', $a->name);
+        $header = ['Agent', 'Branch', 'Total opening', 'Total sales', 'Total closing'];
+        foreach ($rows as $r) {
+            $n = str_replace('"', '""', $r['name']);
             $header[] = "{$n} opening";
             $header[] = "{$n} sales";
             $header[] = "{$n} closing";
         }
         $lines[] = $this->csvLine($header);
 
-        foreach ($rows as $r) {
-            $agentsCol = collect($r['agents'] ?? []);
-            // Total columns = sum across agents only (shop / unassigned warehouse excluded).
-            $totalO = (int) $agentsCol->sum('opening');
-            $totalS = (int) $agentsCol->sum('sales');
-            $totalC = (int) $agentsCol->sum('closing');
+        $t = $payload['totals'];
+        foreach ($agents as $a) {
+            $branch = $a->branch?->name ?? '';
+            $agentTotals = $t['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
             $line = [
-                $r['name'],
-                (string) $r['purchased_today'],
-                (string) $totalO,
-                (string) $totalS,
-                (string) $totalC,
-                (string) ($r['shop']['transfer'] ?? 0),
+                $a->name,
+                $branch,
+                (string) $agentTotals['opening'],
+                (string) $agentTotals['sales'],
+                (string) $agentTotals['closing'],
             ];
-            foreach ($agents as $a) {
+            foreach ($rows as $r) {
                 $c = $r['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
                 $line[] = (string) $c['opening'];
                 $line[] = (string) $c['sales'];
@@ -242,19 +239,18 @@ class AgentDailyStockReportService
             $lines[] = $this->csvLine($line);
         }
 
-        $t = $payload['totals'];
         $totAgents = collect($t['agents'] ?? []);
         $grandO = (int) $totAgents->sum('opening');
         $grandS = (int) $totAgents->sum('sales');
         $grandC = (int) $totAgents->sum('closing');
-        $tot = ['Total', (string) $t['purchased_today'], (string) $grandO, (string) $grandS, (string) $grandC, (string) ($t['shop']['transfer'] ?? 0)];
-        foreach ($agents as $a) {
-            $c = $t['agents'][(int) $a->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
-            $tot[] = (string) $c['opening'];
-            $tot[] = (string) $c['sales'];
-            $tot[] = (string) $c['closing'];
+        $totLine = ['Totals', '', (string) $grandO, (string) $grandS, (string) $grandC];
+        foreach ($rows as $r) {
+            $agentsCol = collect($r['agents'] ?? []);
+            $totLine[] = (string) (int) $agentsCol->sum('opening');
+            $totLine[] = (string) (int) $agentsCol->sum('sales');
+            $totLine[] = (string) (int) $agentsCol->sum('closing');
         }
-        $lines[] = $this->csvLine($tot);
+        $lines[] = $this->csvLine($totLine);
 
         return $lines;
     }

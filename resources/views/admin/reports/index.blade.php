@@ -64,10 +64,9 @@
                     <div>
                         <h2 class="admin-prod-form-title">Agent opening stock &amp; sales (by product)</h2>
                         <p class="admin-prod-form-hint max-w-3xl">
-                            <strong>Agent — Opening</strong> = end-of-yesterday position (same as that day’s <strong>closing</strong>): it stays fixed for the whole calendar day and does not drop when sales are recorded.
-                            <strong>Sales</strong> = units sold in the selected <strong>date range</strong> (From–To).
-                            <strong>Closing</strong> = <strong>opening − sales</strong> per agent.
-                            <strong>Total</strong> = sum across <strong>all agents only</strong> for that product (opening, sales, closing each summed separately). Shop / unassigned warehouse stock is <strong>not</strong> included in Total.
+                            Agents are listed <strong>down the first column</strong>; product models run <strong>across the top</strong> (Opening / Sales / Closing per model).
+                            <strong>Opening</strong> is at the start of the From date; <strong>sales</strong> are summed across From–To; <strong>closing</strong> = opening − sales.
+                            <strong>Total</strong> (column) = that agent’s sum across all models; <strong>Totals</strong> (row) = sum across all agents for each model. Shop stock is excluded.
                         </p>
                     </div>
                     <a href="{{ route('admin.reports.agent-stock-export', ['date_from' => $asr['report_date_from'] ?? $asr['report_date'], 'date_to' => $asr['report_date_to'] ?? $asr['report_date'], 'branch_id' => request('branch_id')]) }}"
@@ -105,7 +104,7 @@
                 </form>
 
                 @if($asr['agents']->isEmpty())
-                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — <strong>Total</strong> columns show agent sums only (0). Warehouse stock is not rolled into Total. Add agents under Sales team to see per-agent columns.</p>
+                    <p class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2 mb-4">No agents yet — add agents under Sales team to see agent rows. Warehouse stock is not included in totals.</p>
                 @endif
                 @if(count($asr['rows']) === 0)
                     <p class="text-sm text-slate-500 py-6">No stock movement for this date and branch filter.</p>
@@ -150,70 +149,73 @@
                     </style>
                     
                     <div class="admin-report-table-container rounded-xl">
+                        @php
+                            $reportProducts = $asr['rows'];
+                            $reportTotals = $asr['totals'];
+                            $grandAgentsO = collect($reportTotals['agents'] ?? [])->sum('opening');
+                            $grandAgentsS = collect($reportTotals['agents'] ?? [])->sum('sales');
+                            $grandAgentsC = collect($reportTotals['agents'] ?? [])->sum('closing');
+                        @endphp
                         <table class="text-sm">
                             <thead>
                                 <tr>
-                                    <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Product</th>
+                                    <th scope="col" class="admin-prod-th align-bottom" rowspan="2">Agent</th>
                                     <th scope="col" class="admin-prod-th text-center bg-slate-100/80" colspan="3">Total</th>
-                                    @foreach($asr['agents'] as $agent)
-                                        @php
-                                            $agentBand = $agentColorBands[$loop->index % count($agentColorBands)];
-                                            $branchLabel = $agent->branch?->name;
-                                            $agentHeader = $branchLabel ? ($agent->name.' · '.$branchLabel) : $agent->name;
-                                        @endphp
-                                        <th scope="col" class="admin-prod-th text-center {{ $agentBand }}" colspan="3">{{ $agentHeader }}</th>
+                                    @foreach($reportProducts as $productRow)
+                                        @php $productBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
+                                        <th scope="col" class="admin-prod-th text-center {{ $productBand }}" colspan="3">{{ $productRow['name'] }}</th>
                                     @endforeach
                                 </tr>
                                 <tr>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Opening</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Sales</th>
                                     <th scope="col" class="admin-prod-th admin-prod-th--end text-xs bg-slate-100/80">Closing</th>
-                                    @foreach($asr['agents'] as $agent)
-                                        @php $agentBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Opening</th>
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Sales</th>
-                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $agentBand }}">Closing</th>
+                                    @foreach($reportProducts as $productRow)
+                                        @php $productBand = $agentColorBands[$loop->index % count($agentColorBands)]; @endphp
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $productBand }}">Opening</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $productBand }}">Sales</th>
+                                        <th scope="col" class="admin-prod-th admin-prod-th--end text-xs {{ $productBand }}">Closing</th>
                                     @endforeach
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($asr['rows'] as $row)
+                                @foreach($asr['agents'] as $agent)
                                     @php
-                                        $agentsO = collect($row['agents'] ?? [])->sum('opening');
-                                        $agentsS = collect($row['agents'] ?? [])->sum('sales');
-                                        $agentsC = collect($row['agents'] ?? [])->sum('closing');
+                                        $branchLabel = $agent->branch?->name;
+                                        $agentLabel = $branchLabel ? ($agent->name.' · '.$branchLabel) : $agent->name;
+                                        $agentTotals = $reportTotals['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
                                     @endphp
                                     <tr class="h-12">
-                                        <td class="font-medium text-[#232f3e] bg-white px-3 py-3">{{ $row['name'] }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentsO) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentsS) }}</td>
-                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($agentsC) }}</td>
-                                        @foreach($asr['agents'] as $agent)
-                                            @php $ac = $row['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
-                                            @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($ac['opening']) }}</td>
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($ac['sales']) }}</td>
-                                            <td class="text-right font-variant-numeric {{ $agentCellBand }} font-semibold px-3 py-3">{{ number_format($ac['closing']) }}</td>
+                                        <td class="font-medium text-[#232f3e] bg-white px-3 py-3">{{ $agentLabel }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentTotals['opening']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($agentTotals['sales']) }}</td>
+                                        <td class="text-right font-variant-numeric bg-slate-50/50 font-semibold px-3 py-3">{{ number_format($agentTotals['closing']) }}</td>
+                                        @foreach($reportProducts as $productRow)
+                                            @php
+                                                $ac = $productRow['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0];
+                                                $productCellBand = $agentCellBands[$loop->index % count($agentCellBands)];
+                                            @endphp
+                                            <td class="text-right font-variant-numeric {{ $productCellBand }} px-3 py-3">{{ number_format($ac['opening']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $productCellBand }} px-3 py-3">{{ number_format($ac['sales']) }}</td>
+                                            <td class="text-right font-variant-numeric {{ $productCellBand }} font-semibold px-3 py-3">{{ number_format($ac['closing']) }}</td>
                                         @endforeach
                                     </tr>
                                 @endforeach
-                                @php
-                                    $tot = $asr['totals'];
-                                    $totAgentsO = collect($tot['agents'] ?? [])->sum('opening');
-                                    $totAgentsS = collect($tot['agents'] ?? [])->sum('sales');
-                                    $totAgentsC = collect($tot['agents'] ?? [])->sum('closing');
-                                @endphp
                                 <tr class="border-t-2 border-slate-300 font-semibold text-[#232f3e] totals-row h-12">
                                     <td class="bg-slate-100 px-3 py-3">Totals</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsO) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsS) }}</td>
-                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($totAgentsC) }}</td>
-                                    @foreach($asr['agents'] as $agent)
-                                        @php $tc = $tot['agents'][(int) $agent->id] ?? ['opening' => 0, 'sales' => 0, 'closing' => 0]; @endphp
-                                        @php $agentCellBand = $agentCellBands[$loop->index % count($agentCellBands)]; @endphp
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['opening']) }}</td>
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['sales']) }}</td>
-                                        <td class="text-right font-variant-numeric {{ $agentCellBand }} px-3 py-3">{{ number_format($tc['closing']) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($grandAgentsO) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($grandAgentsS) }}</td>
+                                    <td class="text-right font-variant-numeric bg-slate-50/50 px-3 py-3">{{ number_format($grandAgentsC) }}</td>
+                                    @foreach($reportProducts as $productRow)
+                                        @php
+                                            $productO = collect($productRow['agents'] ?? [])->sum('opening');
+                                            $productS = collect($productRow['agents'] ?? [])->sum('sales');
+                                            $productC = collect($productRow['agents'] ?? [])->sum('closing');
+                                            $productCellBand = $agentCellBands[$loop->index % count($agentCellBands)];
+                                        @endphp
+                                        <td class="text-right font-variant-numeric {{ $productCellBand }} px-3 py-3">{{ number_format($productO) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $productCellBand }} px-3 py-3">{{ number_format($productS) }}</td>
+                                        <td class="text-right font-variant-numeric {{ $productCellBand }} px-3 py-3">{{ number_format($productC) }}</td>
                                     @endforeach
                                 </tr>
                             </tbody> 
@@ -221,10 +223,10 @@
                     </div>
                     @if(request('branch_id'))
                         <p class="mt-2 text-xs text-slate-600 bg-slate-50/90 border border-slate-200/80 rounded-lg px-3 py-2">
-                            Branch filter is on: agent columns show this branch’s team (assigned branch) plus any rep with stock or sales in this branch’s scope, even if their profile branch is not set yet.
+                            Branch filter is on: agent rows show this branch’s team (assigned branch) plus any rep with stock or sales in this branch’s scope, even if their profile branch is not set yet.
                         </p>
                     @endif
-                    <p class="mt-3 text-xs text-slate-500"><strong>Total</strong> = sum of every agent column for that product (opening, sales, closing each summed across agents). Shop / unassigned warehouse is excluded. Agent cells are per rep. <strong>Opening</strong> is at the start of the From date; <strong>sales</strong> are summed across From–To.</p>
+                    <p class="mt-3 text-xs text-slate-500">Scroll horizontally for more models. <strong>Total</strong> column = each agent’s sum across models; <strong>Totals</strong> row = each model summed across agents. Shop stock is excluded.</p>
                 @endif
             </div>
         </div>
