@@ -116,6 +116,14 @@ class ProductListItem extends Model
             ->whereDoesntHave('agentProductListAssignment');
     }
 
+    /**
+     * Limit distribution IMEIs to a specific purchase row.
+     */
+    public function scopeFromPurchase($query, int $purchaseId)
+    {
+        return $query->where('purchase_id', $purchaseId);
+    }
+
     public function pendingSale()
     {
         return $this->belongsTo(PendingSale::class, 'pending_sale_id');

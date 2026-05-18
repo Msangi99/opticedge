@@ -90,7 +90,7 @@
             <a href="{{ route('admin.stock.distribution') }}" class="admin-prod-back shrink-0">Back to list</a>
         </div>
 
-        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden">
+        <div class="admin-clay-panel admin-prod-form-shell overflow-hidden admin-prod-select2-wrap">
             <div class="admin-prod-form-head">
                 <h2 class="admin-prod-form-title">Sale details</h2>
             </div>
@@ -104,6 +104,71 @@
                     @error('date')
                         <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div>
+                    <label for="purchase_id" class="admin-prod-label">Purchase <span class="text-red-500">*</span></label>
+                    <select id="purchase_id" name="purchase_id" required class="admin-prod-select">
+                        <option value="">Select purchase</option>
+                        @foreach($purchases as $purchase)
+                            @php
+                                $purchaseLabel = $purchase->name ?? ('Purchase #' . $purchase->id);
+                                if ($purchase->date) {
+                                    $purchaseLabel .= ' · ' . $purchase->date;
+                                }
+                                $models = collect();
+                                if (($purchase->lines ?? collect())->isNotEmpty()) {
+                                    $models = $purchase->lines->map(fn ($line) => $line->product?->name)->filter()->unique();
+                                } elseif ($purchase->product) {
+                                    $models = collect([$purchase->product->name]);
+                                }
+                                if ($models->isNotEmpty()) {
+                                    $purchaseLabel .= ' — ' . $models->implode(', ');
+                                }
+                            @endphp
+                            <option value="{{ $purchase->id }}" @selected((string) old('purchase_id') === (string) $purchase->id)>
+                                {{ $purchaseLabel }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('purchase_id')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                    <p class="helper-text">Only IMEIs linked to this purchase can be sold on this distribution.</p>
+                    <p id="purchase-slots-hint" class="helper-text mt-1 hidden"></p>
+                </div>
+
+                <div id="dist-register-panel" class="admin-clay-panel border border-slate-200/80 !shadow-none hidden">
+                    <div class="p-4 border-b border-slate-200/60">
+                        <h3 class="text-sm font-semibold text-slate-900">Register IMEIs on this purchase <span class="text-slate-500 font-normal">(optional)</span></h3>
+                        <p class="helper-text mt-1">Paste or scan codes to add devices to the purchase. Then use <strong>Add model</strong> below and the IMEI modal to include them in this sale.</p>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+                            <h4 class="text-sm font-semibold text-slate-900 mb-2">Capture &amp; scan barcodes</h4>
+                            <p class="text-xs text-slate-600 mb-3">Photo of IMEI barcodes (Code 128, QR, EAN) — codes are read in your browser.</p>
+                            <input type="file" id="dist_barcode_photos" accept="image/*" class="admin-prod-file">
+                            <button type="button" id="dist_btn_decode_photos" class="mt-3 bg-slate-800 text-white text-sm px-4 py-2 rounded-lg hover:bg-slate-700">Capture &amp; scan</button>
+                            <p id="dist_decode_status" class="text-xs text-slate-500 mt-2 min-h-[1rem]"></p>
+                        </div>
+                        <div>
+                            <label for="dist_register_model" class="admin-prod-label">Model</label>
+                            <select id="dist_register_model" class="admin-prod-select w-full">
+                                <option value="">Select purchase first</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="dist_register_imei_numbers" class="admin-prod-label">IMEI / serial numbers</label>
+                            <p class="text-xs text-slate-500 mb-1">One per line, or separate with spaces, commas, or semicolons.</p>
+                            <textarea id="dist_register_imei_numbers" rows="6" class="admin-prod-textarea font-mono text-sm" placeholder="352123456789012&#10;352123456789013"></textarea>
+                            <p id="dist_register_imei_count" class="helper-text mt-1"></p>
+                        </div>
+                        <div id="dist_register_feedback" class="hidden text-sm rounded-lg p-3" role="status"></div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <button type="button" id="dist_register_submit" class="admin-prod-btn-primary text-sm py-2 px-5" disabled>Add to purchase</button>
+                            <p id="dist_register_model_slots" class="text-xs text-slate-500"></p>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -214,6 +279,21 @@
                 'suggest' => (float) ($p->price ?? 0),
             ];
         })->toArray();
+
+        $purchaseProductIds = ($purchases ?? collect())->mapWithKeys(function ($purchase) {
+            $ids = [];
+            if (($purchase->lines ?? collect())->isNotEmpty()) {
+                foreach ($purchase->lines as $line) {
+                    if ($line->product_id) {
+                        $ids[] = (int) $line->product_id;
+                    }
+                }
+            } elseif ($purchase->product_id) {
+                $ids[] = (int) $purchase->product_id;
+            }
+
+            return [(string) $purchase->id => array_values(array_unique($ids))];
+        })->toArray();
     @endphp
 
     @push('scripts')
@@ -221,7 +301,14 @@
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
             const PRODUCT_META = @json($productMeta);
+            const PURCHASE_PRODUCT_IDS = @json($purchaseProductIds);
             const ASSIGNABLE_IMEIS_URL = @json(route('admin.stock.distribution-assignable-imeis'));
+            const PURCHASE_MODELS_URL_TEMPLATE = @json(route('admin.stock.add-product.purchase.models', ['purchase' => '__ID__']));
+            const REGISTER_IMEIS_URL = @json(route('admin.stock.distribution-register-imeis'));
+            const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            let purchaseRegistrationModels = [];
+            let selectedModelLimitRemaining = 0;
 
             const tbody = document.getElementById('line-items-body');
             const noLinesHint = document.getElementById('no-lines-hint');
@@ -330,7 +417,8 @@
                     paymentStatus.style.color = '#f59e0b';
                 }
 
-                submitBtn.disabled = sum <= 0 || deviceCount === 0 || document.getElementById('dealer_id').value === '';
+                const purchaseOk = document.getElementById('purchase_id').value !== '';
+                submitBtn.disabled = sum <= 0 || deviceCount === 0 || document.getElementById('dealer_id').value === '' || !purchaseOk;
                 submitBtn.classList.toggle('opacity-50', submitBtn.disabled);
                 submitBtn.classList.toggle('cursor-not-allowed', submitBtn.disabled);
             }
@@ -434,9 +522,61 @@
                 });
             }
 
+            function getPurchaseId() {
+                return document.getElementById('purchase_id').value;
+            }
+
+            function syncProductPickerForPurchase() {
+                const purchaseId = getPurchaseId();
+                const allowed = purchaseId ? (PURCHASE_PRODUCT_IDS[purchaseId] || []) : [];
+                const $pick = window.jQuery ? jQuery('#product_picker') : null;
+                if (!$pick || !$pick.length) return;
+
+                if ($pick.data('select2')) {
+                    $pick.select2('destroy');
+                }
+                $pick.empty().append(new Option('', '', false, false));
+                Object.keys(PRODUCT_META).forEach(function (id) {
+                    const pid = parseInt(id, 10);
+                    if (!purchaseId || allowed.indexOf(pid) !== -1) {
+                        const meta = PRODUCT_META[id];
+                        const label = meta.label + ' (stock ' + meta.stock + ')';
+                        const opt = new Option(label, id, false, false);
+                        jQuery(opt).attr('data-stock', meta.stock).attr('data-suggest', meta.suggest);
+                        $pick.append(opt);
+                    }
+                });
+                $pick.prop('disabled', !purchaseId);
+                if (window.jQuery && jQuery.fn.select2) {
+                    $pick.select2({
+                        placeholder: purchaseId ? 'Search category / model…' : 'Select a purchase first…',
+                        width: '100%',
+                        allowClear: true
+                    });
+                    $pick.off('select2:select').on('select2:select', function (e) {
+                        const id = e.params.data.id;
+                        if (id) {
+                            openImeiModal(id, null);
+                        }
+                    });
+                }
+            }
+
+            function clearAllLines() {
+                tbody.querySelectorAll('tr[data-line-row]').forEach(function (tr) { tr.remove(); });
+                renumberLines();
+                recalcGrandTotal();
+            }
+
             function openImeiModal(productId, editingRow) {
                 const meta = PRODUCT_META[String(productId)];
                 if (!meta) return;
+
+                const purchaseId = getPurchaseId();
+                if (!purchaseId) {
+                    alert('Select a purchase first.');
+                    return;
+                }
 
                 modalProductId = String(productId);
                 modalEditingRow = editingRow || null;
@@ -447,7 +587,7 @@
                 modalBackdrop.hidden = false;
                 modalBackdrop.classList.add('is-open');
 
-                fetch(ASSIGNABLE_IMEIS_URL + '?product_id=' + encodeURIComponent(productId), {
+                fetch(ASSIGNABLE_IMEIS_URL + '?product_id=' + encodeURIComponent(productId) + '&purchase_id=' + encodeURIComponent(purchaseId), {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'same-origin',
                 })
@@ -508,10 +648,217 @@
                 if (window.jQuery) jQuery('#product_picker').val(null).trigger('change');
             });
 
+            const registerPanel = document.getElementById('dist-register-panel');
+            const purchaseSlotsHint = document.getElementById('purchase-slots-hint');
+            const registerModelSelect = document.getElementById('dist_register_model');
+            const registerImeiTa = document.getElementById('dist_register_imei_numbers');
+            const registerImeiCount = document.getElementById('dist_register_imei_count');
+            const registerModelSlots = document.getElementById('dist_register_model_slots');
+            const registerFeedback = document.getElementById('dist_register_feedback');
+            const registerSubmitBtn = document.getElementById('dist_register_submit');
+
+            function countParsedImeis(text) {
+                if (!text || !text.trim()) return 0;
+                return text.replace(/\r\n/g, '\n').split(/[\n,;\s]+/).map(function (s) { return s.trim(); }).filter(Boolean).length;
+            }
+
+            function updateRegisterImeiCount() {
+                const n = countParsedImeis(registerImeiTa.value);
+                const over = selectedModelLimitRemaining > 0 && n > selectedModelLimitRemaining;
+                registerImeiCount.textContent = n > 0
+                    ? (n + ' code(s) entered' + (selectedModelLimitRemaining > 0 ? ' · max ' + selectedModelLimitRemaining + ' for this model' : '') + (over ? ' — too many' : ''))
+                    : '';
+                registerImeiCount.classList.toggle('text-red-600', over);
+                updateRegisterSubmitState();
+            }
+
+            function updateRegisterSubmitState() {
+                const purchaseId = getPurchaseId();
+                const modelId = registerModelSelect.value;
+                const n = countParsedImeis(registerImeiTa.value);
+                const ok = purchaseId && modelId && n > 0 && (selectedModelLimitRemaining <= 0 || n <= selectedModelLimitRemaining);
+                registerSubmitBtn.disabled = !ok;
+            }
+
+            function showRegisterFeedback(message, isError) {
+                registerFeedback.textContent = message;
+                registerFeedback.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-700');
+                registerFeedback.classList.add(isError ? 'bg-red-50' : 'bg-green-50', isError ? 'text-red-700' : 'text-green-800');
+            }
+
+            function hideRegisterFeedback() {
+                registerFeedback.classList.add('hidden');
+                registerFeedback.textContent = '';
+            }
+
+            function populateRegisterModelSelect(models) {
+                const $sel = window.jQuery ? jQuery('#dist_register_model') : null;
+                if ($sel && $sel.data('select2')) {
+                    $sel.select2('destroy');
+                }
+                registerModelSelect.innerHTML = '';
+                if (!models.length) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'No open slots on this purchase';
+                    registerModelSelect.appendChild(opt);
+                    selectedModelLimitRemaining = 0;
+                } else {
+                    const empty = document.createElement('option');
+                    empty.value = '';
+                    empty.textContent = 'Select model';
+                    registerModelSelect.appendChild(empty);
+                    models.forEach(function (m) {
+                        const opt = document.createElement('option');
+                        opt.value = String(m.product_id);
+                        opt.textContent = m.label || ('Model #' + m.product_id);
+                        opt.dataset.limitRemaining = String(m.limit_remaining || 0);
+                        registerModelSelect.appendChild(opt);
+                    });
+                }
+                if ($sel && window.jQuery && jQuery.fn.select2) {
+                    $sel.select2({ placeholder: 'Select model', width: '100%', allowClear: false });
+                }
+                updateRegisterModelSlotsLabel();
+                updateRegisterSubmitState();
+            }
+
+            function updateRegisterModelSlotsLabel() {
+                const opt = registerModelSelect.options[registerModelSelect.selectedIndex];
+                selectedModelLimitRemaining = opt && opt.dataset.limitRemaining ? parseInt(opt.dataset.limitRemaining, 10) : 0;
+                registerModelSlots.textContent = selectedModelLimitRemaining > 0
+                    ? selectedModelLimitRemaining + ' slot(s) left for this model'
+                    : (purchaseRegistrationModels.length ? 'No slots for selected model' : '');
+                updateRegisterImeiCount();
+            }
+
+            function loadPurchaseRegistrationMeta() {
+                const purchaseId = getPurchaseId();
+                hideRegisterFeedback();
+                purchaseRegistrationModels = [];
+                selectedModelLimitRemaining = 0;
+
+                if (!purchaseId) {
+                    registerPanel.classList.add('hidden');
+                    purchaseSlotsHint.classList.add('hidden');
+                    populateRegisterModelSelect([]);
+                    return;
+                }
+
+                registerPanel.classList.remove('hidden');
+                purchaseSlotsHint.classList.remove('hidden');
+                purchaseSlotsHint.textContent = 'Loading purchase slots…';
+
+                const url = PURCHASE_MODELS_URL_TEMPLATE.replace('__ID__', encodeURIComponent(purchaseId));
+                fetch(url, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (json) {
+                        const rows = (json && json.data) ? json.data : [];
+                        purchaseRegistrationModels = rows.filter(function (m) {
+                            return (m.limit_remaining || 0) > 0;
+                        }).map(function (m) {
+                            return {
+                                product_id: m.product_id,
+                                limit_remaining: m.limit_remaining,
+                                label: m.label || m.model,
+                            };
+                        });
+                        const totalSlots = rows.reduce(function (sum, m) {
+                            return sum + (parseInt(m.limit_remaining, 10) || 0);
+                        }, 0);
+                        if (purchaseRegistrationModels.length) {
+                            purchaseSlotsHint.textContent = totalSlots + ' open slot(s) on this purchase — you can register new IMEIs below.';
+                            registerPanel.classList.remove('hidden');
+                        } else {
+                            purchaseSlotsHint.textContent = 'No open slots on this purchase — you can still sell IMEIs already registered using Add model below.';
+                            registerPanel.classList.add('hidden');
+                        }
+                        populateRegisterModelSelect(purchaseRegistrationModels);
+                    })
+                    .catch(function () {
+                        purchaseSlotsHint.textContent = 'Could not load purchase slot info.';
+                        populateRegisterModelSelect([]);
+                    });
+            }
+
+            registerModelSelect.addEventListener('change', updateRegisterModelSlotsLabel);
+            registerImeiTa.addEventListener('input', updateRegisterImeiCount);
+
+            registerSubmitBtn.addEventListener('click', function () {
+                const purchaseId = getPurchaseId();
+                const catalogProductId = registerModelSelect.value;
+                const imeiNumbers = registerImeiTa.value;
+                if (!purchaseId || !catalogProductId || !imeiNumbers.trim()) return;
+
+                registerSubmitBtn.disabled = true;
+                hideRegisterFeedback();
+
+                fetch(REGISTER_IMEIS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': CSRF_TOKEN,
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        purchase_id: parseInt(purchaseId, 10),
+                        catalog_product_id: parseInt(catalogProductId, 10),
+                        imei_numbers: imeiNumbers,
+                    }),
+                })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+                    .then(function (res) {
+                        if (!res.ok || !res.json.ok) {
+                            showRegisterFeedback(res.json.message || 'Could not add devices.', true);
+                            return;
+                        }
+                        showRegisterFeedback(res.json.message || ('Added ' + res.json.created + ' device(s).'), false);
+                        registerImeiTa.value = '';
+                        updateRegisterImeiCount();
+                        if (res.json.models) {
+                            purchaseRegistrationModels = res.json.models;
+                            const totalSlots = res.json.models.reduce(function (s, m) {
+                                return s + (m.limit_remaining || 0);
+                            }, 0);
+                            purchaseSlotsHint.textContent = totalSlots > 0
+                                ? totalSlots + ' open slot(s) on this purchase — you can register new IMEIs below.'
+                                : 'No open slots on this purchase — you can still sell IMEIs already registered using Add model below.';
+                            if (totalSlots <= 0) {
+                                registerPanel.classList.add('hidden');
+                            }
+                            populateRegisterModelSelect(res.json.models);
+                        } else {
+                            loadPurchaseRegistrationMeta();
+                        }
+                    })
+                    .catch(function () {
+                        showRegisterFeedback('Request failed. Try again.', true);
+                    })
+                    .finally(function () {
+                        updateRegisterSubmitState();
+                    });
+            });
+
             document.getElementById('dealer_id').addEventListener('change', recalcGrandTotal);
+            document.getElementById('purchase_id').addEventListener('change', function () {
+                clearAllLines();
+                syncProductPickerForPurchase();
+                loadPurchaseRegistrationMeta();
+                recalcGrandTotal();
+            });
             paidInput.addEventListener('input', recalcGrandTotal);
 
             form.addEventListener('submit', function (e) {
+                if (!getPurchaseId()) {
+                    e.preventDefault();
+                    alert('Select a purchase for this distribution sale.');
+                    return false;
+                }
                 const rows = tbody.querySelectorAll('tr[data-line-row]');
                 if (rows.length === 0) {
                     e.preventDefault();
@@ -541,21 +888,139 @@
 
             document.addEventListener('DOMContentLoaded', function () {
                 if (window.jQuery && jQuery.fn.select2) {
-                    var $pick = jQuery('#product_picker');
-                    $pick.select2({
-                        placeholder: 'Search category / model…',
+                    jQuery('#dealer_id').select2({
+                        placeholder: 'Select dealer',
                         width: '100%',
-                        allowClear: true
+                        allowClear: false
                     });
-                    $pick.on('select2:select', function (e) {
-                        const id = e.params.data.id;
-                        if (id) {
-                            openImeiModal(id, null);
-                        }
+                    jQuery('#purchase_id').select2({
+                        placeholder: 'Select purchase',
+                        width: '100%',
+                        allowClear: false
                     });
+                    syncProductPickerForPurchase();
+                    loadPurchaseRegistrationMeta();
                 }
                 recalcGrandTotal();
             });
+
+            (function () {
+                var fileInput = document.getElementById('dist_barcode_photos');
+                var btn = document.getElementById('dist_btn_decode_photos');
+                var statusEl = document.getElementById('dist_decode_status');
+                var ta = document.getElementById('dist_register_imei_numbers');
+                if (!fileInput || !btn || !ta) return;
+
+                var _zxingReady = false;
+                var _zxingLoadPromise = null;
+                function loadZXing() {
+                    if (_zxingReady) return Promise.resolve();
+                    if (_zxingLoadPromise) return _zxingLoadPromise;
+                    _zxingLoadPromise = new Promise(function (resolve, reject) {
+                        var s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+                        s.onload = function () { _zxingReady = true; resolve(); };
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                    return _zxingLoadPromise;
+                }
+
+                function mergeCodes(codes) {
+                    var existing = ta.value.replace(/\r\n/g, '\n').split('\n')
+                        .map(function (s) { return s.trim(); }).filter(Boolean);
+                    var seen = {};
+                    existing.forEach(function (c) { seen[c] = true; });
+                    var added = 0;
+                    codes.forEach(function (c) {
+                        c = (c || '').trim();
+                        if (c && !seen[c]) { seen[c] = true; existing.push(c); added++; }
+                    });
+                    ta.value = existing.join('\n');
+                    updateRegisterImeiCount();
+                    return added;
+                }
+
+                async function decodeFileZXing(reader, file) {
+                    var found = new Set();
+                    var imgUrl = URL.createObjectURL(file);
+                    var img = await new Promise(function (res, rej) {
+                        var i = new Image();
+                        i.onload = function () { res(i); };
+                        i.onerror = rej;
+                        i.src = imgUrl;
+                    });
+                    var W = img.naturalWidth;
+                    var H = img.naturalHeight;
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    async function tryRegion(sx, sy, sw, sh) {
+                        if (sw < 10 || sh < 10) return;
+                        canvas.width = sw;
+                        canvas.height = sh;
+                        ctx.clearRect(0, 0, sw, sh);
+                        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                        var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                        try {
+                            var result = await reader.decodeFromImageUrl(dataUrl);
+                            var text = (result && (result.text || (result.getText && result.getText()))) || '';
+                            if (text.trim()) found.add(text.trim());
+                        } catch (e) { /* no barcode */ }
+                    }
+                    await tryRegion(0, 0, W, H);
+                    var grids = [[4, 3], [3, 3], [4, 2], [3, 2], [4, 1], [3, 1], [2, 1]];
+                    for (var g = 0; g < grids.length; g++) {
+                        var rows = grids[g][0], cols = grids[g][1];
+                        if (Math.floor(W / cols) < 30 || Math.floor(H / rows) < 30) continue;
+                        var cellW = Math.floor(W / cols);
+                        var cellH = Math.floor(H / rows);
+                        for (var r = 0; r < rows; r++) {
+                            for (var c = 0; c < cols; c++) {
+                                await tryRegion(c * cellW, r * cellH, cellW, cellH);
+                            }
+                        }
+                        if (found.size > 0 && g >= 1) break;
+                    }
+                    URL.revokeObjectURL(imgUrl);
+                    return Array.from(found);
+                }
+
+                btn.addEventListener('click', async function () {
+                    var files = fileInput.files;
+                    if (!files || !files.length) {
+                        statusEl.textContent = 'Choose a photo first.';
+                        return;
+                    }
+                    btn.disabled = true;
+                    statusEl.textContent = 'Loading decoder…';
+                    try {
+                        await loadZXing();
+                    } catch (e) {
+                        statusEl.textContent = 'Could not load barcode library.';
+                        btn.disabled = false;
+                        return;
+                    }
+                    statusEl.textContent = 'Scanning…';
+                    var allCodes = [];
+                    try {
+                        var reader = new ZXing.BrowserMultiFormatReader();
+                        for (var i = 0; i < files.length; i++) {
+                            allCodes = allCodes.concat(await decodeFileZXing(reader, files[i]));
+                        }
+                    } catch (e) {
+                        statusEl.textContent = 'Decode error: ' + (e.message || e);
+                        btn.disabled = false;
+                        return;
+                    }
+                    btn.disabled = false;
+                    if (allCodes.length) {
+                        var added = mergeCodes(allCodes);
+                        statusEl.textContent = 'Found ' + allCodes.length + ' barcode(s). Added ' + added + ' new code(s).';
+                    } else {
+                        statusEl.textContent = 'No barcode found. Paste IMEIs manually.';
+                    }
+                });
+            })();
         </script>
     @endpush
 </x-admin-layout>

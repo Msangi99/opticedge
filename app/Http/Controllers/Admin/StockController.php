@@ -24,6 +24,7 @@ use App\Support\PdfDownload;
 use App\Support\PurchaseInvoiceNumber;
 use App\Services\AgentCommissionExpenseService;
 use App\Services\AgentSaleCreditMigrationService;
+use App\Services\PurchaseImeiRegistrationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -967,7 +968,7 @@ class StockController extends Controller
     /**
      * Save one or more IMEIs: stock_id or purchase_id, catalog_product_id, imei_numbers (newline / comma separated).
      */
-    public function storeProductFromForm(Request $request)
+    public function storeProductFromForm(Request $request, PurchaseImeiRegistrationService $registrationService)
     {
         $baseRules = [
             'catalog_product_id' => 'required|exists:models,id',
@@ -979,12 +980,6 @@ class StockController extends Controller
                 'purchase_id' => 'required|exists:purchases,id',
             ]);
             $purchase = Purchase::stockPurchases()->with(['product', 'stock', 'lines'])->findOrFail($validated['purchase_id']);
-            if ($purchase->isPassthrough() || $purchase->limit_status !== 'pending' || (int) $purchase->limit_remaining <= 0) {
-                return redirect()->route('admin.stock.add-product')
-                    ->withInput()
-                    ->withErrors(['purchase_id' => 'This purchase has no remaining device slots.']);
-            }
-            $stockIdForRow = $purchase->stock_id;
         } elseif ($request->filled('stock_id')) {
             $validated = $request->validate($baseRules + [
                 'stock_id' => 'required|exists:stocks,id',
@@ -1001,7 +996,6 @@ class StockController extends Controller
                     ->withInput()
                     ->withErrors(['stock_id' => 'No pending purchase limit for this stock.']);
             }
-            $stockIdForRow = $stock->id;
         } else {
             $pickField = Stock::query()->exists() ? 'stock_id' : 'purchase_id';
             $pickMessage = $pickField === 'stock_id'
@@ -1013,129 +1007,22 @@ class StockController extends Controller
                 ->withErrors([$pickField => $pickMessage]);
         }
 
-        $catalogProduct = Product::with('category')->findOrFail((int) $validated['catalog_product_id']);
-        $categoryId = (int) $catalogProduct->category_id;
-        $model = (string) $catalogProduct->name;
+        $result = $registrationService->register(
+            $purchase,
+            (int) $validated['catalog_product_id'],
+            (string) $validated['imei_numbers']
+        );
 
-        $purchaseLine = null;
-        if ($purchase->lines->isNotEmpty()) {
-            $purchaseLine = $purchase->lines->firstWhere('product_id', $catalogProduct->id);
-            if (! $purchaseLine || (int) $purchaseLine->limit_remaining <= 0) {
-                return redirect()->route('admin.stock.add-product')
-                    ->withInput()
-                    ->withErrors(['catalog_product_id' => 'Pick a model from this purchase that still has open IMEI slots.']);
-            }
-            $remainingForModel = (int) $purchaseLine->limit_remaining;
-        } else {
-            if ($purchase->product_id && (int) $purchase->product_id !== (int) $catalogProduct->id) {
-                return redirect()->route('admin.stock.add-product')
-                    ->withInput()
-                    ->withErrors(['catalog_product_id' => 'Selected model does not match this purchase.']);
-            }
-            $remainingForModel = (int) $purchase->limit_remaining;
-        }
-
-        $imeis = ImeiListParser::parse($validated['imei_numbers']);
-
-        if ($imeis === []) {
+        if ($result->hasValidationError()) {
             return redirect()->route('admin.stock.add-product')
                 ->withInput()
-                ->withErrors(['imei_numbers' => 'Enter at least one IMEI. Use one per line, or separate with spaces, commas, or semicolons.']);
+                ->withErrors([$result->errorField => $result->errorMessage]);
         }
 
-        $lenErrors = ImeiListParser::lengthErrors($imeis);
-        if ($lenErrors !== []) {
-            return redirect()->route('admin.stock.add-product')
-                ->withInput()
-                ->withErrors(['imei_numbers' => implode(' ', $lenErrors)]);
-        }
-
-        if (count($imeis) > $remainingForModel) {
-            return redirect()->route('admin.stock.add-product')
-                ->withInput()
-                ->withErrors([
-                    'imei_numbers' => 'Not enough slots for this model. Remaining for this line: '.$remainingForModel.'.',
-                ]);
-        }
-
-        $failed = [];
-        $failureReasons = [
-            'duplicates' => [],
-            'limit_exhausted' => [],
-        ];
-        $created = 0;
-
-        DB::transaction(function () use ($purchase, $purchaseLine, $stockIdForRow, $categoryId, $model, $catalogProduct, $imeis, &$failed, &$failureReasons, &$created) {
-            $productPrice = $purchaseLine
-                ? (float) ($purchaseLine->sell_price ?? $purchaseLine->unit_price)
-                : (float) ($purchase->sell_price ?? $purchase->unit_price ?? 0);
-
-            $product = Product::firstOrCreate(
-                [
-                    'category_id' => $categoryId,
-                    'name' => $model,
-                ],
-                [
-                    'price' => $productPrice,
-                    'stock_quantity' => 0,
-                    'rating' => 5.0,
-                    'description' => 'From product list',
-                    'images' => $catalogProduct->images ?? $purchase->product?->images ?? [],
-                ]
-            );
-
-            $sellToApply = $purchaseLine ? $purchaseLine->sell_price : $purchase->sell_price;
-            if ($sellToApply && (float) $product->price != (float) $sellToApply) {
-                $product->update(['price' => (float) $sellToApply]);
-            }
-
-            foreach ($imeis as $imei) {
-                if (ProductListItem::where('imei_number', $imei)->exists()) {
-                    $failed[] = $imei.' (already in list)';
-                    $failureReasons['duplicates'][] = $imei;
-                    continue;
-                }
-
-                $purchase->refresh();
-                if ($purchaseLine) {
-                    $purchaseLine->refresh();
-                    if ((int) $purchaseLine->limit_remaining <= 0) {
-                        $failed[] = $imei.' (purchase limit exhausted for this model)';
-                        $failureReasons['limit_exhausted'][] = $imei;
-                        break;
-                    }
-                } elseif ($purchase->limit_remaining <= 0) {
-                    $failed[] = $imei.' (purchase limit exhausted)';
-                    $failureReasons['limit_exhausted'][] = $imei;
-                    break;
-                }
-
-                ProductListItem::create([
-                    'stock_id' => $stockIdForRow,
-                    'purchase_id' => $purchase->id,
-                    'category_id' => $categoryId,
-                    'model' => $model,
-                    'imei_number' => $imei,
-                    'product_id' => $product->id,
-                ]);
-
-                if ($purchaseLine) {
-                    $purchaseLine->decrement('limit_remaining');
-                    $purchase->syncAggregatesFromLines();
-                } else {
-                    $purchase->decrement('limit_remaining');
-                    if ($purchase->fresh()->limit_remaining <= 0) {
-                        $purchase->update(['limit_status' => 'complete']);
-                    }
-                }
-                $created++;
-            }
-        });
-
-        if ($created > 0) {
-            $msg = 'Added '.$created.' device(s) ('.count($imeis).' IMEI(s) parsed).';
-            if ($failed !== []) {
-                $msg .= ' Skipped: '.implode('; ', array_slice($failed, 0, 10)).(count($failed) > 10 ? '…' : '');
+        if ($result->succeeded()) {
+            $msg = 'Added '.$result->created.' device(s) ('.$result->parsedCount.' IMEI(s) parsed).';
+            if ($result->failed !== []) {
+                $msg .= ' Skipped: '.implode('; ', array_slice($result->failed, 0, 10)).(count($result->failed) > 10 ? '…' : '');
             }
 
             return redirect()->route('admin.stock.add-product')->with('success', $msg);
@@ -1143,7 +1030,7 @@ class StockController extends Controller
 
         return redirect()->route('admin.stock.add-product')
             ->withInput()
-            ->withErrors(['imei_numbers' => $this->buildDetailedErrorMessage($imeis, $failureReasons)]);
+            ->withErrors(['imei_numbers' => $result->errorMessage ?? 'Could not add devices.']);
     }
 
     public function createPurchase(Request $request)
@@ -2044,7 +1931,16 @@ class StockController extends Controller
 
         $dealers = User::where('role', 'dealer')->orderBy('name')->get();
 
-        return view('admin.stock.create-distribution', compact('products', 'dealers'));
+        $purchases = Purchase::stockPurchases()
+            ->with(['product.category', 'lines.product.category'])
+            ->where(function ($q) {
+                $q->whereNotNull('product_id')->orWhereHas('lines');
+            })
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('admin.stock.create-distribution', compact('products', 'dealers', 'purchases'));
     }
 
     /**
@@ -2054,10 +1950,13 @@ class StockController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|integer|exists:models,id',
+            'purchase_id' => 'required|integer|exists:purchases,id',
         ]);
 
         $productId = (int) $validated['product_id'];
+        $purchaseId = (int) $validated['purchase_id'];
         $items = ProductListItem::availableForDistribution($productId)
+            ->fromPurchase($purchaseId)
             ->orderBy('imei_number')
             ->get(['id', 'imei_number', 'model']);
 
@@ -2070,6 +1969,118 @@ class StockController extends Controller
         ]);
     }
 
+    /**
+     * JSON: register IMEIs on a purchase from distribution create (optional panel).
+     */
+    public function distributionRegisterImeis(Request $request, PurchaseImeiRegistrationService $registrationService)
+    {
+        $validated = $request->validate([
+            'purchase_id' => 'required|integer|exists:purchases,id',
+            'catalog_product_id' => 'required|integer|exists:models,id',
+            'imei_numbers' => 'required|string|max:65535',
+        ]);
+
+        $purchase = Purchase::stockPurchases()
+            ->with(['product', 'stock', 'lines'])
+            ->findOrFail((int) $validated['purchase_id']);
+
+        $result = $registrationService->register(
+            $purchase,
+            (int) $validated['catalog_product_id'],
+            (string) $validated['imei_numbers']
+        );
+
+        if ($result->hasValidationError()) {
+            return response()->json([
+                'ok' => false,
+                'field' => $result->errorField,
+                'message' => $result->errorMessage,
+            ], 422);
+        }
+
+        if (! $result->succeeded()) {
+            return response()->json([
+                'ok' => false,
+                'field' => 'imei_numbers',
+                'message' => $result->errorMessage ?? 'No devices were added.',
+            ], 422);
+        }
+
+        $purchase->refresh()->load('lines');
+
+        $models = $this->purchaseModelsForRegistration($purchase);
+
+        return response()->json([
+            'ok' => true,
+            'created' => $result->created,
+            'parsed' => $result->parsedCount,
+            'failed' => $result->failed,
+            'purchase_limit_remaining' => (int) $purchase->limit_remaining,
+            'model_limit_remaining' => $result->modelLimitRemaining,
+            'models' => $models,
+            'message' => 'Added '.$result->created.' device(s). Use Add model above and the IMEI modal to include them in this sale.',
+        ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function purchaseModelsForRegistration(Purchase $purchase): array
+    {
+        $purchase->loadMissing([
+            'lines.product.category:id,name',
+            'product.category:id,name',
+        ]);
+
+        if ($purchase->lines->isNotEmpty()) {
+            return $purchase->lines
+                ->map(function ($line) {
+                    $product = $line->product;
+                    if (! $product) {
+                        return null;
+                    }
+                    $model = trim((string) ($product->name ?? ''));
+                    $categoryId = $product->category_id ?? null;
+                    if ($model === '' || empty($categoryId)) {
+                        return null;
+                    }
+                    $rem = (int) $line->limit_remaining;
+                    if ($rem <= 0) {
+                        return null;
+                    }
+                    $catName = $product->category?->name ?? '—';
+
+                    return [
+                        'product_id' => (int) $product->id,
+                        'limit_remaining' => $rem,
+                        'label' => $catName.' — '.$model.' · slots '.$rem,
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        $product = $purchase->product;
+        if (! $product) {
+            return [];
+        }
+
+        $rem = (int) ($purchase->limit_remaining ?? 0);
+        if ($rem <= 0) {
+            return [];
+        }
+
+        $catName = $product->category?->name ?? '—';
+        $model = trim((string) ($product->name ?? ''));
+
+        return [[
+            'product_id' => (int) $product->id,
+            'limit_remaining' => $rem,
+            'label' => $catName.' — '.$model.' · slots '.$rem,
+        ]];
+    }
+
     public function storeDistribution(Request $request)
     {
         if ($request->filled('paid_amount') === false || trim((string) $request->input('paid_amount', '')) === '') {
@@ -2078,6 +2089,7 @@ class StockController extends Controller
 
         $validated = $request->validate([
             'date' => 'required|date',
+            'purchase_id' => 'required|integer|exists:purchases,id',
             'dealer_id' => 'required|exists:users,id',
             'seller_name' => 'nullable|string|max:255',
             'lines' => 'required|array|min:1',
@@ -2091,6 +2103,7 @@ class StockController extends Controller
         $service = app(\App\Services\DistributionSaleService::class);
         $dealer = User::findOrFail((int) $validated['dealer_id']);
         $dealerName = $dealer->business_name ?? $dealer->name;
+        $purchaseId = (int) $validated['purchase_id'];
 
         $linePayloads = [];
         $grandSellingTotal = 0.0;
@@ -2114,6 +2127,7 @@ class StockController extends Controller
 
             $product = Product::findOrFail($pid);
             $items = ProductListItem::availableForDistribution($pid)
+                ->fromPurchase($purchaseId)
                 ->whereIn('id', $imeiIds)
                 ->get();
 
@@ -2121,7 +2135,7 @@ class StockController extends Controller
                 return redirect()->back()
                     ->withInput()
                     ->withErrors([
-                        'lines' => "One or more IMEIs on line ".($lineIndex + 1)." are not available for {$product->name} (sold, assigned, or wrong product).",
+                        'lines' => "One or more IMEIs on line ".($lineIndex + 1)." are not available for {$product->name} on this purchase (sold, assigned, wrong product, or different purchase).",
                     ]);
             }
 
@@ -2634,42 +2648,4 @@ class StockController extends Controller
     /**
      * Build a detailed error message categorized by failure reason.
      */
-    private function buildDetailedErrorMessage(array $imeis, array $failureReasons): string
-    {
-        $duplicateCount = count($failureReasons['duplicates'] ?? []);
-        $limitExhaustedCount = count($failureReasons['limit_exhausted'] ?? []);
-        $totalParsed = count($imeis);
-        $totalFailed = $duplicateCount + $limitExhaustedCount;
-
-        $messages = [];
-        $messages[] = "❌ No devices added. Parsed $totalParsed IMEI(s), but all failed.";
-
-        if ($duplicateCount > 0) {
-            $samples = array_slice($failureReasons['duplicates'], 0, 3);
-            $sampleList = implode(', ', $samples);
-            $more = $duplicateCount > 3 ? " (+ " . ($duplicateCount - 3) . " more)" : '';
-            $messages[] = "• All duplicates: $duplicateCount IMEI(s) already exist in the system. Examples: $sampleList$more";
-        }
-
-        if ($limitExhaustedCount > 0) {
-            $samples = array_slice($failureReasons['limit_exhausted'], 0, 3);
-            $sampleList = implode(', ', $samples);
-            $more = $limitExhaustedCount > 3 ? " (+ " . ($limitExhaustedCount - 3) . " more)" : '';
-            $messages[] = "• Purchase limit exhausted: $limitExhaustedCount IMEI(s) could not be added because the purchase limit has been reached. Examples: $sampleList$more";
-        }
-
-        $messages[] = "\n💡 Solutions:";
-        if ($duplicateCount > 0) {
-            $messages[] = "  • Check if these IMEIs have already been added to the system";
-        }
-        if ($limitExhaustedCount > 0) {
-            $messages[] = "  • Create a new purchase with additional quantity for this stock";
-        }
-        if ($duplicateCount === 0 && $limitExhaustedCount === 0) {
-            $messages[] = "  • Verify you selected the correct stock and model";
-            $messages[] = "  • Check that all IMEIs are properly formatted";
-        }
-
-        return implode("\n", $messages);
-    }
 }
