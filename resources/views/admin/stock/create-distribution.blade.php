@@ -77,6 +77,43 @@
                 width: 1rem;
                 height: 1rem;
             }
+            .dist-tab-group {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            .dist-tab-btn {
+                display: block;
+                width: 100%;
+                text-align: left;
+                padding: 0.875rem 1rem;
+                border-radius: 0.625rem;
+                border: 1.5px solid #e2e8f0;
+                background: #fff;
+                cursor: pointer;
+                transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+            }
+            .dist-tab-btn:hover {
+                border-color: #fdba74;
+            }
+            .dist-tab-btn--active {
+                border-color: #f97316;
+                background: #fff7ed;
+                box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+            }
+            .dist-tab-btn__title {
+                display: block;
+                font-weight: 600;
+                color: #0f172a;
+                font-size: 0.9rem;
+            }
+            .dist-tab-btn__hint {
+                display: block;
+                margin-top: 0.25rem;
+                font-size: 0.75rem;
+                color: #64748b;
+                font-weight: 400;
+            }
         </style>
     @endpush
 
@@ -138,12 +175,64 @@
                     <p id="purchase-slots-hint" class="helper-text mt-1 hidden"></p>
                 </div>
 
-                <div id="dist-register-panel" class="admin-clay-panel border border-slate-200/80 !shadow-none hidden">
-                    <div class="p-4 border-b border-slate-200/60">
-                        <h3 class="text-sm font-semibold text-slate-900">Register IMEIs on this purchase <span class="text-slate-500 font-normal">(optional)</span></h3>
-                        <p class="helper-text mt-1">Paste or scan codes to add devices to the purchase. Then use <strong>Add model</strong> below and the IMEI modal to include them in this sale.</p>
+                <div>
+                    <label for="dealer_id" class="admin-prod-label">Dealer <span class="text-red-500">*</span></label>
+                    <select id="dealer_id" name="dealer_id" required class="admin-prod-select">
+                        <option value="">Select dealer</option>
+                        @foreach($dealers as $dealer)
+                            <option value="{{ $dealer->id }}" @selected(old('dealer_id') == $dealer->id)>
+                                {{ $dealer->name }}@if($dealer->business_name) — {{ $dealer->business_name }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('dealer_id')
+                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="admin-clay-panel border border-slate-200/80 !shadow-none admin-prod-select2-wrap overflow-hidden" id="dist-products-tabs-wrap">
+                    <div class="p-4 border-b border-slate-200/60 bg-slate-50/40">
+                        <div class="dist-tab-group" role="tablist" aria-label="Distribution products">
+                            <button type="button" class="dist-tab-btn dist-tab-btn--active" data-dist-tab="sale" role="tab" aria-selected="true" aria-controls="dist-tab-sale">
+                                <span class="dist-tab-btn__title">Add to sale</span>
+                                <span class="dist-tab-btn__hint">Pick models and IMEIs for this distribution.</span>
+                            </button>
+                            <button type="button" class="dist-tab-btn" data-dist-tab="register" role="tab" aria-selected="false" aria-controls="dist-tab-register">
+                                <span class="dist-tab-btn__title">Register IMEIs</span>
+                                <span class="dist-tab-btn__hint">Paste or scan devices onto the purchase first.</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="p-4 space-y-4">
+                    <div id="dist-tab-sale" class="dist-tab-panel" role="tabpanel">
+                        <div class="p-4 border-b border-slate-200/60">
+                            <label for="product_picker" class="admin-prod-label !mb-2">Add model to this sale <span class="text-red-500">*</span></label>
+                            <select id="product_picker" class="w-full" data-placeholder="Select a purchase first…" disabled>
+                                <option value=""></option>
+                            </select>
+                            <p class="helper-text mt-2" id="product_picker_hint">Select a purchase above — only models on that purchase appear here. Choosing a model opens IMEIs registered on this purchase for that model.</p>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm dist-line-table">
+                                <thead class="bg-slate-50/90">
+                                    <tr>
+                                        <th scope="col" class="text-left px-4 py-3 font-semibold">Model / IMEIs</th>
+                                        <th scope="col" class="text-right px-3 py-3 font-semibold w-[9rem]">Unit sell (TZS)</th>
+                                        <th scope="col" class="text-right px-3 py-3 font-semibold w-[10rem]">Line total</th>
+                                        <th scope="col" class="w-12 px-2 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="line-items-body"></tbody>
+                            </table>
+                            <p id="no-lines-hint" class="px-4 py-8 text-center text-slate-500 text-sm">No models added yet — use the search field above.</p>
+                        </div>
+                    </div>
+                    <div id="dist-tab-register" class="dist-tab-panel hidden p-4 space-y-4" role="tabpanel">
+                        <p id="dist-register-no-purchase" class="text-sm text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-2">Select a purchase above to register IMEIs.</p>
+                        <div id="dist-register-body" class="space-y-4 hidden">
+                            <p class="helper-text">After registering, open the <strong>Add to sale</strong> tab and pick the model to include IMEIs in this distribution.</p>
+                            <p id="dist-register-no-slots" class="hidden text-sm text-slate-600 bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2">No open slots on this purchase — sell already registered IMEIs from the <strong>Add to sale</strong> tab.</p>
+                            <div id="dist-register-form" class="space-y-4 hidden">
                         <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
                             <h4 class="text-sm font-semibold text-slate-900 mb-2">Capture &amp; scan barcodes</h4>
                             <p class="text-xs text-slate-600 mb-3">Photo of IMEI barcodes (Code 128, QR, EAN) — codes are read in your browser.</p>
@@ -168,46 +257,8 @@
                             <button type="button" id="dist_register_submit" class="admin-prod-btn-primary text-sm py-2 px-5" disabled>Add to purchase</button>
                             <p id="dist_register_model_slots" class="text-xs text-slate-500"></p>
                         </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="dealer_id" class="admin-prod-label">Dealer <span class="text-red-500">*</span></label>
-                    <select id="dealer_id" name="dealer_id" required class="admin-prod-select">
-                        <option value="">Select dealer</option>
-                        @foreach($dealers as $dealer)
-                            <option value="{{ $dealer->id }}" @selected(old('dealer_id') == $dealer->id)>
-                                {{ $dealer->name }}@if($dealer->business_name) — {{ $dealer->business_name }}@endif
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('dealer_id')
-                        <p class="text-red-600 text-xs mt-1.5 font-semibold">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="admin-clay-panel border border-slate-200/80 !shadow-none admin-prod-select2-wrap">
-                    <div class="p-4 border-b border-slate-200/60">
-                        <label for="product_picker" class="admin-prod-label !mb-2">Add model to this sale <span class="text-red-500">*</span></label>
-                        <select id="product_picker" class="w-full" data-placeholder="Select a purchase first…" disabled>
-                            <option value=""></option>
-                        </select>
-                        <p class="helper-text mt-2" id="product_picker_hint">Select a purchase above — only models on that purchase appear here. Choosing a model opens IMEIs registered on this purchase for that model.</p>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm dist-line-table">
-                            <thead class="bg-slate-50/90">
-                                <tr>
-                                    <th scope="col" class="text-left px-4 py-3 font-semibold">Model / IMEIs</th>
-                                    <th scope="col" class="text-right px-3 py-3 font-semibold w-[9rem]">Unit sell (TZS)</th>
-                                    <th scope="col" class="text-right px-3 py-3 font-semibold w-[10rem]">Line total</th>
-                                    <th scope="col" class="w-12 px-2 py-3"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="line-items-body"></tbody>
-                        </table>
-                        <p id="no-lines-hint" class="px-4 py-8 text-center text-slate-500 text-sm">No models added yet — use the search field above.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -253,7 +304,7 @@
                 <button type="button" id="dist-imei-clear-all" class="text-xs font-semibold text-slate-600 hover:underline">Clear</button>
             </div>
             <div id="dist-imei-list" class="dist-imei-modal__list"></div>
-            <p id="dist-imei-empty" class="hidden px-4 py-6 text-sm text-center text-slate-500">No available IMEIs for this model on the selected purchase. Register them below or pick another model.</p>
+            <p id="dist-imei-empty" class="hidden px-4 py-6 text-sm text-center text-slate-500">No available IMEIs for this model on the selected purchase. Register them in the <strong>Register IMEIs</strong> tab or pick another model.</p>
             <div class="px-4 py-3 flex justify-end gap-2 border-t border-slate-200 bg-slate-50/80">
                 <button type="button" id="dist-imei-cancel" class="admin-prod-btn-ghost text-sm py-2">Cancel</button>
                 <button type="button" id="dist-imei-confirm" class="admin-prod-btn-primary text-sm py-2 px-5">Add to sale</button>
@@ -563,7 +614,7 @@
                         $pick.prop('disabled', false);
                         if (hint) {
                             if (!rows.length) {
-                                hint.textContent = 'No models on this purchase. Add models via the purchase or register IMEIs below.';
+                                hint.textContent = 'No models on this purchase. Add models via the purchase or register IMEIs in the Register IMEIs tab.';
                             } else {
                                 const withImeis = rows.filter(function (r) { return (r.available_imeis || 0) > 0; }).length;
                                 hint.textContent = rows.length + ' model(s) on this purchase'
@@ -621,7 +672,7 @@
                             modalEmpty.textContent = 'No unsold IMEIs for this model on the selected purchase. Register IMEIs on this purchase first, or choose another model.';
                             return;
                         }
-                        modalEmpty.textContent = 'No available IMEIs for this model on the selected purchase. Register them below or pick another model.';
+                        modalEmpty.textContent = 'No available IMEIs for this model on the selected purchase. Register them in the Register IMEIs tab or pick another model.';
                         renderModalList();
                         if (modalEditingRow) {
                             const selected = new Set(
@@ -670,8 +721,34 @@
                 if (window.jQuery) jQuery('#product_picker').val(null).trigger('change');
             });
 
-            const registerPanel = document.getElementById('dist-register-panel');
+            const registerNoPurchase = document.getElementById('dist-register-no-purchase');
+            const registerBody = document.getElementById('dist-register-body');
+            const registerForm = document.getElementById('dist-register-form');
+            const registerNoSlots = document.getElementById('dist-register-no-slots');
             const purchaseSlotsHint = document.getElementById('purchase-slots-hint');
+
+            function switchDistTab(tabId) {
+                document.querySelectorAll('.dist-tab-btn[data-dist-tab]').forEach(function (btn) {
+                    const active = btn.getAttribute('data-dist-tab') === tabId;
+                    btn.classList.toggle('dist-tab-btn--active', active);
+                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                document.getElementById('dist-tab-sale').classList.toggle('hidden', tabId !== 'sale');
+                document.getElementById('dist-tab-register').classList.toggle('hidden', tabId !== 'register');
+            }
+
+            function setRegisterTabState(state) {
+                registerNoPurchase.classList.toggle('hidden', state !== 'no-purchase');
+                registerBody.classList.toggle('hidden', state === 'no-purchase');
+                registerNoSlots.classList.toggle('hidden', state !== 'no-slots');
+                registerForm.classList.toggle('hidden', state !== 'ready');
+            }
+
+            document.querySelectorAll('.dist-tab-btn[data-dist-tab]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    switchDistTab(btn.getAttribute('data-dist-tab'));
+                });
+            });
             const registerModelSelect = document.getElementById('dist_register_model');
             const registerImeiTa = document.getElementById('dist_register_imei_numbers');
             const registerImeiCount = document.getElementById('dist_register_imei_count');
@@ -761,13 +838,13 @@
                 selectedModelLimitRemaining = 0;
 
                 if (!purchaseId) {
-                    registerPanel.classList.add('hidden');
+                    setRegisterTabState('no-purchase');
                     purchaseSlotsHint.classList.add('hidden');
                     populateRegisterModelSelect([]);
                     return;
                 }
 
-                registerPanel.classList.remove('hidden');
+                setRegisterTabState('ready');
                 purchaseSlotsHint.classList.remove('hidden');
                 purchaseSlotsHint.textContent = 'Loading purchase slots…';
 
@@ -792,11 +869,11 @@
                             return sum + (parseInt(m.limit_remaining, 10) || 0);
                         }, 0);
                         if (purchaseRegistrationModels.length) {
-                            purchaseSlotsHint.textContent = totalSlots + ' open slot(s) on this purchase — you can register new IMEIs below.';
-                            registerPanel.classList.remove('hidden');
+                            purchaseSlotsHint.textContent = totalSlots + ' open slot(s) on this purchase — use the Register IMEIs tab to add devices.';
+                            setRegisterTabState('ready');
                         } else {
-                            purchaseSlotsHint.textContent = 'No open slots on this purchase — you can still sell IMEIs already registered using Add model below.';
-                            registerPanel.classList.add('hidden');
+                            purchaseSlotsHint.textContent = 'No open slots on this purchase — sell IMEIs already registered from the Add to sale tab.';
+                            setRegisterTabState('no-slots');
                         }
                         populateRegisterModelSelect(purchaseRegistrationModels);
                     })
@@ -842,17 +919,16 @@
                         showRegisterFeedback(res.json.message || ('Added ' + res.json.created + ' device(s).'), false);
                         registerImeiTa.value = '';
                         updateRegisterImeiCount();
+                        switchDistTab('sale');
                         if (res.json.models) {
                             purchaseRegistrationModels = res.json.models;
                             const totalSlots = res.json.models.reduce(function (s, m) {
                                 return s + (m.limit_remaining || 0);
                             }, 0);
                             purchaseSlotsHint.textContent = totalSlots > 0
-                                ? totalSlots + ' open slot(s) on this purchase — you can register new IMEIs below.'
-                                : 'No open slots on this purchase — you can still sell IMEIs already registered using Add model below.';
-                            if (totalSlots <= 0) {
-                                registerPanel.classList.add('hidden');
-                            }
+                                ? totalSlots + ' open slot(s) on this purchase — use the Register IMEIs tab to add devices.'
+                                : 'No open slots on this purchase — sell IMEIs already registered from the Add to sale tab.';
+                            setRegisterTabState(totalSlots > 0 ? 'ready' : 'no-slots');
                             populateRegisterModelSelect(res.json.models);
                         } else {
                             loadPurchaseRegistrationMeta();
