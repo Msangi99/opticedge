@@ -1924,11 +1924,6 @@ class StockController extends Controller
     // Distribution Sales
     public function createDistribution()
     {
-        $products = Product::whereHas('purchases')
-            ->with('category')
-            ->orderBy('name')
-            ->get();
-
         $dealers = User::where('role', 'dealer')->orderBy('name')->get();
 
         $purchases = Purchase::stockPurchases()
@@ -1940,11 +1935,60 @@ class StockController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return view('admin.stock.create-distribution', compact('products', 'dealers', 'purchases'));
+        return view('admin.stock.create-distribution', compact('dealers', 'purchases'));
     }
 
     /**
-     * JSON: unsold IMEIs available to sell to a dealer for this catalog product.
+     * JSON: catalog models on this purchase (lines or header) with available IMEI counts for distribution.
+     */
+    public function distributionModelsForPurchase(Purchase $purchase)
+    {
+        if ($purchase->isPassthrough()) {
+            abort(404);
+        }
+
+        $purchase->load(['lines.product.category', 'product.category']);
+
+        $productIds = collect();
+        if ($purchase->lines->isNotEmpty()) {
+            $productIds = $purchase->lines->pluck('product_id')->filter()->map(fn ($id) => (int) $id);
+        } elseif ($purchase->product_id) {
+            $productIds = collect([(int) $purchase->product_id]);
+        }
+
+        if ($productIds->isEmpty()) {
+            return response()->json(['data' => []]);
+        }
+
+        $products = Product::with('category')
+            ->whereIn('id', $productIds->unique()->values()->all())
+            ->orderBy('name')
+            ->get();
+
+        $purchaseId = (int) $purchase->id;
+
+        $data = $products->map(function (Product $product) use ($purchaseId) {
+            $pid = (int) $product->id;
+            $available = ProductListItem::availableForDistribution($pid)
+                ->fromPurchase($purchaseId)
+                ->count();
+            $categoryName = $product->category?->name ?? '—';
+            $label = $categoryName.' — '.$product->name;
+
+            return [
+                'product_id' => $pid,
+                'label' => $label,
+                'available_imeis' => $available,
+                'suggest' => (float) ($product->price ?? 0),
+                'picker_label' => $label.' ('.$available.' IMEI'.($available === 1 ? '' : 's').' on this purchase)',
+            ];
+        })->values()->all();
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * JSON: unsold IMEIs available to sell to a dealer for this catalog product on a purchase.
      */
     public function distributionAssignableImeis(Request $request)
     {

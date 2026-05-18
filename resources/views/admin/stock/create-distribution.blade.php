@@ -189,19 +189,10 @@
                 <div class="admin-clay-panel border border-slate-200/80 !shadow-none admin-prod-select2-wrap">
                     <div class="p-4 border-b border-slate-200/60">
                         <label for="product_picker" class="admin-prod-label !mb-2">Add model to this sale <span class="text-red-500">*</span></label>
-                        <select id="product_picker" class="w-full" data-placeholder="Search category / model…">
+                        <select id="product_picker" class="w-full" data-placeholder="Select a purchase first…" disabled>
                             <option value=""></option>
-                            @foreach($products as $product)
-                                <option
-                                    value="{{ $product->id }}"
-                                    data-stock="{{ (int) $product->stock_quantity }}"
-                                    data-suggest="{{ (float) ($product->price ?? 0) }}"
-                                >
-                                    {{ $product->category?->name ?? '—' }} — {{ $product->name }} (stock {{ (int) $product->stock_quantity }})
-                                </option>
-                            @endforeach
                         </select>
-                        <p class="helper-text mt-2">Choose a model — a window opens to select one or more IMEIs, then set unit price on the line.</p>
+                        <p class="helper-text mt-2" id="product_picker_hint">Select a purchase above — only models on that purchase appear here. Choosing a model opens IMEIs registered on this purchase for that model.</p>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -262,7 +253,7 @@
                 <button type="button" id="dist-imei-clear-all" class="text-xs font-semibold text-slate-600 hover:underline">Clear</button>
             </div>
             <div id="dist-imei-list" class="dist-imei-modal__list"></div>
-            <p id="dist-imei-empty" class="hidden px-4 py-6 text-sm text-center text-slate-500">No available IMEIs for this model.</p>
+            <p id="dist-imei-empty" class="hidden px-4 py-6 text-sm text-center text-slate-500">No available IMEIs for this model on the selected purchase. Register them below or pick another model.</p>
             <div class="px-4 py-3 flex justify-end gap-2 border-t border-slate-200 bg-slate-50/80">
                 <button type="button" id="dist-imei-cancel" class="admin-prod-btn-ghost text-sm py-2">Cancel</button>
                 <button type="button" id="dist-imei-confirm" class="admin-prod-btn-primary text-sm py-2 px-5">Add to sale</button>
@@ -270,40 +261,15 @@
         </div>
     </div>
 
-    @php
-        $productMeta = $products->keyBy('id')->map(function ($p) {
-            return [
-                'id' => $p->id,
-                'label' => ($p->category?->name ?? '—') . ' — ' . $p->name,
-                'stock' => (int) ($p->stock_quantity ?? 0),
-                'suggest' => (float) ($p->price ?? 0),
-            ];
-        })->toArray();
-
-        $purchaseProductIds = ($purchases ?? collect())->mapWithKeys(function ($purchase) {
-            $ids = [];
-            if (($purchase->lines ?? collect())->isNotEmpty()) {
-                foreach ($purchase->lines as $line) {
-                    if ($line->product_id) {
-                        $ids[] = (int) $line->product_id;
-                    }
-                }
-            } elseif ($purchase->product_id) {
-                $ids[] = (int) $purchase->product_id;
-            }
-
-            return [(string) $purchase->id => array_values(array_unique($ids))];
-        })->toArray();
-    @endphp
 
     @push('scripts')
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
-            const PRODUCT_META = @json($productMeta);
-            const PURCHASE_PRODUCT_IDS = @json($purchaseProductIds);
+            const PRODUCT_META = {};
             const ASSIGNABLE_IMEIS_URL = @json(route('admin.stock.distribution-assignable-imeis'));
-            const PURCHASE_MODELS_URL_TEMPLATE = @json(route('admin.stock.add-product.purchase.models', ['purchase' => '__ID__']));
+            const PURCHASE_MODELS_URL_TEMPLATE = @json(route('admin.stock.distribution-purchase-models', ['purchase' => '__ID__']));
+            const PURCHASE_MODELS_FOR_REGISTER_URL_TEMPLATE = @json(route('admin.stock.add-product.purchase.models', ['purchase' => '__ID__']));
             const REGISTER_IMEIS_URL = @json(route('admin.stock.distribution-register-imeis'));
             const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -526,40 +492,94 @@
                 return document.getElementById('purchase_id').value;
             }
 
+            function initProductPickerSelect2(purchaseId) {
+                const $pick = window.jQuery ? jQuery('#product_picker') : null;
+                if (!$pick || !$pick.length || !window.jQuery || !jQuery.fn.select2) return;
+
+                if ($pick.data('select2')) {
+                    $pick.select2('destroy');
+                }
+                $pick.select2({
+                    placeholder: purchaseId ? 'Search model on this purchase…' : 'Select a purchase first…',
+                    width: '100%',
+                    allowClear: true
+                });
+                $pick.off('select2:select').on('select2:select', function (e) {
+                    const id = e.params.data.id;
+                    if (id) {
+                        openImeiModal(id, null);
+                    }
+                });
+            }
+
             function syncProductPickerForPurchase() {
                 const purchaseId = getPurchaseId();
-                const allowed = purchaseId ? (PURCHASE_PRODUCT_IDS[purchaseId] || []) : [];
                 const $pick = window.jQuery ? jQuery('#product_picker') : null;
+                const hint = document.getElementById('product_picker_hint');
                 if (!$pick || !$pick.length) return;
 
                 if ($pick.data('select2')) {
                     $pick.select2('destroy');
                 }
                 $pick.empty().append(new Option('', '', false, false));
-                Object.keys(PRODUCT_META).forEach(function (id) {
-                    const pid = parseInt(id, 10);
-                    if (!purchaseId || allowed.indexOf(pid) !== -1) {
-                        const meta = PRODUCT_META[id];
-                        const label = meta.label + ' (stock ' + meta.stock + ')';
-                        const opt = new Option(label, id, false, false);
-                        jQuery(opt).attr('data-stock', meta.stock).attr('data-suggest', meta.suggest);
-                        $pick.append(opt);
+
+                if (!purchaseId) {
+                    $pick.prop('disabled', true);
+                    if (hint) {
+                        hint.textContent = 'Select a purchase above — only models on that purchase appear here.';
                     }
-                });
-                $pick.prop('disabled', !purchaseId);
-                if (window.jQuery && jQuery.fn.select2) {
-                    $pick.select2({
-                        placeholder: purchaseId ? 'Search category / model…' : 'Select a purchase first…',
-                        width: '100%',
-                        allowClear: true
-                    });
-                    $pick.off('select2:select').on('select2:select', function (e) {
-                        const id = e.params.data.id;
-                        if (id) {
-                            openImeiModal(id, null);
-                        }
-                    });
+                    initProductPickerSelect2(null);
+                    return;
                 }
+
+                $pick.prop('disabled', true);
+                if (hint) {
+                    hint.textContent = 'Loading models for this purchase…';
+                }
+
+                const url = PURCHASE_MODELS_URL_TEMPLATE.replace('__ID__', encodeURIComponent(purchaseId));
+                fetch(url, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (json) {
+                        const rows = (json && json.data) ? json.data : [];
+                        rows.forEach(function (row) {
+                            const id = String(row.product_id);
+                            PRODUCT_META[id] = {
+                                id: row.product_id,
+                                label: row.label,
+                                suggest: row.suggest || 0,
+                                available_imeis: row.available_imeis || 0,
+                            };
+                            const opt = new Option(row.picker_label || row.label, id, false, false);
+                            jQuery(opt).attr('data-suggest', row.suggest || 0);
+                            if ((row.available_imeis || 0) < 1) {
+                                opt.disabled = true;
+                            }
+                            $pick.append(opt);
+                        });
+                        $pick.prop('disabled', false);
+                        if (hint) {
+                            if (!rows.length) {
+                                hint.textContent = 'No models on this purchase. Add models via the purchase or register IMEIs below.';
+                            } else {
+                                const withImeis = rows.filter(function (r) { return (r.available_imeis || 0) > 0; }).length;
+                                hint.textContent = rows.length + ' model(s) on this purchase'
+                                    + (withImeis < rows.length ? ' (' + withImeis + ' with IMEIs ready to sell)' : '')
+                                    + '. Pick a model to choose its IMEIs on this purchase.';
+                            }
+                        }
+                        initProductPickerSelect2(purchaseId);
+                    })
+                    .catch(function () {
+                        $pick.prop('disabled', false);
+                        if (hint) {
+                            hint.textContent = 'Could not load models for this purchase.';
+                        }
+                        initProductPickerSelect2(purchaseId);
+                    });
             }
 
             function clearAllLines() {
@@ -598,8 +618,10 @@
                             modalList.innerHTML = '';
                             modalList.classList.add('hidden');
                             modalEmpty.classList.remove('hidden');
+                            modalEmpty.textContent = 'No unsold IMEIs for this model on the selected purchase. Register IMEIs on this purchase first, or choose another model.';
                             return;
                         }
+                        modalEmpty.textContent = 'No available IMEIs for this model on the selected purchase. Register them below or pick another model.';
                         renderModalList();
                         if (modalEditingRow) {
                             const selected = new Set(
@@ -749,7 +771,7 @@
                 purchaseSlotsHint.classList.remove('hidden');
                 purchaseSlotsHint.textContent = 'Loading purchase slots…';
 
-                const url = PURCHASE_MODELS_URL_TEMPLATE.replace('__ID__', encodeURIComponent(purchaseId));
+                const url = PURCHASE_MODELS_FOR_REGISTER_URL_TEMPLATE.replace('__ID__', encodeURIComponent(purchaseId));
                 fetch(url, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'same-origin',
@@ -835,6 +857,7 @@
                         } else {
                             loadPurchaseRegistrationMeta();
                         }
+                        syncProductPickerForPurchase();
                     })
                     .catch(function () {
                         showRegisterFeedback('Request failed. Try again.', true);
@@ -845,12 +868,17 @@
             });
 
             document.getElementById('dealer_id').addEventListener('change', recalcGrandTotal);
-            document.getElementById('purchase_id').addEventListener('change', function () {
+            function onPurchaseChanged() {
                 clearAllLines();
                 syncProductPickerForPurchase();
                 loadPurchaseRegistrationMeta();
                 recalcGrandTotal();
-            });
+            }
+
+            document.getElementById('purchase_id').addEventListener('change', onPurchaseChanged);
+            if (window.jQuery) {
+                jQuery('#purchase_id').on('change', onPurchaseChanged);
+            }
             paidInput.addEventListener('input', recalcGrandTotal);
 
             form.addEventListener('submit', function (e) {

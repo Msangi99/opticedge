@@ -308,6 +308,7 @@ Route::middleware(['auth', 'admin', 'subadmin.ability'])->prefix('admin')->name(
             Route::get('distribution/consolidated-invoice', [App\Http\Controllers\Admin\StockController::class, 'downloadConsolidatedDistributionInvoice'])->name('distribution-consolidated-invoice');
             Route::get('distribution/export-csv', [App\Http\Controllers\Admin\StockController::class, 'exportDistributionCsv'])->name('distribution.export-csv');
             Route::get('distribution/create', [App\Http\Controllers\Admin\StockController::class, 'createDistribution'])->name('create-distribution');
+            Route::get('distribution/purchases/{purchase}/models', [App\Http\Controllers\Admin\StockController::class, 'distributionModelsForPurchase'])->name('distribution-purchase-models');
             Route::get('distribution/assignable-imeis', [App\Http\Controllers\Admin\StockController::class, 'distributionAssignableImeis'])->name('distribution-assignable-imeis');
             Route::post('distribution/register-imeis', [App\Http\Controllers\Admin\StockController::class, 'distributionRegisterImeis'])->name('distribution-register-imeis');
             Route::post('distribution', [App\Http\Controllers\Admin\StockController::class, 'storeDistribution'])->name('store-distribution');
